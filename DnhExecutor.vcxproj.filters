@@ -176,6 +176,9 @@
     <ClCompile Include="source\GcLib\directx\VertexBuffer.cpp">
       <Filter>source\GcLib\directx</Filter>
     </ClCompile>
+    <ClCompile Include="source\GcLib\gstd\ArchiveFile.cpp">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\GcLib\gstd\Application.hpp">
@@ -359,6 +362,12 @@
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\gstd\ArchiveFile.h">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
   </ItemGroup>

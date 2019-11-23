@@ -106,7 +106,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <IgnoreSpecificDefaultLibraries>libc.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <OutputFile>bin_th_dnh/th_dnh_r.exe</OutputFile>
+      <OutputFile>bin_th_dnh/DongFangDanMuFeng.exe</OutputFile>
       <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <AdditionalOptions>/NODEFAULTLIB:"libcmt.lib" %(AdditionalOptions)</AdditionalOptions>
@@ -180,6 +180,7 @@
     <ClCompile Include="source\GcLib\directx\TransitionEffect.cpp" />
     <ClCompile Include="source\GcLib\directx\VertexBuffer.cpp" />
     <ClCompile Include="source\GcLib\gstd\Application.cpp" />
+    <ClCompile Include="source\GcLib\gstd\ArchiveFile.cpp" />
     <ClCompile Include="source\GcLib\gstd\File.cpp" />
     <ClCompile Include="source\GcLib\gstd\FpsController.cpp" />
     <ClCompile Include="source\GcLib\gstd\GstdUtility.cpp" />
@@ -238,11 +239,13 @@
     <ClInclude Include="source\GcLib\directx\VertexBuffer.hpp" />
     <ClInclude Include="source\GcLib\GcLib.hpp" />
     <ClInclude Include="source\GcLib\gstd\Application.hpp" />
+    <ClInclude Include="source\GcLib\gstd\ArchiveFile.h" />
     <ClInclude Include="source\GcLib\gstd\File.hpp" />
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp" />
+    <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp" />
     <ClInclude Include="source\GcLib\gstd\Logger.hpp" />
     <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp" />
     <ClInclude Include="source\GcLib\gstd\RandProvider.hpp" />

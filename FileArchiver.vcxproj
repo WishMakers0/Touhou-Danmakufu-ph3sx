@@ -54,17 +54,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\bin_ext\</OutDir>
-    <IntDir>R:/temp/FileArchiver/Debug\</IntDir>
+    <IntDir>FileArchiver/Debug\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\Visual Studio 2017\Projects\.External Source\zlib</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;.\library</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\bin_ext\</OutDir>
-    <IntDir>R:/temp/FileArchiver/Release\</IntDir>
+    <IntDir>FileArchiver/Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\Visual Studio 2017\Projects\.External Source\zlib</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;.\library</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
@@ -82,10 +82,10 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>_temp/FileArchiver/Debug\</AssemblerListingLocation>
+      <AssemblerListingLocation>FileArchiver/Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>R:/temp/FileArchiver/Debug\FileArchiver.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>_temp/FileArchiver/Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>_temp/FileArchiver/Debug\</ProgramDataBaseFileName>
+      <ObjectFileName>FileArchiver/Debug\</ObjectFileName>
+      <ProgramDataBaseFileName>FileArchiver/Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
     </ClCompile>
     <Midl>
@@ -111,6 +111,7 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <IgnoreSpecificDefaultLibraries>libc.lib</IgnoreSpecificDefaultLibraries>
+      <AdditionalOptions>/NODEFAULTLIB:MSVCRTD %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -124,10 +125,10 @@
       <WarningLevel>Level3</WarningLevel>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>_temp/FileArchiver/Release\</AssemblerListingLocation>
+      <AssemblerListingLocation>FileArchiver/Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>R:/temp/FileArchiver/Release\FileArchiver.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>_temp/FileArchiver/Release\</ObjectFileName>
-      <ProgramDataBaseFileName>_temp/FileArchiver/Release\</ProgramDataBaseFileName>
+      <ObjectFileName>FileArchiver/Release\</ObjectFileName>
+      <ProgramDataBaseFileName>FileArchiver/Release\</ProgramDataBaseFileName>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -148,9 +149,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\bin_ext\FileArchiver.exe</OutputFile>
-      <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>legacy_stdio_definitions.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <IgnoreSpecificDefaultLibraries>libc.lib</IgnoreSpecificDefaultLibraries>
+      <AdditionalOptions>/NODEFAULTLIB:MSVCRT %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
@@ -164,11 +166,12 @@
     <ClCompile Include="source\FileArchiver\MainWindow.cpp" />
     <ClCompile Include="source\FileArchiver\WinMain.cpp" />
     <ClCompile Include="source\GcLib\gstd\Application.cpp" />
+    <ClCompile Include="source\GcLib\gstd\ArchiveFile.cpp" />
     <ClCompile Include="source\GcLib\gstd\File.cpp" />
     <ClCompile Include="source\GcLib\gstd\FpsController.cpp" />
     <ClCompile Include="source\GcLib\gstd\GstdUtility.cpp" />
     <ClCompile Include="source\GcLib\gstd\Logger.cpp" />
-    <ClCompile Include="source\GcLib\gstd\MersenneTwister.cpp" />
+    <ClCompile Include="source\GcLib\gstd\RandProvider.cpp" />
     <ClCompile Include="source\GcLib\gstd\Script.cpp" />
     <ClCompile Include="source\GcLib\gstd\ScriptClient.cpp" />
     <ClCompile Include="source\GcLib\gstd\Task.cpp" />
@@ -179,16 +182,21 @@
     <ClInclude Include="source\FileArchiver\Constant.hpp" />
     <ClInclude Include="source\FileArchiver\LibImpl.hpp" />
     <ClInclude Include="source\FileArchiver\MainWindow.hpp" />
+    <ClInclude Include="source\FileArchiver\resource.h" />
     <ClInclude Include="source\GcLib\gstd\Application.hpp" />
+    <ClInclude Include="source\GcLib\gstd\ArchiveFile.h" />
     <ClInclude Include="source\GcLib\gstd\File.hpp" />
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp" />
+    <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp" />
     <ClInclude Include="source\GcLib\gstd\Logger.hpp" />
-    <ClInclude Include="source\GcLib\gstd\MersenneTwister.hpp" />
+    <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp" />
+    <ClInclude Include="source\GcLib\gstd\RandProvider.hpp" />
     <ClInclude Include="source\GcLib\gstd\Script.hpp" />
     <ClInclude Include="source\GcLib\gstd\ScriptClient.hpp" />
+    <ClInclude Include="source\GcLib\gstd\SmartPointer.hpp" />
     <ClInclude Include="source\GcLib\gstd\Task.hpp" />
     <ClInclude Include="source\GcLib\gstd\Thread.hpp" />
     <ClInclude Include="source\GcLib\gstd\Window.hpp" />
