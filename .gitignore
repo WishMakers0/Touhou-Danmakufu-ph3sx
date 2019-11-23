@@ -262,7 +262,11 @@ __pycache__/
 /bin_ext
 /bin_th_dnh
 /library
+source/GcLib/gstd/Script - Copy.cpp
+source/GcLib/gstd/Script - Copy.hpp
 source/GcLib/gstd/Script - Copy (2).cpp
 source/GcLib/gstd/Script - Copy (2).hpp
+source/GcLib/gstd/ScriptClient - Copy.cpp
+source/GcLib/gstd/ScriptClient - Copy.hpp
 source/GcLib/gstd/ScriptClient - vector.cpp
 source/GcLib/gstd/ScriptClient - vector.hpp
