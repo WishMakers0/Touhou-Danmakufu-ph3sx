@@ -4,6 +4,8 @@
 /**********************************************************
 //ReplayInformation
 **********************************************************/
+const std::string ReplayInformation::REC_HEADER = "DNHRPY";
+
 ReplayInformation::ReplayInformation() {
 	userData_ = new ScriptCommonData();
 }
@@ -51,7 +53,7 @@ bool ReplayInformation::SaveToFile(std::wstring scriptPath, int index) {
 	fDir.CreateDirectory();
 
 	RecordBuffer rec;
-	rec.SetRecordAsInteger("version", 1);
+	rec.SetRecordAsInteger("version", REPLAY_VERSION);
 	rec.SetRecordAsStringW("playerScriptID", playerScriptID_);
 	rec.SetRecordAsStringW("playerScriptFileName", playerScriptFileName_);
 	rec.SetRecordAsStringW("playerScriptReplayName", playerScriptReplayName_);
@@ -79,7 +81,24 @@ bool ReplayInformation::SaveToFile(std::wstring scriptPath, int index) {
 		rec.SetRecordAsRecordBuffer(key, recStage);
 	}
 
-	rec.WriteToFile(path, "REPLAY");
+	std::wstring tmpReplay = path + L".tmp";
+	rec.WriteToFile(tmpReplay, "");
+	{
+		std::ifstream replaySource;
+		replaySource.open(path + L".tmp", std::ios::binary);
+
+		std::ofstream replayFile;
+		replayFile.open(path, std::ios::binary);
+
+		replaySource.seekg(0, std::ios::end);
+		size_t size = replaySource.tellg();
+		replaySource.seekg(0, std::ios::beg);
+
+		replayFile.write(REC_HEADER.c_str(), 0x6);
+		Compressor::Deflate(replaySource, replayFile, size, nullptr);
+	}
+	DeleteFile(tmpReplay.c_str());
+
 	return true;
 }
 ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring scriptPath, std::wstring fileName) {
@@ -93,10 +112,32 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 }
 ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring path) {
 	RecordBuffer rec;
-	if (!rec.ReadFromFile(path, "REPLAY"))return NULL;
+	{
+		std::ifstream file;
+		file.open(path, std::ios::binary);
+		if (!file.is_open()) return NULL;
+
+		file.seekg(0, std::ios::end);
+		size_t size = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		if (size < 0x6) return NULL;
+		char header[0x6];
+		file.read(header, 0x6);
+		if (memcmp(header, REC_HEADER.c_str(), 0x6) != 0) return NULL;
+
+		size_t sizeFull = 0U;
+		std::stringstream fileDecomp;
+		if (!Compressor::Inflate(file, fileDecomp, size - 6U, &sizeFull)) return NULL;
+
+		ByteBuffer tmpBuffer;
+		tmpBuffer.Copy(fileDecomp);
+
+		rec.Read(tmpBuffer);
+	}
 
 	int version = rec.GetRecordAsInteger("version");
-	if (version != 1)return NULL;
+	if (version != ReplayInformation::REPLAY_VERSION) return NULL;
 
 	ref_count_ptr<ReplayInformation> res = new ReplayInformation();
 	res->path_ = path;
@@ -133,7 +174,6 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 
 	return res;
 }
-
 
 //ReplayInformation::StageData
 double ReplayInformation::StageData::GetFramePerSecondAvarage() {
@@ -181,7 +221,7 @@ void ReplayInformation::StageData::ReadRecord(gstd::RecordBuffer& record) {
 	record.GetRecord("graze", &graze_, sizeof(int64_t));
 	record.GetRecord("point", &point_, sizeof(int64_t));
 	frameEnd_ = record.GetRecordAsInteger("frameEnd");
-	randSeed_ = record.GetRecordAsInteger("randSeed");
+	record.GetRecord("randSeed", &randSeed_, sizeof(uint32_t));
 	record.GetRecordAsRecordBuffer("recordKey", *recordKey_);
 
 	int countFramePerSecond = record.GetRecordAsInteger("countFramePerSecond");
@@ -217,7 +257,7 @@ void ReplayInformation::StageData::WriteRecord(gstd::RecordBuffer& record) {
 	record.SetRecord("graze", &graze_, sizeof(int64_t));
 	record.SetRecord("point", &point_, sizeof(int64_t));
 	record.SetRecordAsInteger("frameEnd", frameEnd_);
-	record.SetRecordAsInteger("randSeed", randSeed_);
+	record.SetRecord(RecordEntry::TYPE_INTEGER, "randSeed", &randSeed_, sizeof(uint32_t));
 	record.SetRecordAsRecordBuffer("recordKey", *recordKey_);
 
 	int countFramePerSecond = listFramePerSecond_.size();

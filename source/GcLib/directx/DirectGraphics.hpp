@@ -118,7 +118,9 @@ namespace directx {
 	public:
 		DirectGraphics();
 		virtual ~DirectGraphics();
+
 		static DirectGraphics* GetBase() { return thisBase_; }
+
 		HWND GetAttachedWindowHandle() { return hAttachedWindow_; }
 
 		virtual bool Initialize(HWND hWnd);
@@ -199,6 +201,9 @@ namespace directx {
 		D3DXVECTOR3 pos_;//è≈ì_
 		D3DXVECTOR3 camPos_;
 
+		//D3DXVECTOR3 laPosEye_;
+		D3DXVECTOR3 laPosLookAt_;
+
 		float radius_;
 		float angleAzimuth_;
 		float angleElevation_;
@@ -215,8 +220,21 @@ namespace directx {
 
 		D3DXMATRIX matViewProjection_;
 		D3DXMATRIX matViewInverse_;
+		D3DXMATRIX matViewTranspose_;
 		D3DXMATRIX matProjectionInverse_;
+
+		D3DXMATRIX matIdentity_;
+
+		int modeCamera_;
 	public:
+		enum {
+			MODE_NORMAL,
+			MODE_LOOKAT
+		};
+
+		bool thisViewChanged_;
+		bool thisProjectionChanged_;
+
 		DxCamera();
 		virtual ~DxCamera();
 		void Reset();
@@ -233,6 +251,9 @@ namespace directx {
 		float GetElevationAngle() { return angleElevation_; }
 		void SetElevationAngle(float angle) { angleElevation_ = angle; }
 
+		void SetCameraLookAtVector(D3DXVECTOR3 vec) { laPosLookAt_ = vec; }
+		//void SetCameraEyeVector(D3DXVECTOR3 vec) { laPosEye_ = vec; }
+
 		float GetYaw() { return yaw_; }
 		void SetYaw(float yaw) { yaw_ = yaw; }
 		float GetPitch() { return pitch_; }
@@ -242,6 +263,9 @@ namespace directx {
 
 		double GetNearClip() { return clipNear_; }
 		double GetFarClip() { return clipFar_; }
+
+		void SetCameraMode(int mode) { modeCamera_ = mode; }
+		int GetCameraMode() { return modeCamera_; }
 
 		D3DXMATRIX GetMatrixLookAtLH();
 		void UpdateDeviceWorldViewMatrix();
@@ -253,7 +277,11 @@ namespace directx {
 		D3DXMATRIX& GetViewMatrix() { return matView_; }
 		D3DXMATRIX& GetViewProjectionMatrix() { return matViewProjection_; }
 		D3DXMATRIX& GetViewInverseMatrix() { return matViewInverse_; }
+		D3DXMATRIX& GetViewTransposedMatrix() { return matViewTranspose_; }
+		D3DXMATRIX& GetProjectionMatrix() { return matProjection_; }
 		D3DXMATRIX& GetProjectionInverseMatrix() { return matProjectionInverse_; }
+
+		D3DXMATRIX& GetIdentity() { return matIdentity_; }
 	};
 
 	/**********************************************************
@@ -300,7 +328,7 @@ namespace directx {
 		RECT GetClip() { return rcClip_; }
 		void SetClip(RECT rect) { rcClip_ = rect; }
 
-		void SetResetFocus(gstd::ref_count_ptr<D3DXVECTOR2> pos) { posReset_ = pos; }
+		void SetResetFocus(gstd::ref_count_ptr<D3DXVECTOR2>& pos) { posReset_ = pos; }
 		void Reset();
 		inline D3DXVECTOR2 GetLeftTopPosition();
 		inline static D3DXVECTOR2 GetLeftTopPosition(D3DXVECTOR2 focus, double ratio);

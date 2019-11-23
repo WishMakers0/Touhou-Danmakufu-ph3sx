@@ -2,17 +2,17 @@
 
 using namespace gstd;
 
-inline uint32_t RandProvider::rotl(uint32_t u, int x) {
-	return (u << x) | (u >> (32 - x));
+inline uint64_t RandProvider::rotl(uint64_t u, size_t x) {
+	return (u << x) | (u >> (64U - x));
 }
-inline uint32_t RandProvider::rotr(uint32_t u, int x) {
-	return (u >> x) | (u << (32 - x));
+inline uint64_t RandProvider::rotr(uint64_t u, size_t x) {
+	return (u >> x) | (u << (64U - x));
 }
 
 RandProvider::RandProvider() {
 	this->Initialize(0);
 }
-RandProvider::RandProvider(unsigned long s) {
+RandProvider::RandProvider(uint32_t s) {
 	this->Initialize(s);
 }
 
@@ -50,21 +50,25 @@ void RandProvider::Initialize(unsigned long s) {
 	seed_ = s;
 }
 */
-void RandProvider::Initialize(unsigned long s) {
-	static const uint32_t JUMP[] = { 0x8764000b, 0xf542d2d3, 0x6fa035c3, 0x77f2db5b };
+void RandProvider::Initialize(uint32_t s) {
+	memset(states_, 0x00, sizeof(uint64_t) * 4U);
+
+	static const uint64_t JUMP[] = 
+		{ 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c };
+
+	seed_ = s;
 
 	states_[0] = s ^ JUMP[0];
-
-	for (int i = 1; i < 4; ++i) {
-		uint32_t s = 0x6c078965 * states_[i - 1] ^ (states_[i - 1] >> 30) + i;
+	for (uint64_t i = 1ui64; i < 4ui64; ++i) {
+		uint64_t s = 0x76e15d3efefdcbbf * states_[i - 1] ^ (states_[i - 1] >> 37) + i;
 		s ^= JUMP[i];
-		states_[i] = s & 0xffffffff;
+		states_[i] = s & 0xffffffffffffffffui64;
 	}
 }
-uint32_t RandProvider::_GenrandInt32() {
-	uint32_t result = rotl(states_[0] * 5, 7) * 9;
+uint64_t RandProvider::_GenrandInt64() {
+	uint64_t result = rotl(states_[1] * 5, 7U) * 9;
 
-	uint32_t t = states_[1] << 9;
+	uint64_t t = states_[1] << 17;
 
 	states_[2] ^= states_[0];
 	states_[3] ^= states_[1];
@@ -73,15 +77,15 @@ uint32_t RandProvider::_GenrandInt32() {
 
 	states_[2] ^= t;
 
-	states_[3] = rotl(states_[3], 11);
+	states_[3] = rotl(states_[3], 45U);
 
 	return result;
 }
 
-long RandProvider::GetInt() {
-	return (long)(_GenrandInt32() >> 1);
+int RandProvider::GetInt() {
+	return (int)(_GenrandInt64() >> 1);
 }
-long RandProvider::GetInt(long min, long max) {
+int RandProvider::GetInt(int min, int max) {
 	return (int)this->GetReal(min, max);
 }
 int64_t RandProvider::GetInt64() {
@@ -91,7 +95,7 @@ int64_t RandProvider::GetInt64(int64_t min, int64_t max) {
 	return (int64_t)this->GetReal(min, max);
 }
 double RandProvider::GetReal() {
-	return (double)(_GenrandInt32() * (1.0 / (double)UINT32_MAX));
+	return (double)(_GenrandInt64() * (1.0 / (double)UINT64_MAX));
 }
 double RandProvider::GetReal(double a, double b) {
 	if (a == b) return a;

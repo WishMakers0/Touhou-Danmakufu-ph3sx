@@ -168,7 +168,7 @@ bool Shader::SetTexture(std::string name, gstd::ref_count_ptr<Texture> texture) 
 RenderShaderManager* RenderShaderManager::thisBase_ = nullptr;
 RenderShaderManager::RenderShaderManager() {
 	effectSkinnedMesh_ = nullptr;
-	effectRender3D_ = nullptr;
+	effectRender2D_ = nullptr;
 
 	declarationTLX_ = nullptr;
 	declarationLX_ = nullptr;
@@ -195,7 +195,17 @@ void RenderShaderManager::Initialize() {
 			reinterpret_cast<const char*>(error->GetBufferPointer()));
 		throw gstd::wexception(err);
 	}
+	
+	hr = D3DXCreateEffect(device, HLSL_DEFAULT_RENDER2D.c_str(), HLSL_DEFAULT_RENDER2D.size(),
+		nullptr, nullptr, 0, nullptr, &effectRender2D_, &error);
+	if (FAILED(hr)) {
+		std::string err = StringUtility::Format("RenderShaderManager: Shader load failed. (HLSL_DEFAULT_RENDER2D)\n[%s]",
+			reinterpret_cast<const char*>(error->GetBufferPointer()));
+		throw gstd::wexception(err);
+	}
+	effectRender2D_->SetTechnique("Render");
 
+	/*
 	hr = D3DXCreateEffect(device, HLSL_DEFAULT_RENDER3D.c_str(), HLSL_DEFAULT_RENDER3D.size(),
 		nullptr, nullptr, 0, nullptr, &effectRender3D_, &error);
 	if (FAILED(hr)) {
@@ -203,6 +213,15 @@ void RenderShaderManager::Initialize() {
 			reinterpret_cast<const char*>(error->GetBufferPointer()));
 		throw gstd::wexception(err);
 	}
+
+	hr = D3DXCreateEffect(device, HLSL_DEFAULT_RENDERTARGETLAYER.c_str(), HLSL_DEFAULT_RENDERTARGETLAYER.size(),
+		nullptr, nullptr, 0, nullptr, &effectRenderTarget_, &error);
+	if (FAILED(hr)) {
+		std::string err = StringUtility::Format("RenderShaderManager: Shader load failed. (HLSL_DEFAULT_RENDERTARGETLAYER)\n[%s]",
+			reinterpret_cast<const char*>(error->GetBufferPointer()));
+		throw gstd::wexception(err);
+	}
+	*/
 
 	hr = device->CreateVertexDeclaration(ELEMENTS_TLX, &declarationTLX_);
 	if (FAILED(hr)) {
@@ -220,8 +239,6 @@ void RenderShaderManager::Initialize() {
 		throw gstd::wexception(err);
 	}
 
-	D3DXMatrixIdentity(&matIdentity);
-
 	thisBase_ = this;
 }
 void RenderShaderManager::Release() {
@@ -229,9 +246,9 @@ void RenderShaderManager::Release() {
 		effectSkinnedMesh_->Release();
 		effectSkinnedMesh_ = nullptr;
 	}
-	if (effectRender3D_ != nullptr) {
-		effectRender3D_->Release();
-		effectRender3D_ = nullptr;
+	if (effectRender2D_ != nullptr) {
+		effectRender2D_->Release();
+		effectRender2D_ = nullptr;
 	}
 	if (declarationTLX_ != nullptr) {
 		declarationTLX_->Release();

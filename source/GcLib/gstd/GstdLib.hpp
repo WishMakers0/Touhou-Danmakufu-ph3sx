@@ -18,5 +18,6 @@
 #include "Application.hpp"
 #include "Window.hpp"
 
+#include "ArchiveFile.h"
 
 #endif

@@ -29,6 +29,12 @@ StgItemManager::StgItemManager(StgStageController* stageController) {
 
 	vertexBuffer_ = nullptr;
 	_SetVertexBuffer(256 * 256);
+
+	{
+		RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+		effectLayer_ = shaderManager_->GetRender2DShader();
+		handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
+	}
 }
 StgItemManager::~StgItemManager() {
 	if (vertexBuffer_) {
@@ -140,6 +146,8 @@ void StgItemManager::Work() {
 }
 void StgItemManager::Render(int targetPriority) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
+	IDirect3DDevice9* device = graphics->GetDevice();
+
 	graphics->SetZBufferEnable(false);
 	graphics->SetZWriteEnable(false);
 	graphics->SetCullingMode(D3DCULL_NONE);
@@ -148,13 +156,14 @@ void StgItemManager::Render(int targetPriority) {
 
 	//ƒtƒHƒO‚ð‰ðœ‚·‚é
 	DWORD bEnableFog = FALSE;
-	graphics->GetDevice()->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
+	device->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
 	if (bEnableFog)
 		graphics->SetFogEnable(false);
 
-	//Šg‘å—¦‚È‚ÇŒvŽZ
-	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
-	D3DXMATRIX matCamera = camera->GetMatrix();
+	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+
+	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
 	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
@@ -162,29 +171,57 @@ void StgItemManager::Render(int targetPriority) {
 		if (obj->IsDeleted())continue;
 		if (obj->GetRenderPriorityI() != targetPriority)continue;
 
-		obj->RenderOnItemManager(matCamera);
+		obj->RenderOnItemManager();
 	}
+
+	{
+		D3DVIEWPORT9 viewPort;
+		device->GetViewport(&viewPort);
+
+		D3DXMATRIX matProj = camera3D->GetIdentity();
+		matProj._11 = 2.0f / viewPort.Width;
+		matProj._22 = -2.0f / viewPort.Height;
+		matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+		matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+		matProj = matCamera * matProj;
+		effectLayer_->SetMatrix(handleEffectWorld_, &matProj);
+	}
+
+	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+
+	device->SetFVF(VERTEX_TLX::fvf);
 
 	int countBlendType = StgItemDataList::RENDER_TYPE_COUNT;
 	int blendMode[] = { DirectGraphics::MODE_BLEND_ADD_ARGB, DirectGraphics::MODE_BLEND_ADD_RGB, DirectGraphics::MODE_BLEND_ALPHA };
 
-	SpriteList2D* listSprite[] = { listSpriteDigit_, listSpriteItem_ };
-	for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
-		graphics->SetBlendMode(blendMode[iBlend]);
-		if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ADD_ARGB) {
-			listSpriteDigit_->Render();
-			listSpriteDigit_->ClearVertexCount();
-		}
-		else if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ALPHA) {
-			listSpriteItem_->Render();
-			listSpriteItem_->ClearVertexCount();
+	{
+		device->SetVertexDeclaration(nullptr);
+
+		SpriteList2D* listSprite[] = { listSpriteDigit_, listSpriteItem_ };
+		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+			graphics->SetBlendMode(blendMode[iBlend]);
+			if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ADD_ARGB) {
+				listSpriteDigit_->Render();
+				listSpriteDigit_->ClearVertexCount();
+			}
+			else if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ALPHA) {
+				listSpriteItem_->Render();
+				listSpriteItem_->ClearVertexCount();
+			}
 		}
 
-		std::vector<StgItemRenderer*>* listRenderer =
-			listItemData_->GetRendererList(blendMode[iBlend] - 1);
-		int iRender = 0;
-		for (iRender = 0; iRender < listRenderer->size(); iRender++)
-			(listRenderer->at(iRender))->Render(this);
+		device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
+
+		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+			std::vector<StgItemRenderer*>* listRenderer =
+				listItemData_->GetRendererList(blendMode[iBlend] - 1);
+			int iRender = 0;
+			for (iRender = 0; iRender < listRenderer->size(); iRender++)
+				(listRenderer->at(iRender))->Render(this);
+		}
+
+		device->SetVertexDeclaration(nullptr);
 	}
 
 	if (bEnableFog)
@@ -571,7 +608,6 @@ void StgItemRenderer::Render(StgItemManager* manager) {
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
 		device->SetTexture(0, nullptr);
-	device->SetFVF(VERTEX_TLX::fvf);
 
 	//device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, (int)(countRenderVertex_ / 3), vertex_.get(), sizeof(VERTEX_TLX));
 
@@ -585,7 +621,19 @@ void StgItemRenderer::Render(StgItemManager* manager) {
 	vBuffer->Unlock();
 
 	device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
-	device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+	{
+		ID3DXEffect*& effect = manager->effectLayer_;
+		effect->SetTechnique("Render");
+
+		UINT cPass = 1;
+		effect->Begin(&cPass, 0);
+		for (UINT iPass = 0; iPass < cPass; ++iPass) {
+			effect->BeginPass(iPass);
+			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+			effect->EndPass();
+		}
+		effect->End();
+	}
 
 	countRenderVertex_ = 0;
 }
@@ -642,7 +690,7 @@ void StgItemObject::Work() {
 
 	_DeleteInAutoClip();
 }
-void StgItemObject::RenderOnItemManager(D3DXMATRIX& mat) {
+void StgItemObject::RenderOnItemManager() {
 	StgItemManager* itemManager = stageController_->GetItemManager();
 	SpriteList2D* renderer = typeItem_ == ITEM_SCORE ?
 		itemManager->GetDigitRenderer() : itemManager->GetItemRenderer();
@@ -1009,7 +1057,7 @@ void StgItemObject_User::Work() {
 	StgItemObject::Work();
 	frameWork_++;
 }
-void StgItemObject_User::RenderOnItemManager(D3DXMATRIX& mat) {
+void StgItemObject_User::RenderOnItemManager() {
 	if (!IsVisible())return;
 
 	StgItemData* itemData = _GetItemData();
@@ -1091,7 +1139,7 @@ void StgItemObject_User::RenderOnItemManager(D3DXMATRIX& mat) {
 		vt.position.y = (px * s + py * c) + posy;
 		vt.position.z = position_.z;
 
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+		//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 		verts[iVert] = vt;
 	}
 
@@ -1119,7 +1167,7 @@ StgMovePattern_Item::StgMovePattern_Item(StgMoveObject* target) : StgMovePattern
 	frame_ = 0;
 	typeMove_ = MOVE_DOWN;
 	speed_ = 3;
-	angDirection_ = D3DXToRadian(270);
+	angDirection_ = Math::DegreeToRadian(270);
 	ZeroMemory(&posTo_, sizeof(POINT));
 }
 void StgMovePattern_Item::Move() {
@@ -1143,18 +1191,18 @@ void StgMovePattern_Item::Move() {
 		angDirection_ = angle;
 		if (frame_ == 60) {
 			speed_ = 0;
-			angDirection_ = D3DXToRadian(90);
+			angDirection_ = Math::DegreeToRadian(90);
 			typeMove_ = MOVE_DOWN;
 		}
 	}
 	else if (typeMove_ == MOVE_DOWN) {
 		speed_ += 3.0f / 60.0f;
 		if (speed_ > 2.5f)speed_ = 2.5f;
-		angDirection_ = D3DXToRadian(90);
+		angDirection_ = Math::DegreeToRadian(90);
 	}
 	else if (typeMove_ == MOVE_SCORE) {
 		speed_ = 1;
-		angDirection_ = D3DXToRadian(270);
+		angDirection_ = Math::DegreeToRadian(270);
 	}
 
 	if (typeMove_ != MOVE_NONE) {

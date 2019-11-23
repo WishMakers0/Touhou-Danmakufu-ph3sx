@@ -13,7 +13,16 @@ using namespace directx;
 
 //MetasequoiaMeshData
 MetasequoiaMeshData::MetasequoiaMeshData() {}
-MetasequoiaMeshData::~MetasequoiaMeshData() {}
+MetasequoiaMeshData::~MetasequoiaMeshData() {
+	for (auto obj : renderList_) {
+		if (obj) delete obj;
+		obj = nullptr;
+	}
+	for (auto obj : materialList_) {
+		if (obj) delete obj;
+		obj = nullptr;
+	}
+}
 bool MetasequoiaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader) {
 	bool res = false;
 	path_ = reader->GetOriginalPath();
@@ -44,15 +53,15 @@ bool MetasequoiaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileRea
 }
 void MetasequoiaMeshData::_ReadMaterial(gstd::Scanner& scanner) {
 	int countMaterial = scanner.Next().GetInteger();
-	material_.resize(countMaterial);
+	materialList_.resize(countMaterial);
 	for (int iMat = 0; iMat < countMaterial; iMat++) {
-		material_[iMat] = new Material();
+		materialList_[iMat] = new Material();
 	}
 	scanner.CheckType(scanner.Next(), Token::TK_OPENC);
 	scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 
 	int posMat = 0;
-	Material* mat = material_[posMat].GetPointer();
+	Material* mat = materialList_[posMat];
 	D3DCOLORVALUE color;
 	ZeroMemory(&color, sizeof(D3DCOLORVALUE));
 	while (true) {
@@ -61,9 +70,9 @@ void MetasequoiaMeshData::_ReadMaterial(gstd::Scanner& scanner) {
 
 		if (tok.GetType() == Token::TK_NEWLINE) {
 			posMat++;
-			if (material_.size() <= posMat)
+			if (materialList_.size() <= posMat)
 				break;
-			mat = material_[posMat].GetPointer();
+			mat = materialList_[posMat];
 			ZeroMemory(&color, sizeof(D3DCOLORVALUE));
 		}
 		else if (tok.GetType() == Token::TK_STRING) {
@@ -109,7 +118,7 @@ void MetasequoiaMeshData::_ReadMaterial(gstd::Scanner& scanner) {
 			std::wstring wPathTexture = tok.GetString();
 			std::wstring path = PathProperty::GetFileDirectory(path_) + wPathTexture;
 			mat->texture_ = new Texture();
-			mat->texture_->CreateFromFile(path, true, false);
+			mat->texture_->CreateFromFile(path, false, false);
 			scanner.CheckType(scanner.Next(), Token::TK_CLOSEP);
 		}
 	}
@@ -199,15 +208,16 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 	if (!obj.bVisible_)return;
 
 	//マテリアルごとに仕分けてオブジェクトを作成
+	size_t iMapFace = 0U;
 	std::map<int, std::list<MetasequoiaMeshData::Object::Face*> >::iterator itrMap;
-	for (itrMap = mapFace.begin(); itrMap != mapFace.end(); itrMap++) {
+	for (itrMap = mapFace.begin(); itrMap != mapFace.end(); itrMap++, iMapFace++) {
 		int indexMaterial = itrMap->first;
 		std::list<MetasequoiaMeshData::Object::Face*>& listFace = itrMap->second;
 
 		MetasequoiaMeshData::RenderObject* render = new MetasequoiaMeshData::RenderObject();
-		obj_.push_back(render);
+		renderList_.push_back(render);
 		if (indexMaterial >= 0)
-			render->material_ = material_[indexMaterial];
+			render->material_ = materialList_[indexMaterial];
 
 		int countVert = 0;
 		std::list<MetasequoiaMeshData::Object::Face*>::iterator itrFace;
@@ -218,6 +228,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 
 		std::vector<ref_count_ptr<NormalData> > listNormalData;
 		listNormalData.resize(countVert);
+
 		render->SetVertexCount(countVert);
 
 		int posVert = 0;
@@ -244,25 +255,6 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 					vert->position = obj.vertices_[mqoVertexIndex];
 					vert->texcoord = face->vertices_[iVert].tcoord_;
 					vert->normal = normal;
-					/*
-										ref_count_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
-										if(norlamData == NULL)
-										{
-											norlamData = new NormalData();
-											norlamData->normal_ = normal;
-											listNormalData[mqoVertexIndex] = norlamData;
-										}
-										else
-										{
-											D3DXVECTOR3 tNormal = norlamData->normal_;
-											int norlamCountOld = norlamData->listIndex_.size();
-											int normalCountNew = norlamCountOld + 1;
-											norlamData->normal_.x = tNormal.x * norlamCountOld / normalCountNew + normal.x / normalCountNew;
-											norlamData->normal_.y = tNormal.y * norlamCountOld / normalCountNew + normal.y / normalCountNew;
-											norlamData->normal_.z = tNormal.z * norlamCountOld / normalCountNew + normal.z / normalCountNew;
-										}
-										norlamData->listIndex_.push_back(nxVertexIndex);
-					*/
 				}
 				posVert += 3;
 			}
@@ -302,25 +294,6 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 					vert->position = obj.vertices_[mqoVertexIndex];
 					vert->texcoord = face->vertices_[indexFace].tcoord_;
 					vert->normal = iVert < 3 ? normals[0] : normals[1];
-					/*
-										ref_count_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
-										if(norlamData == NULL)
-										{
-											norlamData = new NormalData();
-											norlamData->normal_ = vert->normal;
-											listNormalData[mqoVertexIndex] = norlamData;
-										}
-										else
-										{
-											D3DXVECTOR3 tNormal = norlamData->normal_;
-											int norlamCountOld = norlamData->listIndex_.size();
-											int normalCountNew = norlamCountOld + 1;
-											norlamData->normal_.x = tNormal.x * norlamCountOld / normalCountNew + vert->normal.x / normalCountNew;
-											norlamData->normal_.y = tNormal.y * norlamCountOld / normalCountNew + vert->normal.y / normalCountNew;
-											norlamData->normal_.z = tNormal.z * norlamCountOld / normalCountNew + vert->normal.z / normalCountNew;
-										}
-										norlamData->listIndex_.push_back(nxVertexIndex);
-					*/
 				}
 
 				posVert += 6;
@@ -340,33 +313,30 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 			}
 		}
 
-		{
+		if (countVert > 0) {
 			IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-
-			device->CreateVertexBuffer(countVert * sizeof(VERTEX_NX), 0, VERTEX_NX::fvf, D3DPOOL_MANAGED,
-				&render->pVertexBuffer_, nullptr);
+			IDirect3DVertexBuffer9*& vertexBuf = render->pVertexBuffer_;
 
 			void* pVoid;
-			char* pVertData = render->vertex_.GetPointer(0);
-			render->pVertexBuffer_->Lock(0, countVert * sizeof(VERTEX_NX), &pVoid, D3DUSAGE_WRITEONLY);
+			VERTEX_NX* pVertData = render->GetVertex(0);
+
+			device->CreateVertexBuffer(countVert * sizeof(VERTEX_NX), 0, VERTEX_NX::fvf, D3DPOOL_MANAGED,
+				&vertexBuf, nullptr);
+
+			vertexBuf->Lock(0, countVert * sizeof(VERTEX_NX), &pVoid, D3DUSAGE_WRITEONLY);
 			memcpy(pVoid, pVertData, countVert * sizeof(VERTEX_NX));
-			render->pVertexBuffer_->Unlock();
+			vertexBuf->Unlock();
 		}
 	}
 }
 
-//MetasequoiaMeshData::RenderObject
 void MetasequoiaMeshData::RenderObject::Render() {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	MetasequoiaMeshData::Material* material = material_.GetPointer();
-	if (material != NULL) {
-		if (material->texture_ != NULL)
-			SetTexture(material->texture_);
-		D3DMATERIAL9 tMaterial = ColorAccess::SetColor(material->mat_, color_);
+	if (material_ != nullptr) {
+		if (material_->texture_ != nullptr)
+			SetTexture(material_->texture_);
+		D3DMATERIAL9 tMaterial = ColorAccess::SetColor(material_->mat_, color_);
 		device->SetMaterial(&tMaterial);
-	}
-	else {
-		device->SetMaterial(nullptr);
 	}
 
 	RenderObjectNX::Render();
@@ -408,7 +378,11 @@ std::wstring MetasequoiaMesh::GetPath() {
 	if (data_ == NULL)return L"";
 	return ((MetasequoiaMeshData*)data_.GetPointer())->path_;
 }
+
 void MetasequoiaMesh::Render() {
+	MetasequoiaMesh::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
+}
+void MetasequoiaMesh::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 	if (data_ == NULL)return;
 
 	MetasequoiaMeshData* data = (MetasequoiaMeshData*)data_.GetPointer();
@@ -417,34 +391,33 @@ void MetasequoiaMesh::Render() {
 		::Sleep(1);
 	}
 
-	for (int iObj = 0; iObj < data->obj_.size(); iObj++) {
-		MetasequoiaMeshData::RenderObject* obj = (MetasequoiaMeshData::RenderObject*)data->obj_[iObj].GetPointer();
-		obj->SetShader(shader_);
-		obj->SetPosition(position_);
-		obj->SetAngle(angle_);
-		obj->SetScale(scale_);
-		obj->SetColor(color_);
-		obj->SetCoordinate2D(bCoordinate2D_);
-		obj->Render();
-	}
+	{
+		DirectGraphics* graphics = DirectGraphics::GetBase();
+		IDirect3DDevice9* device = graphics->GetDevice();
+		ref_count_ptr<DxCamera> camera = graphics->GetCamera();
 
-}
-std::vector<DxTriangle> MetasequoiaMesh::CreateIntersectionTriangles() {
-	std::vector<DxTriangle> res;
-	MetasequoiaMeshData* data = (MetasequoiaMeshData*)data_.GetPointer();
-	for (int iObj = 0; iObj < data->obj_.size(); iObj++) {
-		MetasequoiaMeshData::RenderObject* obj = (MetasequoiaMeshData::RenderObject*)data->obj_[iObj].GetPointer();
-		int vertexCount = obj->GetVertexCount();
-		for (int iVert = 0; iVert < vertexCount - 2;) {
-			VERTEX_NX* nx1 = obj->GetVertex(iVert);
-			VERTEX_NX* nx2 = obj->GetVertex(iVert + 1);
-			VERTEX_NX* nx3 = obj->GetVertex(iVert + 2);
-			DxTriangle triangle(nx1->position, nx2->position, nx3->position);
-			res.push_back(triangle);
+		DWORD bFogEnable = FALSE;
+		if (bCoordinate2D_) {
+			device->SetTransform(D3DTS_VIEW, &camera->GetIdentity());
+			device->GetRenderState(D3DRS_FOGENABLE, &bFogEnable);
+			device->SetRenderState(D3DRS_FOGENABLE, FALSE);
+			RenderObject::SetCoordinate2dDeviceMatrix();
+		}
 
-			iVert += 3;
+		D3DXMATRIX mat = RenderObject::CreateWorldMatrix(position_, scale_,
+			angX, angY, angZ, &camera->GetIdentity(), bCoordinate2D_);
+		device->SetTransform(D3DTS_WORLD, &mat);
+
+		size_t i = 0;
+		for (auto render : data->renderList_) {
+			render->SetShader(shader_);
+			render->SetColor(color_);
+			render->Render();
+		}
+
+		if (bCoordinate2D_) {
+			device->SetTransform(D3DTS_VIEW, &camera->GetViewProjectionMatrix());
+			device->SetRenderState(D3DRS_FOGENABLE, bFogEnable);
 		}
 	}
-
-	return res;
 }

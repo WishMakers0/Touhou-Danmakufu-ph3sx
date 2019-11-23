@@ -27,7 +27,7 @@ namespace directx {
 		bool bDeleted_;
 		bool bActive_;
 
-		std::map<std::wstring, gstd::value> mapObjectValue_;
+		std::unordered_map<std::wstring, gstd::value> mapObjectValue_;
 
 	public:
 		DxScriptObjectBase();
@@ -82,9 +82,9 @@ namespace directx {
 		virtual void SetX(double x) { position_.x = x; }
 		virtual void SetY(double y) { position_.y = y; }
 		virtual void SetZ(double z) { position_.z = z; }
-		virtual void SetAngleX(double x) { angle_.x = D3DXToRadian(x); }
-		virtual void SetAngleY(double y) { angle_.y = D3DXToRadian(y); }
-		virtual void SetAngleZ(double z) { angle_.z = D3DXToRadian(z); }
+		virtual void SetAngleX(double x) { angle_.x = gstd::Math::DegreeToRadian(x); }
+		virtual void SetAngleY(double y) { angle_.y = gstd::Math::DegreeToRadian(y); }
+		virtual void SetAngleZ(double z) { angle_.z = gstd::Math::DegreeToRadian(z); }
 		virtual void SetScaleX(double x) { scale_.x = x; }
 		virtual void SetScaleY(double y) { scale_.y = y; }
 		virtual void SetScaleZ(double z) { scale_.z = z; }
@@ -130,6 +130,10 @@ namespace directx {
 		friend DxScript;
 	protected:
 		gstd::ref_count_ptr<RenderObject> objRender_;
+
+		D3DXVECTOR2 angX_;
+		D3DXVECTOR2 angY_;
+		D3DXVECTOR2 angZ_;
 	public:
 		DxScriptPrimitiveObject();
 		void SetPrimitiveType(D3DPRIMITIVETYPE type);
@@ -148,16 +152,39 @@ namespace directx {
 
 		virtual gstd::ref_count_ptr<Shader> GetShader();
 		virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+
+		virtual void SetAngleX(double x) {
+			x = gstd::Math::DegreeToRadian(x);
+			if (angle_.x != x) {
+				angle_.x = x;
+				angX_ = D3DXVECTOR2(cosf(-x), sinf(-x));
+			}
+		}
+		virtual void SetAngleY(double y) {
+			y = gstd::Math::DegreeToRadian(y);
+			if (angle_.y != y) {
+				angle_.y = y;
+				angY_ = D3DXVECTOR2(cosf(-y), sinf(-y));
+			}
+		}
+		virtual void SetAngleZ(double z) {
+			z = gstd::Math::DegreeToRadian(z);
+			if (angle_.z != z) {
+				angle_.z = z;
+				angZ_ = D3DXVECTOR2(cosf(-z), sinf(-z));
+			}
+		}
+		virtual void SetAngle(D3DXVECTOR3 angle) {
+			DxScriptPrimitiveObject::SetAngleX(angle.x);
+			DxScriptPrimitiveObject::SetAngleY(angle.y);
+			DxScriptPrimitiveObject::SetAngleZ(angle.z);
+		}
 	};
 
 	/**********************************************************
 	//DxScriptPrimitiveObject2D
 	**********************************************************/
 	class DxScriptPrimitiveObject2D : public DxScriptPrimitiveObject {
-	protected:
-		D3DXVECTOR2 angX_;
-		D3DXVECTOR2 angY_;
-		D3DXVECTOR2 angZ_;
 	public:
 		DxScriptPrimitiveObject2D();
 		virtual void Render();
@@ -172,33 +199,6 @@ namespace directx {
 		virtual void SetVertexColor(int index, int r, int g, int b);
 		void SetPermitCamera(bool bPermit);
 		virtual D3DXVECTOR3 GetVertexPosition(int index);
-
-		virtual void SetAngleX(double x) {
-			x = D3DXToRadian(x);
-			if (angle_.x != x) {
-				angle_.x = x;
-				angX_ = D3DXVECTOR2(cos(x), sin(x));
-			}
-		}
-		virtual void SetAngleY(double y) {
-			y = D3DXToRadian(y);
-			if (angle_.y != y) {
-				angle_.y = y;
-				angY_ = D3DXVECTOR2(cos(y), sin(y));
-			}
-		}
-		virtual void SetAngleZ(double z) {
-			z = D3DXToRadian(z);
-			if (angle_.z != z) {
-				angle_.z = z;
-				angZ_ = D3DXVECTOR2(cos(z), sin(z));
-			}
-		}
-		virtual void SetAngle(D3DXVECTOR3 angle) {
-			DxScriptPrimitiveObject2D::SetAngleX(angle.x);
-			DxScriptPrimitiveObject2D::SetAngleY(angle.y);
-			DxScriptPrimitiveObject2D::SetAngleZ(angle.z);
-		}
 	};
 
 	/**********************************************************
@@ -284,6 +284,10 @@ namespace directx {
 		std::wstring anime_;
 		bool bCoordinate2D_;
 		void _UpdateMeshState();
+
+		D3DXVECTOR2 angX_;
+		D3DXVECTOR2 angY_;
+		D3DXVECTOR2 angZ_;
 	public:
 		DxScriptMeshObject();
 		virtual void Render();
@@ -301,6 +305,37 @@ namespace directx {
 		virtual void SetAngleX(float x) { angle_.x = x; _UpdateMeshState(); }
 		virtual void SetAngleY(float y) { angle_.y = y; _UpdateMeshState(); }
 		virtual void SetAngleZ(float z) { angle_.z = z; _UpdateMeshState(); }
+
+		virtual void SetAngleX(double x) {
+			x = gstd::Math::DegreeToRadian(x);
+			if (angle_.x != x) {
+				angle_.x = x;
+				angX_ = D3DXVECTOR2(cosf(-x), sinf(-x));
+				_UpdateMeshState();
+			}
+		}
+		virtual void SetAngleY(double y) {
+			y = gstd::Math::DegreeToRadian(y);
+			if (angle_.y != y) {
+				angle_.y = y;
+				angY_ = D3DXVECTOR2(cosf(-y), sinf(-y));
+				_UpdateMeshState();
+			}
+		}
+		virtual void SetAngleZ(double z) {
+			z = gstd::Math::DegreeToRadian(z);
+			if (angle_.z != z) {
+				angle_.z = z;
+				angZ_ = D3DXVECTOR2(cosf(-z), sinf(-z));
+				_UpdateMeshState();
+			}
+		}
+		virtual void SetAngle(D3DXVECTOR3 angle) {
+			DxScriptMeshObject::SetAngleX(angle.x);
+			DxScriptMeshObject::SetAngleY(angle.y);
+			DxScriptMeshObject::SetAngleZ(angle.z);
+		}
+
 		virtual void SetScaleX(float x) { scale_.x = x; _UpdateMeshState(); }
 		virtual void SetScaleY(float y) { scale_.y = y; _UpdateMeshState(); }
 		virtual void SetScaleZ(float z) { scale_.z = z; _UpdateMeshState(); }
@@ -465,7 +500,7 @@ namespace directx {
 		std::list<int> listUnusedIndex_;
 		std::vector<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > obj_;//オブジェクト
 		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > listActiveObject_;
-		std::map<std::wstring, gstd::ref_count_ptr<SoundInfo> > mapReservedSound_;
+		std::unordered_map<std::wstring, gstd::ref_count_ptr<SoundInfo> > mapReservedSound_;
 
 		//フォグ
 		bool bFogEnable_;
@@ -648,6 +683,9 @@ namespace directx {
 		static gstd::value Func_SetCameraYaw(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_SetCameraPitch(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_SetCameraRoll(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_SetCameraMode(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		//static gstd::value Func_SetCameraPosEye(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_SetCameraPosLookAt(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		static gstd::value Func_GetCameraX(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_GetCameraY(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -664,7 +702,7 @@ namespace directx {
 
 		static gstd::value Func_SetCameraPerspectiveClip(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-		static gstd::value Func_GetCameraWVPMatrix(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_GetCameraViewProjectionMatrix(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dx関数：カメラ2D
 		static gstd::value Func_Set2DCameraFocusX(gstd::script_machine* machine, int argc, const gstd::value* argv);

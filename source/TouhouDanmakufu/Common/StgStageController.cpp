@@ -31,7 +31,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	camera3D->SetProjectionMatrix(384, 448, 10, 2000);
 
 	//2Dカメラ
-	gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 	camera2D->Reset();
 
 	ref_count_ptr<StgStageInformation> infoStage = startData->GetStageInformation();
@@ -84,8 +84,12 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	//リプレイ関連(スクリプト初期化前)
 	if (!infoStage_->IsReplay()) {
 		//乱数
-		int randSeed = infoStage_->GetRandProvider()->GetSeed();
+		uint32_t randSeed = infoStage_->GetRandProvider()->GetSeed();
 		replayStageData->SetRandSeed(randSeed);
+
+		ELogger* logger = ELogger::GetInstance();
+		if (logger->IsWindowVisible())
+			logger->SetInfo(11, L"Rand seed", StringUtility::Format(L"%08x", randSeed));
 
 		//ステージ情報
 		ref_count_ptr<ScriptInformation> infoParent = systemController_->GetSystemInformation()->GetMainScriptInformation();
@@ -104,8 +108,12 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	}
 	else {
 		//乱数
-		int randSeed = replayStageData->GetRandSeed();
+		uint32_t randSeed = replayStageData->GetRandSeed();
 		infoStage_->GetRandProvider()->Initialize(randSeed);
+
+		ELogger* logger = ELogger::GetInstance();
+		if (logger->IsWindowVisible())
+			logger->SetInfo(11, L"Rand seed", StringUtility::Format(L"%08x", randSeed));
 
 		//リプレイキー
 		keyReplayManager_->ReadRecord(*replayStageData->GetReplayKeyRecord());
@@ -465,13 +473,14 @@ StgStageInformation::StgStageInformation() {
 StgStageInformation::~StgStageInformation() {}
 void StgStageInformation::SetStgFrameRect(RECT rect, bool bUpdateFocusResetValue) {
 	rcStgFrame_ = rect;
-	gstd::ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2();
-	pos->x = (rect.right - rect.left) / 2;
-	pos->y = (rect.bottom - rect.top) / 2;
+
+	ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2;
+	pos->x = (rect.right - rect.left) / 2.0f;
+	pos->y = (rect.bottom - rect.top) / 2.0f;
 
 	if (bUpdateFocusResetValue) {
 		DirectGraphics* graphics = DirectGraphics::GetBase();
-		gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+		ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 		camera2D->SetResetFocus(pos);
 		camera2D->Reset();
 	}

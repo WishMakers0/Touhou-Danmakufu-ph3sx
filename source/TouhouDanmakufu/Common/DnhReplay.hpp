@@ -13,7 +13,11 @@ public:
 		INDEX_DIGIT_MIN = 1,
 		INDEX_DIGIT_MAX = 99,
 		INDEX_USER = 100,
+
+		REPLAY_VERSION = 42621,
 	};
+
+	static const std::string REC_HEADER;
 
 	class StageData;
 private:
@@ -79,7 +83,7 @@ private:
 	int64_t graze_;
 	int64_t point_;
 	int frameEnd_;
-	int randSeed_;
+	uint32_t randSeed_;
 	std::vector<float> listFramePerSecond_;
 	ref_count_ptr<gstd::RecordBuffer> recordKey_;
 	std::map<std::string, ref_count_ptr<gstd::RecordBuffer> > mapCommonData_;
@@ -114,8 +118,8 @@ public:
 	void SetPoint(int64_t point) { point_ = point; }
 	int GetEndFrame() { return frameEnd_; }
 	void SetEndFrame(int frame) { frameEnd_ = frame; }
-	int GetRandSeed() { return randSeed_; }
-	void SetRandSeed(int seed) { randSeed_ = seed; }
+	uint32_t GetRandSeed() { return randSeed_; }
+	void SetRandSeed(uint32_t seed) { randSeed_ = seed; }
 	float GetFramePerSecond(int frame) { int index = frame / 60; int res = index < listFramePerSecond_.size() ? listFramePerSecond_[index] : 0; return res; }
 	void AddFramePerSecond(float frame) { listFramePerSecond_.push_back(frame); }
 	double GetFramePerSecondAvarage();

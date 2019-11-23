@@ -1034,7 +1034,7 @@ gstd::value StgStageScript::Func_GetAngleToPlayer(gstd::script_machine* machine,
 	double tx = objMove->GetPosition().x;
 	double ty = objMove->GetPosition().y;
 
-	double angle = D3DXToDegree(atan2(py - ty, px - tx));
+	double angle = Math::RadianToDegree(atan2(py - ty, px - tx));
 	return value(machine->get_engine()->get_real_type(), (double)angle);
 }
 
@@ -1427,7 +1427,7 @@ gstd::value StgStageScript::Func_CreateShotA1(gstd::script_machine* machine, int
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetShotDataID(idShot);
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
@@ -1461,7 +1461,7 @@ gstd::value StgStageScript::Func_CreateShotA2(gstd::script_machine* machine, int
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetShotDataID(idShot);
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
@@ -1504,7 +1504,7 @@ gstd::value StgStageScript::Func_CreateShotOA1(gstd::script_machine* machine, in
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetShotDataID(idShot);
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
@@ -1658,7 +1658,7 @@ gstd::value StgStageScript::Func_CreateLooseLaserA1(gstd::script_machine* machin
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetLength(length);
 		obj->SetRenderWidth(width);
 		obj->SetShotDataID(idShot);
@@ -1694,7 +1694,7 @@ gstd::value StgStageScript::Func_CreateStraightLaserA1(gstd::script_machine* mac
 
 		obj->SetX(posX);
 		obj->SetY(posY);
-		obj->SetLaserAngle(D3DXToRadian(angle));
+		obj->SetLaserAngle(Math::DegreeToRadian(angle));
 		obj->SetLength(length);
 		obj->SetRenderWidth(width);
 		obj->SetAutoDeleteFrame(deleteFrame);
@@ -1730,7 +1730,7 @@ gstd::value StgStageScript::Func_CreateCurveLaserA1(gstd::script_machine* machin
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetLength(length);
 		obj->SetRenderWidth(width);
 		obj->SetShotDataID(idShot);
@@ -2314,7 +2314,7 @@ gstd::value StgStageScript::Func_ObjMove_SetAngle(gstd::script_machine* machine,
 	if (obj == nullptr)return value();
 
 	double angle = argv[1].as_real();
-	obj->SetDirectionAngle(D3DXToRadian(angle));
+	obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 	return value();
 }
 gstd::value StgStageScript::Func_ObjMove_SetAcceleration(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2344,7 +2344,7 @@ gstd::value StgStageScript::Func_ObjMove_SetAngularVelocity(gstd::script_machine
 	}
 
 	double param = argv[1].as_real();
-	pattern->SetAngularVelocity(D3DXToRadian(param));
+	pattern->SetAngularVelocity(Math::DegreeToRadian(param));
 	return value();
 }
 gstd::value StgStageScript::Func_ObjMove_SetMaxSpeed(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2424,7 +2424,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA1(gstd::script_machine* mach
 
 	StgMovePattern_Angle* pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
-	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angle) : StgMovePattern::NO_CHANGE);
+	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angle) : StgMovePattern::NO_CHANGE);
 	obj->AddPattern(frame, pattern);
 
 	return value();
@@ -2444,9 +2444,9 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA2(gstd::script_machine* mach
 
 	StgMovePattern_Angle* pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
-	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angle) : StgMovePattern::NO_CHANGE);
+	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angle) : StgMovePattern::NO_CHANGE);
 	pattern->SetAcceleration(accele);
-	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angV) : StgMovePattern::NO_CHANGE);
+	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angV) : StgMovePattern::NO_CHANGE);
 	pattern->SetMaxSpeed(maxSpeed);
 	obj->AddPattern(frame, pattern);
 
@@ -2468,9 +2468,9 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA3(gstd::script_machine* mach
 
 	StgMovePattern_Angle* pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
-	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angle) : StgMovePattern::NO_CHANGE);
+	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angle) : StgMovePattern::NO_CHANGE);
 	pattern->SetAcceleration(accele);
-	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angV) : StgMovePattern::NO_CHANGE);
+	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angV) : StgMovePattern::NO_CHANGE);
 	pattern->SetMaxSpeed(maxSpeed);
 	pattern->SetShotDataID(idShot);
 	obj->AddPattern(frame, pattern);
@@ -2494,9 +2494,9 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA4(gstd::script_machine* mach
 
 	StgMovePattern_Angle* pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
-	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angle) : StgMovePattern::NO_CHANGE);
+	pattern->SetDirectionAngle((angle != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angle) : StgMovePattern::NO_CHANGE);
 	pattern->SetAcceleration(accele);
-	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? D3DXToRadian(angV) : StgMovePattern::NO_CHANGE);
+	pattern->SetAngularVelocity((angV != StgMovePattern::NO_CHANGE) ? Math::DegreeToRadian(angV) : StgMovePattern::NO_CHANGE);
 	pattern->SetMaxSpeed(maxSpeed);
 	pattern->SetShotDataID(idShot);
 	pattern->SetRelativeObjectID(idRelative);
@@ -2606,7 +2606,7 @@ gstd::value StgStageScript::Func_ObjMove_GetAngle(gstd::script_machine* machine,
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr)return value(machine->get_engine()->get_real_type(), (double)0);
 
-	double angle = D3DXToDegree(obj->GetDirectionAngle());
+	double angle = Math::RadianToDegree(obj->GetDirectionAngle());
 	return value(machine->get_engine()->get_real_type(), (double)angle);
 }
 
@@ -3270,7 +3270,7 @@ gstd::value StgStageScript::Func_ObjShot_AddShotA2(gstd::script_machine* machine
 	int frame = (int)argv[2].as_real();
 	double radius = argv[3].as_real();
 	double angle = argv[4].as_real();
-	obj->AddShot(frame, idShot, radius, D3DXToRadian(angle));
+	obj->AddShot(frame, idShot, radius, Math::DegreeToRadian(angle));
 	return value();
 }
 gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA1(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -3601,7 +3601,7 @@ gstd::value StgStageScript::Func_ObjStLaser_SetAngle(gstd::script_machine* machi
 	if (obj == nullptr)return value();
 
 	double angle = argv[1].as_real();
-	obj->SetLaserAngle(D3DXToRadian(angle));
+	obj->SetLaserAngle(Math::DegreeToRadian(angle));
 
 	return value();
 }
@@ -3611,7 +3611,7 @@ gstd::value StgStageScript::Func_ObjStLaser_GetAngle(gstd::script_machine* machi
 	StgStraightLaserObject* obj = dynamic_cast<StgStraightLaserObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr)return script->CreateRealValue(0);
 
-	double angle = D3DXToDegree(obj->GetLaserAngle());
+	double angle = Math::RadianToDegree(obj->GetLaserAngle());
 	return value(machine->get_engine()->get_real_type(), (double)angle);
 }
 gstd::value StgStageScript::Func_ObjStLaser_SetSource(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -4009,7 +4009,7 @@ gstd::value StgStagePlayerScript::Func_CreatePlayerShotA1(gstd::script_machine* 
 		obj->SetX(posX);
 		obj->SetY(posY);
 		obj->SetSpeed(speed);
-		obj->SetDirectionAngle(D3DXToRadian(angle));
+		obj->SetDirectionAngle(Math::DegreeToRadian(angle));
 		obj->SetLife(life);
 		obj->SetDamage(damage);
 		obj->SetShotDataID(idShot);

@@ -62,6 +62,10 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 		vertRTh = height;
 	}
 	*/
+
+	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+	effectLayer_ = shaderManager_->GetRender2DShader();
+	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 }
 StgShotManager::~StgShotManager() {
 	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
@@ -112,13 +116,7 @@ void StgShotManager::Work() {
 void StgShotManager::Render(int targetPriority) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
-	/*
-	IDirect3DSurface9* tmpSurface = nullptr;
-	device->GetRenderTarget(0, &tmpSurface);
-	device->SetRenderTarget(0, renderSurface_);
 
-	device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-	*/
 	graphics->SetZBufferEnable(false);
 	graphics->SetZWriteEnable(false);
 	graphics->SetCullingMode(D3DCULL_NONE);
@@ -130,11 +128,14 @@ void StgShotManager::Render(int targetPriority) {
 	//			MODE_TEXTURE_FILTER_LINEAR,//線形補間
 	//フォグを解除する
 	DWORD bEnableFog = FALSE;
-	graphics->GetDevice()->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
+	device->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
 	if (bEnableFog)
 		graphics->SetFogEnable(false);
 
-	D3DXMATRIX& matCamera = graphics->GetCamera2D()->GetMatrix();
+	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+
+	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
 	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
@@ -142,7 +143,21 @@ void StgShotManager::Render(int targetPriority) {
 		if (obj->IsDeleted())continue;
 		if (!obj->IsActive())continue;
 		if (obj->GetRenderPriorityI() != targetPriority)continue;
-		obj->RenderOnShotManager(matCamera);
+		obj->RenderOnShotManager();
+	}
+
+	{
+		D3DVIEWPORT9 viewPort;
+		device->GetViewport(&viewPort);
+
+		D3DXMATRIX matProj = camera3D->GetIdentity();
+		matProj._11 = 2.0f / viewPort.Width;
+		matProj._22 = -2.0f / viewPort.Height;
+		matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+		matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+		matProj = matCamera * matProj;
+		effectLayer_->SetMatrix(handleEffectWorld_, &matProj);
 	}
 
 	//描画
@@ -159,22 +174,35 @@ void StgShotManager::Render(int targetPriority) {
 		DirectGraphics::MODE_BLEND_ALPHA
 	};
 
+	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+
 	device->SetFVF(VERTEX_TLX::fvf);
+	device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
 
-	for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
-		graphics->SetBlendMode(blendMode[iBlend]);
+	{
+		//Always render enemy shots above player shots, completely obliterates TAΣ's wet dream.
 
-		std::vector<StgShotRenderer*>* listPlayer =
-			listPlayerShotData_->GetRendererList(blendMode[iBlend] - 1);
-		int iRender = 0;
-		for (iRender = 0; iRender < listPlayer->size(); iRender++)
-			(listPlayer->at(iRender))->Render(this);
+		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+			graphics->SetBlendMode(blendMode[iBlend]);
 
-		std::vector<StgShotRenderer*>* listEnemy =
-			listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
-		for (iRender = 0; iRender < listEnemy->size(); iRender++)
-			(listEnemy->at(iRender))->Render(this);
+			std::vector<StgShotRenderer*>* listPlayer =
+				listPlayerShotData_->GetRendererList(blendMode[iBlend] - 1);
+
+			for (size_t iRender = 0U; iRender < listPlayer->size(); iRender++)
+				(listPlayer->at(iRender))->Render(this);
+		}
+		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+			graphics->SetBlendMode(blendMode[iBlend]);
+
+			std::vector<StgShotRenderer*>* listEnemy =
+				listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
+
+			for (size_t iRender = 0U; iRender < listEnemy->size(); iRender++)
+				(listEnemy->at(iRender))->Render(this);
+		}
 	}
+
+	device->SetVertexDeclaration(nullptr);
 
 	/*
 	{
@@ -618,13 +646,13 @@ void StgShotDataList::_ScanShot(std::vector<StgShotData*>& listData, Scanner& sc
 				tok = scanner.Next();
 				if (tok.GetElement() == L"rand") {
 					scanner.CheckType(scanner.Next(), Token::TK_OPENP);
-					data->angularVelocityMin_ = D3DXToRadian(scanner.Next().GetReal());
+					data->angularVelocityMin_ = Math::DegreeToRadian(scanner.Next().GetReal());
 					scanner.CheckType(scanner.Next(), Token::TK_COMMA);
-					data->angularVelocityMax_ = D3DXToRadian(scanner.Next().GetReal());
+					data->angularVelocityMax_ = Math::DegreeToRadian(scanner.Next().GetReal());
 					scanner.CheckType(scanner.Next(), Token::TK_CLOSEP);
 				}
 				else {
-					data->angularVelocityMin_ = D3DXToRadian(tok.GetReal());
+					data->angularVelocityMin_ = Math::DegreeToRadian(tok.GetReal());
 					data->angularVelocityMax_ = data->angularVelocityMin_;
 				}
 			}
@@ -816,7 +844,19 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 	vBuffer->Unlock();
 
 	device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
-	device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+	{
+		ID3DXEffect*& effect = manager->effectLayer_;
+		effect->SetTechnique("Render");
+
+		UINT cPass = 1;
+		effect->Begin(&cPass, 0);
+		for (UINT iPass = 0; iPass < cPass; ++iPass) {
+			effect->BeginPass(iPass);
+			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+			effect->EndPass();
+		}
+		effect->End();
+	}
 
 	countRenderVertex_ = 0;
 }
@@ -1144,7 +1184,7 @@ void StgShotObject::ReserveShotList::Clear(StgStageController* stageController) 
 	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController->GetMainObjectManager();
 	if (objectManager == nullptr)return;
 
-	std::map<int, ref_count_ptr<ListElement>::unsync >::iterator itrMap = mapData_.begin();
+	auto itrMap = mapData_.begin();
 	for (; itrMap != mapData_.end(); itrMap++) {
 		ref_count_ptr<ListElement>::unsync listElement = itrMap->second;
 		std::list<ReserveShotListData>* list = listElement->GetDataList();
@@ -1312,7 +1352,7 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 	return res;
 }
 
-void StgNormalShotObject::RenderOnShotManager(D3DXMATRIX& mat) {
+void StgNormalShotObject::RenderOnShotManager() {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -1349,7 +1389,7 @@ void StgNormalShotObject::RenderOnShotManager(D3DXMATRIX& mat) {
 	double scaleY = 1.0;
 
 	double angleZ = 0;
-	if (!shotData->IsFixedAngle())angleZ = GetDirectionAngle() + D3DXToRadian(90) + angle_.z;
+	if (!shotData->IsFixedAngle())angleZ = GetDirectionAngle() + Math::DegreeToRadian(90) + angle_.z;
 	else angleZ = angle_.z;
 
 	if (angleZ != lastAngle_) {
@@ -1417,7 +1457,7 @@ void StgNormalShotObject::RenderOnShotManager(D3DXMATRIX& mat) {
 		vt.position.y = (px * s_ + py * c_) + position_.y;
 		vt.position.z = position_.z;
 
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+		//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 		verts[iVert] = vt;
 	}
 
@@ -1720,7 +1760,7 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	return res;
 }
 
-void StgLooseLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
+void StgLooseLaserObject::RenderOnShotManager() {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -1835,7 +1875,7 @@ void StgLooseLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 		vt.position.y = (px * renderS + py * renderC) + position_.y;
 		vt.position.z = position_.z;
 
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+		//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 		verts[iVert] = vt;
 	}
 
@@ -2027,7 +2067,7 @@ void StgStraightLaserObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsy
 	obj->Activate();
 	objectManager->ActivateObject(obj->GetObjectID(), true);
 }
-void StgStraightLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
+void StgStraightLaserObject::RenderOnShotManager() {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -2094,7 +2134,7 @@ void StgStraightLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 			vt.position.y = (-px * c_ + py * s_) + position_.y;
 			vt.position.z = position_.z;
 
-			D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 			verts[iVert] = vt;
 		}
 
@@ -2142,7 +2182,7 @@ void StgStraightLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 			vt.position.y = (-px * c_ + py * s_) + position_.y;
 			vt.position.z = position_.z;
 
-			D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 			verts[iVert] = vt;
 		}
 
@@ -2341,7 +2381,7 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 	return res;
 }
 
-void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
+void StgCurveLaserObject::RenderOnShotManager() {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -2382,7 +2422,7 @@ void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 		double expa = 0.5f + (double)delay_ / 30.0f * 2;
 		if (expa > 3.5)expa = 3.5;
 
-		double ang = GetDirectionAngle() + D3DXToRadian(270);
+		double ang = GetDirectionAngle() + Math::DegreeToRadian(270);
 		double c = cos(ang);
 		double s = sin(ang);
 
@@ -2406,7 +2446,7 @@ void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 			vt.position.y = (px * s + py * c) + position_.y;
 			vt.position.z = position_.z;
 
-			D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 			verts[iVert] = vt;
 		}
 
@@ -2495,7 +2535,7 @@ void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat) {
 				vt.position.y = (px * s + py * c) + posYS;
 				vt.position.z = position_.z;
 
-				D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+				//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
 				verts[iVert] = vt;
 			}
 

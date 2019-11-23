@@ -56,6 +56,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <bitset>
 #include <memory>
 #include <algorithm>
@@ -64,6 +65,8 @@
 #include <locale>
 #include <codecvt>
 
+#include <fstream>
+#include <sstream>
 
 #include <assert.h>
 

@@ -58,6 +58,10 @@ DxScriptShaderObject::DxScriptShaderObject() {
 **********************************************************/
 DxScriptPrimitiveObject::DxScriptPrimitiveObject() {
 	idRelative_ = -1;
+
+	angX_ = D3DXVECTOR2(1, 0);
+	angY_ = D3DXVECTOR2(1, 0);
+	angZ_ = D3DXVECTOR2(1, 0);
 }
 void DxScriptPrimitiveObject::SetPrimitiveType(D3DPRIMITIVETYPE type) {
 	objRender_->SetPrimitiveType(type);
@@ -90,10 +94,6 @@ DxScriptPrimitiveObject2D::DxScriptPrimitiveObject2D() {
 	objRender_ = new RenderObjectTLX();
 	bZWrite_ = false;
 	bZTest_ = false;
-
-	angX_ = D3DXVECTOR2(1, 0);
-	angY_ = D3DXVECTOR2(1, 0);
-	angZ_ = D3DXVECTOR2(1, 0);
 }
 void DxScriptPrimitiveObject2D::Render() {
 	RenderObjectTLX* obj = GetObjectPointer();
@@ -285,8 +285,8 @@ void DxScriptPrimitiveObject3D::Render() {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	bool bEnvFogEnable = graphics->IsFogEnable();
 	SetRenderState();
-	obj->Render();
-	//obj->Render(angX_, angY_, angZ_);
+	//obj->Render();
+	obj->Render(angX_, angY_, angZ_);
 
 	//フォグの状態をリセット
 	if (bEnvFogEnable)
@@ -445,7 +445,8 @@ void DxScriptTrajectoryObject3D::Work() {
 void DxScriptTrajectoryObject3D::Render() {
 	TrajectoryObject3D* obj = GetObjectPointer();
 	SetRenderState();
-	obj->Render();
+	//obj->Render();
+	obj->Render(angX_, angY_, angZ_);
 }
 void DxScriptTrajectoryObject3D::SetRenderState() {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -480,6 +481,10 @@ DxScriptMeshObject::DxScriptMeshObject() {
 	anime_ = L"";
 	color_ = 0xffffffff;
 	bCoordinate2D_ = false;
+
+	angX_ = D3DXVECTOR2(1, 0);
+	angY_ = D3DXVECTOR2(1, 0);
+	angZ_ = D3DXVECTOR2(1, 0);
 }
 
 void DxScriptMeshObject::Render() {
@@ -487,7 +492,7 @@ void DxScriptMeshObject::Render() {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	bool bEnvFogEnable = graphics->IsFogEnable();
 	SetRenderState();
-	mesh_->Render(anime_, time_);
+	mesh_->Render(anime_, time_, angX_, angY_, angZ_);
 
 	//フォグの状態をリセット
 	if (bEnvFogEnable)
@@ -976,7 +981,7 @@ void DxScriptObjectManager::WorkObject() {
 
 	//音声再生
 	DirectSoundManager* soundManager = DirectSoundManager::GetBase();
-	std::map<std::wstring, ref_count_ptr<SoundInfo> >::iterator itrSound = mapReservedSound_.begin();
+	auto itrSound = mapReservedSound_.begin();
 	for (; itrSound != mapReservedSound_.end(); ++itrSound) {
 		gstd::ref_count_ptr<SoundInfo> info = itrSound->second;
 		gstd::ref_count_ptr<SoundPlayer> player = info->player_;
@@ -1115,8 +1120,8 @@ function const dxFunction[] =
 	{ "SetFogEnable", DxScript::Func_SetFogEnable, 1 },
 	{ "SetFogParam", DxScript::Func_SetFogParam, 5 },
 	{ "CreateRenderTarget", DxScript::Func_CreateRenderTarget, 1 },
-	{ "SetRenderTarget", DxScript::Func_SetRenderTarget, 2 },
-	{ "ResetRenderTarget", DxScript::Func_ResetRenderTarget, 0 },
+	//{ "SetRenderTarget", DxScript::Func_SetRenderTarget, 2 },
+	//{ "ResetRenderTarget", DxScript::Func_ResetRenderTarget, 0 },
 	{ "ClearRenderTargetA1", DxScript::Func_ClearRenderTargetA1, 1 },
 	{ "ClearRenderTargetA2", DxScript::Func_ClearRenderTargetA2, 5 },
 	{ "ClearRenderTargetA3", DxScript::Func_ClearRenderTargetA3, 9 },
@@ -1141,6 +1146,10 @@ function const dxFunction[] =
 	{ "SetCameraYaw", DxScript::Func_SetCameraYaw, 1 },
 	{ "SetCameraPitch", DxScript::Func_SetCameraPitch, 1 },
 	{ "SetCameraRoll", DxScript::Func_SetCameraRoll, 1 },
+	{ "SetCameraMode", DxScript::Func_SetCameraMode, 1 },
+	//{ "SetCameraPosEye", DxScript::Func_SetCameraPosEye, 3 },
+	{ "SetCameraPosEye", DxScript::Func_SetCameraFocusXYZ, 3 },
+	{ "SetCameraPosLookAt", DxScript::Func_SetCameraPosLookAt, 3 },
 	{ "GetCameraX", DxScript::Func_GetCameraX, 0 },
 	{ "GetCameraY", DxScript::Func_GetCameraY, 0 },
 	{ "GetCameraZ", DxScript::Func_GetCameraZ, 0 },
@@ -1153,7 +1162,7 @@ function const dxFunction[] =
 	{ "GetCameraYaw", DxScript::Func_GetCameraYaw, 0 },
 	{ "GetCameraPitch", DxScript::Func_GetCameraPitch, 0 },
 	{ "GetCameraRoll", DxScript::Func_GetCameraRoll, 0 },
-	{ "GetCameraWVPMatrix", DxScript::Func_GetCameraWVPMatrix, 0 },
+	{ "GetCameraViewProjectionMatrix", DxScript::Func_GetCameraViewProjectionMatrix, 0 },
 	{ "SetCameraPerspectiveClip", DxScript::Func_SetCameraPerspectiveClip, 2 },
 
 	//Dx関数：カメラ2D
@@ -1412,6 +1421,9 @@ function const dxFunction[] =
 	{ "FILTER_POINT", constant<D3DTEXF_POINT>::func, 0 },
 	{ "FILTER_LINEAR", constant<D3DTEXF_LINEAR>::func, 0 },
 	{ "FILTER_ANISOTROPIC", constant<D3DTEXF_ANISOTROPIC>::func, 0 },
+
+	{ "CAMERA_NORMAL", constant<DxCamera::MODE_NORMAL>::func, 0 },
+	{ "CAMERA_LOOKAT", constant<DxCamera::MODE_LOOKAT>::func, 0 },
 
 	{ "PRIMITIVE_POINT_LIST",constant<D3DPT_POINTLIST>::func,0 },
 	{ "PRIMITIVE_LINELIST",constant<D3DPT_LINELIST>::func,0 },
@@ -2390,7 +2402,6 @@ gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc,
 
 	double priMin = (double)min / (double)(size - 1);
 	double priMax = (double)max / (double)(size - 1);
-
 	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, priMin, priMax);
 
@@ -2401,19 +2412,25 @@ gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc,
 value DxScript::Func_SetCameraFocusX(script_machine* machine, int argc, const value* argv) {
 	double x = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetFocusX(x);
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetFocusX(x);
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraFocusY(script_machine* machine, int argc, const value* argv) {
 	double y = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetFocusY(y);
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetFocusY(y);
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraFocusZ(script_machine* machine, int argc, const value* argv) {
 	double z = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetFocusZ(z);
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetFocusZ(z);
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraFocusXYZ(script_machine* machine, int argc, const value* argv) {
@@ -2421,45 +2438,77 @@ value DxScript::Func_SetCameraFocusXYZ(script_machine* machine, int argc, const 
 	double y = argv[1].as_real();
 	double z = argv[2].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetFocusX(x);
-	graphics->GetCamera()->SetFocusY(y);
-	graphics->GetCamera()->SetFocusZ(z);
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetFocusX(x);
+	camera->SetFocusY(y);
+	camera->SetFocusZ(z);
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraRadius(script_machine* machine, int argc, const value* argv) {
 	double r = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetRadius(r);
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetRadius(r);
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraAzimuthAngle(script_machine* machine, int argc, const value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetAzimuthAngle(D3DXToRadian(angle));
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetAzimuthAngle(Math::DegreeToRadian(angle));
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraElevationAngle(script_machine* machine, int argc, const value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetElevationAngle(D3DXToRadian(angle));
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetElevationAngle(Math::DegreeToRadian(angle));
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraYaw(script_machine* machine, int argc, const value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetYaw(D3DXToRadian(angle));
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetYaw(Math::DegreeToRadian(angle));
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraPitch(script_machine* machine, int argc, const value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetPitch(D3DXToRadian(angle));
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetPitch(Math::DegreeToRadian(angle));
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_SetCameraRoll(script_machine* machine, int argc, const value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera()->SetRoll(D3DXToRadian(angle));
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetRoll(Math::DegreeToRadian(angle));
+	camera->thisViewChanged_ = true;
+	return value();
+}
+value DxScript::Func_SetCameraMode(script_machine* machine, int argc, const value* argv) {
+	int mode = (int)(argv[0].as_real() + 0.01);
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetCameraMode(mode);
+	camera->thisViewChanged_ = true;
+	return value();
+}
+value DxScript::Func_SetCameraPosLookAt(script_machine* machine, int argc, const value* argv) {
+	double x = argv[0].as_real();
+	double y = argv[1].as_real();
+	double z = argv[2].as_real();
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	camera->SetCameraLookAtVector(D3DXVECTOR3(x, y, z));
+	camera->thisViewChanged_ = true;
 	return value();
 }
 value DxScript::Func_GetCameraX(script_machine* machine, int argc, const value* argv) {
@@ -2500,43 +2549,37 @@ value DxScript::Func_GetCameraRadius(script_machine* machine, int argc, const va
 value DxScript::Func_GetCameraAzimuthAngle(script_machine* machine, int argc, const value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera()->GetAzimuthAngle();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 value DxScript::Func_GetCameraElevationAngle(script_machine* machine, int argc, const value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera()->GetElevationAngle();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 value DxScript::Func_GetCameraYaw(script_machine* machine, int argc, const value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera()->GetYaw();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 value DxScript::Func_GetCameraPitch(script_machine* machine, int argc, const value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera()->GetPitch();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 value DxScript::Func_GetCameraRoll(script_machine* machine, int argc, const value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera()->GetRoll();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
-value DxScript::Func_GetCameraWVPMatrix(script_machine* machine, int argc, const value* argv) {
+value DxScript::Func_GetCameraViewProjectionMatrix(script_machine* machine, int argc, const value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	IDirect3DDevice9* device = graphics->GetDevice();
 
-	D3DXMATRIX matView;
-	device->GetTransform(D3DTS_VIEW, &matView);
-	D3DXMATRIX matProj;
-	device->GetTransform(D3DTS_PROJECTION, &matProj);
+	D3DXMATRIX matViewProj = graphics->GetCamera()->GetViewProjectionMatrix();
 
-	matView = matView * matProj;
-
-	std::vector<double> mat;
+	std::vector<float> mat;
 	mat.resize(16);
-	memcpy(&mat[0], &matView, sizeof(double) * 16);
+	memcpy(&mat[0], &matViewProj, sizeof(float) * 16);
 
 	return script->CreateRealArrayValue(mat);
 }
@@ -2567,7 +2610,7 @@ gstd::value DxScript::Func_Set2DCameraFocusY(gstd::script_machine* machine, int 
 gstd::value DxScript::Func_Set2DCameraAngleZ(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	double angle = argv[0].as_real();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	graphics->GetCamera2D()->SetAngleZ(D3DXToRadian(angle));
+	graphics->GetCamera2D()->SetAngleZ(Math::DegreeToRadian(angle));
 	return gstd::value();
 }
 gstd::value DxScript::Func_Set2DCameraRatio(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2606,7 +2649,7 @@ gstd::value DxScript::Func_Get2DCameraY(gstd::script_machine* machine, int argc,
 gstd::value DxScript::Func_Get2DCameraAngleZ(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	double res = graphics->GetCamera2D()->GetAngleZ();
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 gstd::value DxScript::Func_Get2DCameraRatio(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -2651,7 +2694,7 @@ gstd::value DxScript::Func_GetObject2dPosition(gstd::script_machine* machine, in
 	if (obj == NULL)script->RaiseError(L"Invalid object; object might not have been initialized.");
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
 	D3DXVECTOR3 pos = obj->GetPosition();
 
 	D3DXVECTOR2 point = camera->TransformCoordinateTo2D(pos);
@@ -2671,7 +2714,7 @@ gstd::value DxScript::Func_Get2dPosition(gstd::script_machine* machine, int argc
 	D3DXVECTOR3 pos(px, py, pz);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
 	D3DXVECTOR2 point = camera->TransformCoordinateTo2D(pos);
 	std::vector<double> listRes;
 	listRes.push_back(point.x);
@@ -3036,7 +3079,7 @@ gstd::value DxScript::Func_ObjRender_GetAngleX(gstd::script_machine* machine, in
 	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != NULL)
 		res = obj->angle_.x;
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 gstd::value DxScript::Func_ObjRender_GetAngleY(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	double res = 0;
@@ -3045,7 +3088,7 @@ gstd::value DxScript::Func_ObjRender_GetAngleY(gstd::script_machine* machine, in
 	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != NULL)
 		res = obj->angle_.y;
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 gstd::value DxScript::Func_ObjRender_GetAngleZ(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	double res = 0;
@@ -3054,7 +3097,7 @@ gstd::value DxScript::Func_ObjRender_GetAngleZ(gstd::script_machine* machine, in
 	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != NULL)
 		res = obj->angle_.z;
-	return value(machine->get_engine()->get_real_type(), D3DXToDegree(res));
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(res));
 }
 gstd::value DxScript::Func_ObjRender_GetScaleX(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	double res = 0;

@@ -806,14 +806,12 @@ void RenderObjectElfreinaBlock::CalculateZValue() {
 	IDirect3DDevice9* pDevice = graph->GetDevice();
 	ElfreinaMeshData::Mesh* obj = (ElfreinaMeshData::Mesh*)obj_.GetPointer();
 
-	D3DXMATRIX matTrans = obj->_CreateWorldTransformMatrix();
+	D3DXMATRIX matTrans = RenderObject::CreateWorldMatrix(position_, scale_, angle_, &graph->GetCamera()->GetIdentity(), false);
 	D3DXMATRIX matView;
-	D3DXMATRIX matPers;
 	pDevice->GetTransform(D3DTS_VIEW, &matView);
-	pDevice->GetTransform(D3DTS_PROJECTION, &matPers);
 	D3DXMATRIX matAnime = matrix_->GetMatrix(obj->indexWeightForCalucZValue_);
 
-	D3DXMATRIX mat = matAnime * matTrans * matView * matPers;
+	D3DXMATRIX mat = matAnime * matTrans * matView;
 	D3DXVECTOR3 posCenter = obj->GetWeightCenter();
 	D3DXVec3TransformCoord(&posCenter, &posCenter, &mat);
 	posSortKey_ = posCenter.z;
@@ -975,7 +973,7 @@ D3DXMATRIX ElfreinaMesh::GetAnimationMatrix(std::wstring nameAnime, double time,
 			res = res * matScale;
 
 			D3DXMATRIX matRot;
-			D3DXMatrixRotationYawPitchRoll(&matRot, D3DXToRadian(angle_.y), D3DXToRadian(angle_.x), D3DXToRadian(angle_.z));
+			D3DXMatrixRotationYawPitchRoll(&matRot, angle_.y, angle_.x, angle_.z);
 			res = res * matRot;
 
 			D3DXMATRIX matTrans;

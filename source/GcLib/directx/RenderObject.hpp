@@ -163,14 +163,7 @@ namespace directx {
 		virtual void _RestoreVertexBuffer();
 		virtual void _CreateVertexDeclaration() {}
 
-		int _GetPrimitiveCount();
-		int _GetPrimitiveCount(int count);
 		void _SetTextureStageCount(int count) { texture_.resize(count); for (int i = 0; i < count; i++)texture_[i] = NULL; }
-
-		virtual D3DXMATRIX _CreateWorldTransformMatrix();//position_,angle_,scale_Ç©ÇÁçÏê¨
-		virtual int _CreateWorldTransformMatrix(D3DXMATRIX*& arrayMat);
-
-		void _SetCoordinate2dDeviceMatrix();
 	public:
 		RenderObject();
 		virtual ~RenderObject();
@@ -180,7 +173,22 @@ namespace directx {
 		D3DXVECTOR3 GetWeightCenter() { return posWeightCenter_; }
 		gstd::ref_count_ptr<Texture> GetTexture(int pos = 0) { return texture_[pos]; }
 
+		int _GetPrimitiveCount();
+		int _GetPrimitiveCount(int count);
+
 		void SetRalativeMatrix(D3DXMATRIX mat) { matRelative_ = mat; }
+
+		static D3DXMATRIX CreateWorldMatrix(D3DXVECTOR3& position, D3DXVECTOR3& scale, 
+			D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ,
+			D3DXMATRIX* matRelative, bool bCoordinate2D = false);
+		static D3DXMATRIX CreateWorldMatrix(D3DXVECTOR3& position, D3DXVECTOR3& scale, D3DXVECTOR3& angle,
+			D3DXMATRIX* matRelative, bool bCoordinate2D = false);
+		static D3DXMATRIX CreateWorldMatrixSprite3D(D3DXVECTOR3& position, D3DXVECTOR3& scale, 
+			D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ,
+			D3DXMATRIX* matRelative, bool bBillboard = false);
+		static D3DXMATRIX CreateWorldMatrix2D(D3DXVECTOR3& position, D3DXVECTOR3& scale, 
+			D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ, D3DXMATRIX* matCamera);
+		static void SetCoordinate2dDeviceMatrix();
 
 		//í∏ì_ê›íË
 		void SetPrimitiveType(D3DPRIMITIVETYPE type) { typePrimitive_ = type; }
@@ -268,6 +276,7 @@ namespace directx {
 		RenderObjectLX();
 		~RenderObjectLX();
 		virtual void Render();
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 		virtual void SetVertexCount(int count);
 
 		//í∏ì_ê›íË
@@ -337,6 +346,7 @@ namespace directx {
 		~RenderObjectBNX();
 		virtual void InitializeVertexBuffer();
 		virtual void Render();
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 
 		//ï`âÊópê›íË
 		void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; }
@@ -470,11 +480,13 @@ namespace directx {
 	class Sprite3D : public RenderObjectLX {
 	protected:
 		bool bBillboard_;
-		virtual D3DXMATRIX _CreateWorldTransformMatrix();
-		virtual int _CreateWorldTransformMatrix(D3DXMATRIX*& arrayMat);
 	public:
 		Sprite3D();
 		~Sprite3D();
+
+		virtual void Render();
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
+
 		void SetSourceRect(RECT_D &rcSrc);
 		void SetDestinationRect(RECT_D &rcDest);
 		void SetVertex(RECT_D &rcSrc, RECT_D &rcDest, D3DCOLOR color = D3DCOLOR_ARGB(255, 255, 255, 255));
@@ -507,6 +519,7 @@ namespace directx {
 		~TrajectoryObject3D();
 		virtual void Work();
 		virtual void Render();
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 		void SetInitialLine(D3DXVECTOR3 pos1, D3DXVECTOR3 pos2);
 		void AddPoint(D3DXMATRIX mat);
 		void SetAlphaVariation(int diff) { diffAlpha_ = diff; }
@@ -561,7 +574,11 @@ namespace directx {
 		virtual std::wstring GetPath() = 0;
 
 		virtual void Render() = 0;
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) = 0;
 		virtual void Render(std::wstring nameAnime, int time) { Render(); }
+		virtual void Render(std::wstring nameAnime, int time, 
+			D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) { Render(angX, angY, angZ); }
+
 		void SetPosition(D3DXVECTOR3 pos) { position_ = pos; }
 		void SetPosition(float x, float y, float z) { position_.x = x; position_.y = y; position_.z = z; }
 		void SetX(float x) { position_.x = x; }

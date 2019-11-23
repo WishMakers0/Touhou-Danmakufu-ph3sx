@@ -565,6 +565,8 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 	ETextureManager* textureManager = ETextureManager::GetInstance();
 	StgSystemController* systemController = script->systemController_;
 
+	script->criticalSection_.Enter();
+
 	std::wstring name = argv[0].as_string();
 	int priMin = (int)argv[1].as_real();
 	int priMax = (int)argv[2].as_real();
@@ -597,11 +599,16 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 			count++;
 		}
 	*/
+
+	script->criticalSection_.Leave();
+
 	return value();
 }
 gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	ETextureManager* textureManager = ETextureManager::GetInstance();
+
+	script->criticalSection_.Enter();
 
 	std::wstring name = argv[0].as_string();
 	int id = (int)argv[1].as_real();
@@ -627,6 +634,8 @@ gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machi
 
 	graphics->EndScene();
 	graphics->SetRenderTarget(NULL);
+
+	script->criticalSection_.Leave();
 
 	return value();
 }

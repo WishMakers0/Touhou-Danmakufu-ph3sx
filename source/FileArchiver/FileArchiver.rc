@@ -7,7 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include <windows.h>
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -34,7 +34,7 @@ END
 
 2 TEXTINCLUDE DISCARDABLE 
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include <windows.h>\r\n"
     "\0"
 END
 
@@ -63,6 +63,7 @@ BEGIN
                     WS_BORDER | WS_TABSTOP,1,5,195,138,WS_EX_CLIENTEDGE
     PUSHBUTTON      "Add",IDC_BUTTON_ADD,201,5,50,14
     PUSHBUTTON      "Delete",IDC_BUTTON_DELETE,201,27,50,14
+    PUSHBUTTON      "Clear",IDC_BUTTON_CLEAR,201,49,50,14
     PUSHBUTTON      "Start Archive",IDC_BUTTON_ARCHIVE,171,149,80,17
 END
 
@@ -102,6 +103,7 @@ BEGIN
     POPUP "Help(&H)"
     BEGIN
         MENUITEM "Version(&A)",                 ID_MENUITEM_VERSION
+        MENUITEM "How to Use(&U)",              ID_MENUITEM_HELP
     END
 END
 

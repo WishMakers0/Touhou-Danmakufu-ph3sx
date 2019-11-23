@@ -24,8 +24,8 @@ void StgSystemController::Initialize(ref_count_ptr<StgSystemInformation> infoSys
 void StgSystemController::Start(ref_count_ptr<ScriptInformation> infoPlayer, ref_count_ptr<ReplayInformation> infoReplay) {
 	//DirectX
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
-	gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 
 	camera3D->SetProjectionMatrix(384, 448, 10, 2000);
 	camera2D->Reset();
@@ -176,7 +176,7 @@ void StgSystemController::Render() {
 	}
 	catch (gstd::wexception e) {
 		DirectGraphics* graphics = DirectGraphics::GetBase();
-		gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+		ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 		camera2D->SetEnable(false);
 		camera2D->Reset();
 		Logger::WriteTop(e.what());
@@ -257,8 +257,9 @@ void StgSystemController::RenderScriptObject() {
 void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	ref_count_ptr<StgStageScriptObjectManager> objectManagerStage = NULL;
 	ref_count_ptr<DxScriptObjectManager> objectManagerPackage = NULL;
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > > *pRenderListStage = NULL;
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > > *pRenderListPackage = NULL;
+
+	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>>* pRenderListStage = NULL;
+	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>>* pRenderListPackage = NULL;
 
 
 	int scene = infoSystem_->GetScene();
@@ -287,12 +288,9 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	}
 
 
-
-	//--------------------------------
-
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
-	gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 	double focusRatioX = camera2D->GetRatioX();
 	double focusRatioY = camera2D->GetRatioY();
 	double focusAngleZ = camera2D->GetAngleZ();
@@ -306,9 +304,9 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 
 		//pause後に、フォーカスリセット値が上書きされていることがあるので
 		//STGシーン用にリセット値を更新する
-		gstd::ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2();
-		pos->x = (rcStgFrame.right - rcStgFrame.left) / 2;
-		pos->y = (rcStgFrame.bottom - rcStgFrame.top) / 2;
+		ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2;
+		pos->x = (rcStgFrame.right - rcStgFrame.left) / 2.0f;
+		pos->y = (rcStgFrame.bottom - rcStgFrame.top) / 2.0f;
 		camera2D->SetResetFocus(pos);
 
 		orgFocusPos = camera2D->GetFocusPosition();

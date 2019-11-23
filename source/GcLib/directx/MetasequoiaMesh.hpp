@@ -10,19 +10,20 @@ namespace directx {
 	class MetasequoiaMesh;
 	class MetasequoiaMeshData : public DxMeshData {
 		friend MetasequoiaMesh;
+	public:
+		class Material;
+		class Object;
+		class RenderObject;
+
 		struct NormalData {
 			std::vector<int> listIndex_;
 			D3DXVECTOR3 normal_;
 			virtual ~NormalData() {}
 		};
-	public:
-		class Material;
-		class Object;
-		class RenderObject;
 	protected:
 		std::wstring path_;
-		std::vector<gstd::ref_count_ptr<Material> > material_;
-		std::vector<gstd::ref_count_ptr<RenderObject> > obj_;
+		std::vector<RenderObject*> renderList_;
+		std::vector<Material*> materialList_;
 
 		void _ReadMaterial(gstd::Scanner& scanner);
 		void _ReadObject(gstd::Scanner& scanner);
@@ -33,6 +34,7 @@ namespace directx {
 	};
 
 	class MetasequoiaMeshData::Material {
+		friend MetasequoiaMesh;
 		friend MetasequoiaMeshData;
 		friend MetasequoiaMeshData::RenderObject;
 	protected:
@@ -72,15 +74,14 @@ namespace directx {
 	class MetasequoiaMeshData::RenderObject : public RenderObjectNX {
 		friend MetasequoiaMeshData;
 	protected:
-		gstd::ref_count_ptr<Material> material_;
+		Material* material_;
 	public:
-		RenderObject() {}
+		RenderObject() {};
 		virtual ~RenderObject() {};
 		virtual void Render();
 	};
 
 	class MetasequoiaMesh : public DxMesh {
-	protected:
 	public:
 		MetasequoiaMesh() {}
 		virtual ~MetasequoiaMesh() {}
@@ -88,8 +89,7 @@ namespace directx {
 		virtual bool CreateFromFileInLoadThread(std::wstring path);
 		virtual std::wstring GetPath();
 		virtual void Render();
-
-		std::vector<DxTriangle> CreateIntersectionTriangles();
+		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 	};
 }
 

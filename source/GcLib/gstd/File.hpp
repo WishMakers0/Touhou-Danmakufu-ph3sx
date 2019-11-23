@@ -6,7 +6,6 @@
 #include"Thread.hpp"
 
 namespace gstd {
-	const std::string HEADER_ARCHIVEFILE = "ArchiveFile";
 	const std::string HEADER_RECORDFILE = "RecordBufferFile";
 
 	class ByteBuffer;
@@ -47,6 +46,10 @@ namespace gstd {
 		int64_t ReadInteger64() { int64_t num; Read(num); return num; }
 		float ReadFloat() { float num; Read(num); return num; }
 		double ReadDouble() { double num; Read(num); return num; }
+
+		template<typename T> T ReadValue() {
+			T tmp; Read(tmp); return tmp;
+		}
 
 		std::string ReadString(int size) {
 			std::string res = "";
@@ -98,8 +101,10 @@ namespace gstd {
 	public:
 		ByteBuffer();
 		ByteBuffer(ByteBuffer& buffer);
+		ByteBuffer(std::stringstream& stream);
 		virtual ~ByteBuffer();
 		void Copy(ByteBuffer& src);
+		void Copy(std::stringstream& src);
 		void Clear();
 
 		void Seek(int pos);
@@ -160,93 +165,8 @@ namespace gstd {
 		static std::vector<std::wstring> GetDirectoryPathList(std::wstring dir);
 	};
 
-	/**********************************************************
-	//ArchiveFileEntry
-	**********************************************************/
-	class FileArchiver;
+	class ArchiveFileEntry;
 	class ArchiveFile;
-
-	class ArchiveFileEntry {
-		friend FileArchiver;
-		friend ArchiveFile;
-	public:
-		enum CompressType {
-			CT_NON,
-			CT_COMPRESS,
-		};
-
-	private:
-		std::wstring dir_;
-		std::wstring name_;
-		CompressType typeCompress_;
-		int sizeData_;
-		int sizeCompressed_;
-		int offset_;
-		std::wstring pathArchive_;
-
-		int _GetEntryRecordSize();
-		void _WriteEntryRecord(ByteBuffer &buf);
-		void _ReadEntryRecord(ByteBuffer &buf);
-
-		void _SetOffset(int offset) { offset_ = offset; }
-		void _SetDataSize(int size) { sizeData_ = size; }
-		void _SetCompressedDataSize(int size) { sizeCompressed_ = size; }
-		void _SetArchivePath(std::wstring path) { pathArchive_ = path; }
-
-	public:
-		ArchiveFileEntry();
-		virtual ~ArchiveFileEntry();
-
-		void SetDirectory(std::wstring dir) { dir_ = dir; }
-		std::wstring& GetDirectory() { return dir_; }
-		void SetName(std::wstring name) { name_ = name; }
-		std::wstring& GetName() { return name_; }
-		void SetCompressType(CompressType type) { typeCompress_ = type; }
-		CompressType& GetCompressType() { return typeCompress_; }
-
-		int GetOffset() { return offset_; }
-		int GetDataSize() { return sizeData_; }
-		int GetCompressedDataSize() { return sizeCompressed_; }
-
-		std::wstring& GetArchivePath() { return pathArchive_; }
-	};
-
-	/**********************************************************
-	//FileArchiver
-	**********************************************************/
-	class FileArchiver {
-	private:
-		std::list<ref_count_ptr<ArchiveFileEntry> > listEntry_;
-
-	public:
-		FileArchiver();
-		virtual ~FileArchiver();
-
-		void AddEntry(ref_count_ptr<ArchiveFileEntry> entry) { listEntry_.push_back(entry); }
-		bool CreateArchiveFile(std::wstring path);
-	};
-
-	/**********************************************************
-	//ArchiveFile
-	**********************************************************/
-	class ArchiveFile {
-	private:
-		ref_count_ptr<File> file_;
-		std::multimap<std::wstring, ref_count_ptr<ArchiveFileEntry> > mapEntry_;
-
-	public:
-		ArchiveFile(std::wstring path);
-		virtual ~ArchiveFile();
-		bool Open();
-		void Close();
-
-		std::set<std::wstring> GetKeyList();
-		std::multimap<std::wstring, ref_count_ptr<ArchiveFileEntry> > GetEntryMap() { return mapEntry_; }
-		std::vector<ref_count_ptr<ArchiveFileEntry> > GetEntryList(std::wstring name);
-		bool IsExists(std::wstring name);
-		static ref_count_ptr<ByteBuffer> CreateEntryBuffer(ref_count_ptr<ArchiveFileEntry> entry);
-		//ref_count_ptr<ByteBuffer> GetBuffer(std::string name);
-	};
 
 	/**********************************************************
 	//FileManager
@@ -264,11 +184,11 @@ namespace gstd {
 	protected:
 		gstd::CriticalSection lock_;
 		gstd::ref_count_ptr<LoadThread> threadLoad_;
-		std::map<std::wstring, ref_count_ptr<ArchiveFile> > mapArchiveFile_;
-		std::map<std::wstring, ref_count_ptr<ByteBuffer> > mapByteBuffer_;
+		std::map<std::wstring, ref_count_ptr<ArchiveFile>> mapArchiveFile_;
+		std::map<std::wstring, ref_count_ptr<ByteBuffer>> mapByteBuffer_;
 
-		ref_count_ptr<ByteBuffer> _GetByteBuffer(ref_count_ptr<ArchiveFileEntry> entry);
-		void _ReleaseByteBuffer(ref_count_ptr<ArchiveFileEntry> entry);
+		ref_count_ptr<ByteBuffer> _GetByteBuffer(ArchiveFileEntry* entry);
+		void _ReleaseByteBuffer(ArchiveFileEntry* entry);
 	public:
 		static FileManager* GetBase() { return thisBase_; }
 		FileManager();
@@ -347,12 +267,12 @@ namespace gstd {
 
 		FILETYPE type_;
 		ref_count_ptr<File> file_;
-		ref_count_ptr<ArchiveFileEntry> entry_;
+		ArchiveFileEntry* entry_;
 		ref_count_ptr<ByteBuffer> buffer_;
 		int offset_;
 
 	public:
-		ManagedFileReader(ref_count_ptr<File> file, ref_count_ptr<ArchiveFileEntry> entry);
+		ManagedFileReader(ref_count_ptr<File> file, ArchiveFileEntry* entry);
 		~ManagedFileReader();
 
 		virtual bool Open();
@@ -521,22 +441,6 @@ namespace gstd {
 		int GetInteger(std::wstring key, int def);
 		double GetReal(std::wstring key) { return GetReal(key, 0.0); }
 		double GetReal(std::wstring key, double def);
-	};
-
-	/**********************************************************
-	//Compressor
-	**********************************************************/
-	class Compressor {
-	public:
-		static bool Compress(ByteBuffer& bufIn, ByteBuffer& bufOut);
-	};
-
-	/**********************************************************
-	//DeCompressor
-	**********************************************************/
-	class DeCompressor {
-	public:
-		static bool DeCompress(ByteBuffer& bufIn, ByteBuffer& bufOut);
 	};
 
 	/**********************************************************

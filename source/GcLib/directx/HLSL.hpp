@@ -135,6 +135,51 @@ namespace directx {
 			"}"
 		"}";
 
+	static const std::wstring NAME_DEFAULT_RENDER2D = L"__NAME_DEFAULT_RENDER2D__";
+	static const std::string HLSL_DEFAULT_RENDER2D =
+		"sampler samp0_ : register(s0);"
+		"row_major float4x4 g_mWorld : WORLD : register(c0);"
+
+		"struct VS_INPUT {"
+			"float4 position : POSITION;"
+			"float4 diffuse : COLOR0;"
+			"float2 texCoord : TEXCOORD0;"
+		"};"
+		"struct VS_OUTPUT {"
+			"float4 position : POSITION;"
+			"float4 diffuse : COLOR0;"
+			"float2 texCoord : TEXCOORD0;"
+		"};"
+		"struct PS_OUTPUT {"
+			"float4 color : COLOR0;"
+		"};"
+
+		"VS_OUTPUT mainVS(VS_INPUT inVs) {"
+			"VS_OUTPUT outVs;"
+
+			"outVs.diffuse = inVs.diffuse;"
+			"outVs.texCoord = inVs.texCoord;"
+			"outVs.position = mul(inVs.position, g_mWorld);"
+			"outVs.position.z = 1.0f;"
+
+			"return outVs;"
+		"}"
+
+		"PS_OUTPUT mainPS(VS_OUTPUT inPs) {"
+			"PS_OUTPUT outPs;"
+
+			"outPs.color = tex2D(samp0_, inPs.texCoord) * inPs.diffuse;"
+
+			"return outPs;"
+		"}"
+
+		"technique Render {"
+			"pass P0 {"
+				"VertexShader = compile vs_2_0 mainVS();"
+				"PixelShader = compile ps_2_0 mainPS();"
+			"}"
+		"}";
+
 	class RenderShaderManager {
 		static RenderShaderManager* thisBase_;
 	public:
@@ -150,24 +195,22 @@ namespace directx {
 		void Release();
 
 		ID3DXEffect* GetSkinnedMeshShader() { return effectSkinnedMesh_; }
-		ID3DXEffect* GetRender3DShader() { return effectRender3D_; }
+		ID3DXEffect* GetRender2DShader() { return effectRender2D_; }
 
 		IDirect3DVertexDeclaration9* GetVertexDeclarationTLX() { return declarationTLX_; }
 		IDirect3DVertexDeclaration9* GetVertexDeclarationLX() { return declarationLX_; }
 		IDirect3DVertexDeclaration9* GetVertexDeclarationNX() { return declarationNX_; }
 
 		D3DXMATRIX* GetArrayMatrix() { return arrayMatrix; }
-		D3DXMATRIX* GetIdentityMatrix() { return &matIdentity; }
 	private:
 		ID3DXEffect* effectSkinnedMesh_;
-		ID3DXEffect* effectRender3D_;
+		ID3DXEffect* effectRender2D_;
 
 		IDirect3DVertexDeclaration9* declarationTLX_;
 		IDirect3DVertexDeclaration9* declarationLX_;
 		IDirect3DVertexDeclaration9* declarationNX_;
 
 		D3DXMATRIX arrayMatrix[MAX_MATRIX];
-		D3DXMATRIX matIdentity;
 	};
 }
 

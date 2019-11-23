@@ -20,8 +20,8 @@ bool EApplication::_Initialize() {
 
 	EFpsController* fpsController = EFpsController::CreateInstance();
 
-	std::wstring appName = L"“Œ•û’e–‹•— – ‚Æ‚ ‚é‰J‚Ì’ª¹‘(ƒtƒ@ƒ“ƒQ[ƒ€)";
-	//appName += DNH_VERSION;
+	std::wstring appName = L"“Œ•û•ó“V‹ž@` Treasure Castle Labyrinth";
+	appName += DNH_VERSION;
 
 	DnhConfiguration* config = DnhConfiguration::CreateInstance();
 	std::wstring configWindowTitle = config->GetWindowTitle();

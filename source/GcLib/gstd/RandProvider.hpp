@@ -51,24 +51,25 @@ namespace gstd {
 	};
 	*/
 
+	//Xoroshiro256**
 	class RandProvider {
 	private:
-		uint32_t states_[4];
+		uint64_t states_[4];
 
-		int seed_;
-		uint32_t _GenrandInt32();
+		uint32_t seed_;
+		uint64_t _GenrandInt64();
 
-		inline uint32_t rotl(uint32_t u, int x);
-		inline uint32_t rotr(uint32_t u, int x);
+		inline uint64_t rotl(uint64_t u, size_t x);
+		inline uint64_t rotr(uint64_t u, size_t x);
 	public:
 		RandProvider();
-		RandProvider(unsigned long s);
+		RandProvider(uint32_t s);
 		virtual ~RandProvider() {}
-		void Initialize(unsigned long s);
+		void Initialize(uint32_t s);
 
-		int GetSeed() { return seed_; }
-		long GetInt();
-		long GetInt(long min, long max);
+		uint32_t GetSeed() { return seed_; }
+		int GetInt();
+		int GetInt(int min, int max);
 		int64_t GetInt64();
 		int64_t GetInt64(int64_t min, int64_t max);
 		double GetReal();

@@ -172,10 +172,10 @@ ScriptClientBase::ScriptClientBase() {
 	commonDataManager_ = new ScriptCommonDataManager();
 
 	mt_ = new RandProvider();
-	mt_->Initialize(timeGetTime());
+	mt_->Initialize(timeGetTime() ^ 0xc3c3c3c3);
 
 	mtEffect_ = new RandProvider();
-	mtEffect_->Initialize(timeGetTime() ^ 0xf27ea0218b56c1b5);
+	mtEffect_->Initialize(((timeGetTime() ^ 0xf27ea021) << 11) ^ ((timeGetTime() ^ 0x8b56c1b5) >> 11));
 
 	_AddFunction(commonFunction, sizeof(commonFunction) / sizeof(function));
 }

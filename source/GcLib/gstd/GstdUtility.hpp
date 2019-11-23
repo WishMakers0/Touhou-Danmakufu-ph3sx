@@ -141,8 +141,8 @@ namespace gstd {
 	constexpr double GM_LN10 = 2.30258509299404568402;		//ln(10)
 	class Math {
 	public:
-		static inline constexpr double DegreeToRadian(double angle) { return angle * GM_PI / 180; }
-		static inline constexpr double RadianToDegree(double angle) { return angle * 180 / GM_PI; }
+		static inline constexpr double DegreeToRadian(double angle) { return angle * GM_PI / 180.0; }
+		static inline constexpr double RadianToDegree(double angle) { return angle * 180.0 / GM_PI; }
 
 		static void InitializeFPU();
 

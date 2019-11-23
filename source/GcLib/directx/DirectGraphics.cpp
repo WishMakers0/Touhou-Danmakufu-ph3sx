@@ -47,10 +47,10 @@ DirectGraphics::DirectGraphics() {
 DirectGraphics::~DirectGraphics() {
 	Logger::WriteTop("DirectGraphics: Finalizing.");
 
-	if (pZBuffer_ != nullptr)pZBuffer_->Release();
-	if (pBackSurf_ != nullptr)pBackSurf_->Release();
-	if (pDevice_ != nullptr)pDevice_->Release();
-	if (pDirect3D_ != nullptr)pDirect3D_->Release();
+	if (pZBuffer_ != nullptr) pZBuffer_->Release();
+	if (pBackSurf_ != nullptr) pBackSurf_->Release();
+	if (pDevice_ != nullptr) pDevice_->Release();
+	if (pDirect3D_ != nullptr) pDirect3D_->Release();
 	thisBase_ = nullptr;
 	Logger::WriteTop("DirectGraphics: Finalized.");
 }
@@ -210,17 +210,20 @@ void DirectGraphics::_InitializeDeviceState() {
 	D3DXMATRIX viewMat;
 	D3DXMATRIX persMat;
 	if (camera_ != nullptr) {
+		camera_->SetProjectionMatrix(config_.GetScreenWidth(), config_.GetScreenHeight(), 10.0f, 2000.0f);
 		camera_->UpdateDeviceWorldViewMatrix();
 	}
 	else {
 		D3DVECTOR viewFrom = D3DXVECTOR3(100, 300, -500);
 		D3DXMatrixLookAtLH(&viewMat, (D3DXVECTOR3*)&viewFrom, &D3DXVECTOR3(0, 0, 0), &D3DXVECTOR3(0, 1, 0));
-	}
-	D3DXMatrixPerspectiveFovLH(&persMat, D3DXToRadian(45.0),
-		(float)config_.GetScreenWidth() / (float)config_.GetScreenHeight(), 10, 2000);
 
-	pDevice_->SetTransform(D3DTS_VIEW, &viewMat);
-	pDevice_->SetTransform(D3DTS_PROJECTION, &persMat);
+		D3DXMatrixPerspectiveFovLH(&persMat, D3DXToRadian(45.0),
+			config_.GetScreenWidth() / (float)config_.GetScreenHeight(), 10.0f, 2000.0f);
+
+		viewMat = viewMat * persMat;
+
+		pDevice_->SetTransform(D3DTS_VIEW, &viewMat);
+	}
 
 	SetCullingMode(D3DCULL_NONE);
 	pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
@@ -234,7 +237,6 @@ void DirectGraphics::_InitializeDeviceState() {
 	SetDirectionalLight(dir);
 
 	SetBlendMode(MODE_BLEND_ALPHA);
-
 
 	//αテスト
 	SetAlphaTest(true, 0, D3DCMP_GREATER);
@@ -268,7 +270,11 @@ void DirectGraphics::BeginScene(bool bClear) {
 	if (bClear)
 		ClearRenderTarget();
 	pDevice_->BeginScene();
-	camera_->UpdateDeviceWorldViewMatrix();
+
+	if (camera_->thisViewChanged_) {
+		camera_->UpdateDeviceWorldViewMatrix();
+		camera_->thisViewChanged_ = false;
+	}
 }
 void DirectGraphics::EndScene() {
 	pDevice_->EndScene();
@@ -940,6 +946,7 @@ void DxCamera::Reset() {
 
 	ZeroMemory(&pos_, sizeof(D3DXVECTOR3));
 	ZeroMemory(&camPos_, sizeof(D3DXVECTOR3));
+	ZeroMemory(&laPosLookAt_, sizeof(D3DXVECTOR3));
 
 	yaw_ = 0;
 	pitch_ = 0;
@@ -952,7 +959,14 @@ void DxCamera::Reset() {
 	D3DXMatrixIdentity(&matProjection_);
 	D3DXMatrixIdentity(&matViewProjection_);
 	D3DXMatrixIdentity(&matViewInverse_);
+	D3DXMatrixIdentity(&matViewTranspose_);
 	D3DXMatrixIdentity(&matProjectionInverse_);
+	D3DXMatrixIdentity(&matIdentity_);
+
+	thisViewChanged_ = true;
+	thisProjectionChanged_ = true;
+
+	modeCamera_ = MODE_NORMAL;
 }
 
 D3DXVECTOR3 DxCamera::GetCameraPosition() {
@@ -960,10 +974,6 @@ D3DXVECTOR3 DxCamera::GetCameraPosition() {
 }
 D3DXMATRIX DxCamera::GetMatrixLookAtLH() {
 	D3DXMATRIX res;
-
-	camPos_.x = pos_.x + (float)(radius_ * cos(angleElevation_) * cos(angleAzimuth_));
-	camPos_.y = pos_.y + (float)(radius_ * sin(angleElevation_));
-	camPos_.z = pos_.z + (float)(radius_ * cos(angleElevation_) * sin(angleAzimuth_));
 
 	D3DXVECTOR3 vCameraUp(0, 1, 0);
 	{
@@ -974,26 +984,35 @@ D3DXMATRIX DxCamera::GetMatrixLookAtLH() {
 		D3DXVec3TransformCoord((D3DXVECTOR3*)&vCameraUp, (D3DXVECTOR3*)&vCameraUp, &matRot);
 	}
 
-	D3DXVECTOR3 posTo = pos_;
-	{
-		D3DXMATRIX matTrans1;
-		D3DXMatrixTranslation(&matTrans1, -camPos_.x, -camPos_.y, -camPos_.z);
-		D3DXMATRIX matTrans2;
-		D3DXMatrixTranslation(&matTrans2, camPos_.x, camPos_.y, camPos_.z);
+	if (modeCamera_ == MODE_LOOKAT) {
+		D3DXMatrixLookAtLH(&res, &pos_, &laPosLookAt_, &vCameraUp);
+	}
+	else {
+		camPos_.x = pos_.x + (float)(radius_ * cos(angleElevation_) * cos(angleAzimuth_));
+		camPos_.y = pos_.y + (float)(radius_ * sin(angleElevation_));
+		camPos_.z = pos_.z + (float)(radius_ * cos(angleElevation_) * sin(angleAzimuth_));
 
-		float pitch = pitch_;
+		D3DXVECTOR3 posTo = pos_;
 
-		D3DXQUATERNION qRot(0, 0, 0, 1.0f);
-		D3DXQuaternionRotationYawPitchRoll(&qRot, yaw_, pitch_, 0);
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationQuaternion(&matRot, &qRot);
+		{
+			D3DXMATRIX matTrans1;
+			D3DXMatrixTranslation(&matTrans1, -camPos_.x, -camPos_.y, -camPos_.z);
+			D3DXMATRIX matTrans2;
+			D3DXMatrixTranslation(&matTrans2, camPos_.x, camPos_.y, camPos_.z);
 
-		D3DXMATRIX mat;
-		mat = matTrans1 * matRot * matTrans2;
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&posTo, (D3DXVECTOR3*)&posTo, &mat);
+			D3DXQUATERNION qRot(0, 0, 0, 1.0f);
+			D3DXQuaternionRotationYawPitchRoll(&qRot, yaw_, pitch_, 0);
+			D3DXMATRIX matRot;
+			D3DXMatrixRotationQuaternion(&matRot, &qRot);
+
+			D3DXMATRIX mat;
+			mat = matTrans1 * matRot * matTrans2;
+			D3DXVec3TransformCoord((D3DXVECTOR3*)&posTo, (D3DXVECTOR3*)&posTo, &mat);
+		}
+
+		D3DXMatrixLookAtLH(&res, &camPos_, &posTo, &vCameraUp);
 	}
 
-	D3DXMatrixLookAtLH(&res, &camPos_, &posTo, &vCameraUp);
 	return res;
 }
 void DxCamera::UpdateDeviceWorldViewMatrix() {
@@ -1002,50 +1021,50 @@ void DxCamera::UpdateDeviceWorldViewMatrix() {
 	IDirect3DDevice9* device = graph->GetDevice();
 
 	matView_ = GetMatrixLookAtLH();
-	device->SetTransform(D3DTS_VIEW, &matView_);
-
 	D3DXMatrixInverse(&matViewInverse_, nullptr, &matView_);
 
-	D3DXMATRIX matProj;
-	device->GetTransform(D3DTS_PROJECTION, &matProj);
-	matProj = matView_ * matProj;
-	matViewProjection_ = matProj;
+	{
+		matViewTranspose_._11 = matView_._11;
+		matViewTranspose_._12 = matView_._21;
+		matViewTranspose_._13 = matView_._31;
+		matViewTranspose_._21 = matView_._12;
+		matViewTranspose_._22 = matView_._22;
+		matViewTranspose_._23 = matView_._32;
+		matViewTranspose_._31 = matView_._13;
+		matViewTranspose_._32 = matView_._23;
+		matViewTranspose_._33 = matView_._33;
+		matViewTranspose_._14 = 0.0f;
+		matViewTranspose_._24 = 0.0f;
+		matViewTranspose_._34 = 0.0f;
+		matViewTranspose_._44 = 1.0f;
+	}
+
+	//UpdateDeviceProjectionMatrix();
 }
 void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar) {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (graph == nullptr)return;
 	IDirect3DDevice9* device = graph->GetDevice();
 
-	D3DXMatrixPerspectiveFovLH(&matProjection_, D3DXToRadian(45.0),
-		width / height, posNear, posFar);
-
-	if (clipNear_ < 1)clipNear_ = 1;
-	if (clipFar_ < 1)clipFar_ = 1;
 	clipNear_ = posNear;
 	clipFar_ = posFar;
+	if (clipNear_ < 1)clipNear_ = 1;
+	if (clipFar_ < 1)clipFar_ = 1;
 
+	D3DXMatrixPerspectiveFovLH(&matProjection_, D3DXToRadian(45.0),
+		width / height, clipNear_, clipFar_);
 	D3DXMatrixInverse(&matProjectionInverse_, nullptr, &matProjection_);
 
-	/*
-		ref_count_ptr<DxCamera2D> camera2D = graph->GetCamera2D();
-		D3DXVECTOR2 pos = camera2D->GetLeftTopPosition();
-		double ratio = camera2D->GetRatio();
-		D3DXMATRIX matScale;
-		D3DXMatrixScaling(&matScale, ratio, ratio, 1.0);
-		D3DXMATRIX matTrans;
-		D3DXMatrixTranslation(&matTrans, pos.x / width, pos.y / height, 0);
-
-		persMat = persMat * matScale;
-		persMat = persMat * matTrans;
-	*/
-
-
+	//UpdateDeviceProjectionMatrix();
 }
 void DxCamera::UpdateDeviceProjectionMatrix() {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (graph == nullptr)return;
 	IDirect3DDevice9* device = graph->GetDevice();
-	device->SetTransform(D3DTS_PROJECTION, &matProjection_);
+
+	matViewProjection_ = matView_ * matProjection_;
+	device->SetTransform(D3DTS_VIEW, &matViewProjection_);
+	device->SetTransform(D3DTS_PROJECTION, &matIdentity_);
 }
 D3DXVECTOR2 DxCamera::TransformCoordinateTo2D(D3DXVECTOR3 pos) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -1053,18 +1072,12 @@ D3DXVECTOR2 DxCamera::TransformCoordinateTo2D(D3DXVECTOR3 pos) {
 	int width = graphics->GetConfigData().GetScreenWidth();
 	int height = graphics->GetConfigData().GetScreenHeight();
 
-	D3DXMATRIX matView;
-	device->GetTransform(D3DTS_VIEW, &matView);
-	D3DXMATRIX matPers;
-	device->GetTransform(D3DTS_PROJECTION, &matPers);
-
-	D3DXMATRIX mat = matView * matPers;
-	D3DXVECTOR4 vect(pos, 1.0f);
-	D3DXVec3TransformCoord((D3DXVECTOR3*)&vect, (D3DXVECTOR3*)&vect, &mat);
+	D3DXVECTOR4 vect;
+	D3DXVec3Transform(&vect, &pos, &matViewProjection_);
 
 	if (vect.w > 0) {
-		vect.x = width / 2 + (vect.x / vect.w)*width / 2;
-		vect.y = height / 2 - (vect.y / vect.w)*height / 2; // Ｙ方向は上が正となるため
+		vect.x = width / 2.0f + (vect.x / vect.w) * width / 2.0f;
+		vect.y = height / 2.0f - (vect.y / vect.w) * height / 2.0f; // Ｙ方向は上が正となるため
 	}
 
 	D3DXVECTOR2 res(vect.x, vect.y);
@@ -1081,6 +1094,8 @@ DxCamera2D::DxCamera2D() {
 	ratioY_ = 1.0;
 	angleZ_ = 0;
 	bEnable_ = false;
+
+	posReset_ = nullptr;
 
 	D3DXMatrixIdentity(&matIdentity_);
 }
@@ -1120,14 +1135,14 @@ D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, dou
 	return GetLeftTopPosition(focus, ratioX, ratioY, rcClip);
 }
 D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, double ratioY, RECT rcClip) {
-	int width = rcClip.right - rcClip.left;
-	int height = rcClip.bottom - rcClip.top;
+	LONG width = rcClip.right - rcClip.left;
+	LONG height = rcClip.bottom - rcClip.top;
 
-	int cx = rcClip.left + width / 2; //画面の中心座標x
-	int cy = rcClip.top + height / 2; //画面の中心座標y
+	LONG cx = rcClip.left + width / 2; //画面の中心座標x
+	LONG cy = rcClip.top + height / 2; //画面の中心座標y
 
-	int dx = focus.x - cx; //現フォーカスでの画面左端位置
-	int dy = focus.y - cy; //現フォーカスでの画面上端位置
+	LONG dx = focus.x - cx; //現フォーカスでの画面左端位置
+	LONG dy = focus.y - cy; //現フォーカスでの画面上端位置
 
 	D3DXVECTOR2 res;
 	res.x = cx - dx * ratioX; //現フォーカスでの画面中心の位置(x座標変換量)
@@ -1141,14 +1156,19 @@ D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, dou
 
 void DxCamera2D::UpdateMatrix() {
 	D3DXVECTOR2 pos = GetLeftTopPosition();
+	/*
 	D3DXMATRIX matScale;
 	D3DXMatrixScaling(&matScale, ratioX_, ratioY_, 1.0);
 	D3DXMATRIX matTrans;
 	D3DXMatrixTranslation(&matTrans, pos.x, pos.y, 0);
+	*/
+
+	D3DXMatrixIdentity(&matCamera_);
 
 	D3DXMATRIX matAngleZ;
 	D3DXMatrixIdentity(&matAngleZ);
 	if (angleZ_ != 0) {
+		/*
 		D3DXMATRIX matTransRot1;
 		D3DXMatrixTranslation(&matTransRot1, -GetFocusX() + pos.x, -GetFocusY() + pos.y, 0);
 		D3DXMATRIX matRot;
@@ -1156,13 +1176,28 @@ void DxCamera2D::UpdateMatrix() {
 		D3DXMATRIX matTransRot2;
 		D3DXMatrixTranslation(&matTransRot2, GetFocusX() - pos.x, GetFocusY() - pos.y, 0);
 		matAngleZ = matTransRot1 * matRot * matTransRot2;
+		*/
+
+		float c = cosf(angleZ_);
+		float s = sinf(angleZ_);
+		float x = -GetFocusX() + pos.x;
+		float y = -GetFocusY() + pos.y;
+
+		matAngleZ._11 = c;	matAngleZ._12 = s;
+		matAngleZ._21 = s;	matAngleZ._22 = -c;
+		matAngleZ._41 = c * x + s * y - x;
+		matAngleZ._42 = s * x - c * y - y;
+
+		matCamera_ = matAngleZ;
 	}
 
-	D3DXMATRIX mat;
-	D3DXMatrixIdentity(&mat);
+	/*
 	mat = mat * matScale;
 	mat = mat * matAngleZ;
 	mat = mat * matTrans;
-
-	matCamera_ = mat;
+	*/ 
+	matCamera_._11 *= ratioX_;
+	matCamera_._22 *= ratioY_;
+	matCamera_._41 += pos.x;
+	matCamera_._42 += pos.y;
 }

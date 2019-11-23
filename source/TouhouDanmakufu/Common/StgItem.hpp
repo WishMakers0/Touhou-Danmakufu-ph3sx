@@ -12,6 +12,8 @@ class StgItemRenderer;
 //StgItemManager
 **********************************************************/
 class StgItemManager {
+	friend class StgItemRenderer;
+
 	StgStageController* stageController_;
 
 	SpriteList2D* listSpriteItem_;
@@ -27,6 +29,9 @@ class StgItemManager {
 
 	IDirect3DVertexBuffer9* vertexBuffer_;
 	size_t vertexBufferSize_;
+
+	ID3DXEffect* effectLayer_;
+	D3DXHANDLE handleEffectWorld_;
 public:
 	StgItemManager(StgStageController* stageController);
 	virtual ~StgItemManager();
@@ -185,7 +190,7 @@ public:
 	StgItemObject(StgStageController* stageController);
 	virtual void Work();
 	virtual void Render() {}//一括で描画するためオブジェクト管理での描画はしない
-	virtual void RenderOnItemManager(D3DXMATRIX& mat);
+	virtual void RenderOnItemManager();
 	virtual void SetRenderState() {}
 	virtual void Activate() {}
 
@@ -263,7 +268,7 @@ class StgItemObject_User : public StgItemObject {
 public:
 	StgItemObject_User(StgStageController* stageController);
 	virtual void Work();
-	virtual void RenderOnItemManager(D3DXMATRIX& mat);
+	virtual void RenderOnItemManager();
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
 
 	void SetImageID(int id);
