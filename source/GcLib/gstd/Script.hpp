@@ -41,53 +41,53 @@ namespace gstd {
 	class script_engine;
 	class script_machine;
 
-	typedef value(*callback) (script_machine * machine, int argc, value const * argv);
+	typedef value (*callback)(script_machine* machine, int argc, value const* argv);
 
 	struct function {
-		char const * name;
+		const char* name;
 		callback func;
-		unsigned arguments;
+		size_t arguments;
 	};
 
 	class script_type_manager {
 	public:
 		script_type_manager();
 
-		type_data * get_real_type() {
+		type_data* get_real_type() {
 			return real_type;
 		}
 
-		type_data * get_char_type() {
+		type_data* get_char_type() {
 			return char_type;
 		}
 
-		type_data * get_boolean_type() {
+		type_data* get_boolean_type() {
 			return boolean_type;
 		}
 
-		type_data * get_string_type() {
+		type_data* get_string_type() {
 			return string_type;
 		}
 
-		type_data * get_array_type(type_data * element);
+		type_data* get_array_type(type_data* element);
 	private:
-		script_type_manager(script_type_manager const &);
-		script_type_manager & operator = (script_type_manager const & source);
+		script_type_manager(const script_type_manager&);
+		script_type_manager& operator=(const script_type_manager& source);
 
-		std::list < type_data > types;	//中身のポインタを使うのでアドレスが変わらないようにlist
-		type_data * real_type;
-		type_data * char_type;
-		type_data * boolean_type;
-		type_data * string_type;
+		std::list<type_data> types;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		type_data* real_type;
+		type_data* char_type;
+		type_data* boolean_type;
+		type_data* string_type;
 	};
 
 	class script_engine {
 	public:
-		script_engine(script_type_manager * a_type_manager, std::string const & source, int funcc, function const * funcv);
-		script_engine(script_type_manager * a_type_manager, std::vector<char> const & source, int funcc, function const * funcv);
+		script_engine(script_type_manager* a_type_manager, const std::string& source, int funcc, function const* funcv);
+		script_engine(script_type_manager* a_type_manager, const std::vector<char>& source, int funcc, function const* funcv);
 		virtual ~script_engine();
 
-		void * data;	//クライアント用空間
+		void* data;	//クライアント用空間
 
 		bool get_error() {
 			return error;
@@ -101,28 +101,28 @@ namespace gstd {
 			return error_line;
 		}
 
-		script_type_manager * get_type_manager() {
+		script_type_manager* get_type_manager() {
 			return type_manager;
 		}
 
 		//compatibility
-		type_data * get_real_type() {
+		type_data* get_real_type() {
 			return type_manager->get_real_type();
 		}
 
-		type_data * get_char_type() {
+		type_data* get_char_type() {
 			return type_manager->get_char_type();
 		}
 
-		type_data * get_boolean_type() {
+		type_data* get_boolean_type() {
 			return type_manager->get_boolean_type();
 		}
 
-		type_data * get_array_type(type_data * element) {
+		type_data* get_array_type(type_data* element) {
 			return type_manager->get_array_type(element);
 		}
 
-		type_data * get_string_type() {
+		type_data* get_string_type() {
 			return type_manager->get_string_type();
 		}
 
@@ -131,8 +131,8 @@ namespace gstd {
 #endif
 
 		//コピー、代入演算子の自動生成を無効に
-		script_engine(script_engine const & source);
-		script_engine & operator = (script_engine const & source);
+		script_engine(const script_engine& source);
+		script_engine& operator=(const script_engine& source);
 
 		//エラー
 		bool error;
@@ -140,7 +140,7 @@ namespace gstd {
 		int error_line;
 
 		//型
-		script_type_manager * type_manager;
+		script_type_manager* type_manager;
 
 		//中間コード
 		enum command_kind {
@@ -161,11 +161,11 @@ namespace gstd {
 			union {
 				struct {
 					int level;	//assign/push_variableの変数の環境位置
-					unsigned variable;	//assign/push_variableの変数のインデックス
+					size_t variable;	//assign/push_variableの変数のインデックス
 				};
 				struct {
-					block * sub;	//call/call_and_push_resultの飛び先
-					unsigned arguments;	//call/call_and_push_resultの引数の数
+					block* sub;	//call/call_and_push_resultの飛び先
+					size_t arguments;	//call/call_and_push_resultの引数の数
 				};
 				struct {
 					int ip;	//loop_backの戻り先
@@ -176,9 +176,9 @@ namespace gstd {
 
 			code(int the_line, command_kind the_command) : line(the_line), command(the_command) {}
 
-			code(int the_line, command_kind the_command, int the_level, unsigned the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
+			code(int the_line, command_kind the_command, int the_level, size_t the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
 
-			code(int the_line, command_kind the_command, block * the_sub, int the_arguments) : line(the_line), command(the_command), sub(the_sub),
+			code(int the_line, command_kind the_command, block * the_sub, size_t the_arguments) : line(the_line), command(the_command), sub(the_sub),
 				arguments(the_arguments) {}
 
 			code(int the_line, command_kind the_command, int the_ip) : line(the_line), command(the_command), ip(the_ip) {}
@@ -192,7 +192,7 @@ namespace gstd {
 
 		friend struct block;
 
-		typedef lightweight_vector < code > codes_t;
+		typedef lightweight_vector<code> codes_t;
 
 		struct block {
 			int level;
@@ -203,16 +203,16 @@ namespace gstd {
 			block_kind kind;
 
 			block(int the_level, block_kind the_kind) :
-				level(the_level), arguments(0), name(), func(NULL), codes(), kind(the_kind) {}
+				level(the_level), arguments(0), name(), func(nullptr), codes(), kind(the_kind) {}
 		};
 
-		std::list < block > blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
-		block * main_block;
-		std::map < std::string, block * > events;
+		std::list<block> blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		block* main_block;
+		std::map<std::string, block*> events;
 
-		block * new_block(int level, block_kind kind) {
+		block* new_block(int level, block_kind kind) {
 			block x(level, kind);
-			return &* blocks.insert(blocks.end(), x);
+			return &*blocks.insert(blocks.end(), x);
 		}
 
 		friend class parser;
@@ -221,10 +221,10 @@ namespace gstd {
 
 	class script_machine {
 	public:
-		script_machine(script_engine * the_engine);
+		script_machine(script_engine* the_engine);
 		virtual ~script_machine();
 
-		void * data;	//クライアント用空間
+		void* data;	//クライアント用空間
 
 		void run();
 		void call(std::string event_name);
@@ -247,7 +247,7 @@ namespace gstd {
 			return error;
 		}
 
-		std::wstring & get_error_message() {
+		std::wstring& get_error_message() {
 			return error_message;
 		}
 
@@ -255,19 +255,19 @@ namespace gstd {
 			return error_line;
 		}
 
-		void raise_error(std::wstring const & message) {
+		void raise_error(const std::wstring& message) {
 			error = true;
 			error_message = message;
 			finished = true;
 		}
-		void terminate(std::wstring const & message) {
+		void terminate(const std::wstring& message) {
 			bTerminate = true;
 			error = true;
 			error_message = message;
 			finished = true;
 		}
 
-		script_engine * get_engine() {
+		script_engine* get_engine() {
 			return engine;
 		}
 
@@ -277,10 +277,10 @@ namespace gstd {
 
 	private:
 		script_machine();
-		script_machine(script_machine const & source);
-		script_machine & operator = (script_machine const & source);
+		script_machine(const script_machine& source);
+		script_machine& operator=(const script_machine& source);
 
-		script_engine * engine;
+		script_engine* engine;
 
 		bool error;
 		std::wstring error_message;
@@ -288,28 +288,29 @@ namespace gstd {
 
 		bool bTerminate;
 
-		typedef lightweight_vector < value > variables_t;
-		typedef lightweight_vector < value > stack_t;
+		typedef lightweight_vector<value> variables_t;
+		typedef lightweight_vector<value> stack_t;
 
 		struct environment {
-			environment * pred, *succ;	//双方向リンクリスト
-			environment * parent;
+			environment* pred;	//双方向リンクリスト
+			environment* succ;
+			environment* parent;
 			int ref_count;
 			script_engine::block * sub;
-			unsigned ip;
+			size_t ip;
 			variables_t variables;
 			stack_t stack;
 			bool has_result;
 			int waitCount;
 		};
 
-		std::list<environment *> call_start_parent_environment_list;
-		environment * first_using_environment;
-		environment * last_using_environment;
-		environment * first_garbage_environment;
-		environment * last_garbage_environment;
-		environment * new_environment(environment * parent, script_engine::block * b);
-		void dispose_environment(environment * object);
+		std::list<environment*> call_start_parent_environment_list;
+		environment* first_using_environment;
+		environment* last_using_environment;
+		environment* first_garbage_environment;
+		environment* last_garbage_environment;
+		environment* new_environment(environment* parent, script_engine::block* b);
+		void dispose_environment(environment* object);
 
 		typedef std::list<environment*> threads_t;
 
@@ -335,65 +336,65 @@ namespace gstd {
 	template<int num>
 	class constant {
 	public:
-		static value func(script_machine * machine, int argc, value const * argv) {
+		static value func(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), (double)num);
 		}
 	};
 
 	class mconstant {
 	public:
-		static value funcPi(script_machine * machine, int argc, value const * argv) {
+		static value funcPi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI);
 		}
-		static value funcPiX2(script_machine * machine, int argc, value const * argv) {
+		static value funcPiX2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_X2);
 		}
-		static value funcPiX4(script_machine * machine, int argc, value const * argv) {
+		static value funcPiX4(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_X4);
 		}
-		static value funcPi2(script_machine * machine, int argc, value const * argv) {
+		static value funcPi2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_2);
 		}
-		static value funcPi4(script_machine * machine, int argc, value const * argv) {
+		static value funcPi4(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_4);
 		}
-		static value func1Pi(script_machine * machine, int argc, value const * argv) {
+		static value func1Pi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_1_PI);
 		}
-		static value func2Pi(script_machine * machine, int argc, value const * argv) {
+		static value func2Pi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_2_PI);
 		}
-		static value funcSqrtPi(script_machine * machine, int argc, value const * argv) {
+		static value funcSqrtPi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRTP);
 		}
-		static value func1SqrtPi(script_machine * machine, int argc, value const * argv) {
+		static value func1SqrtPi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_1_SQRTP);
 		}
-		static value func2SqrtPi(script_machine * machine, int argc, value const * argv) {
+		static value func2SqrtPi(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_2_SQRTP);
 		}
-		static value funcSqrt2(script_machine * machine, int argc, value const * argv) {
+		static value funcSqrt2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2);
 		}
-		static value funcSqrt2_2(script_machine * machine, int argc, value const * argv) {
+		static value funcSqrt2_2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2_2);
 		}
-		static value funcSqrt2_X2(script_machine * machine, int argc, value const * argv) {
+		static value funcSqrt2_X2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2_X2);
 		}
-		static value funcEuler(script_machine * machine, int argc, value const * argv) {
+		static value funcEuler(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_E);
 		}
-		static value funcLog2Euler(script_machine * machine, int argc, value const * argv) {
+		static value funcLog2Euler(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LOG2E);
 		}
-		static value funcLog10Euler(script_machine * machine, int argc, value const * argv) {
+		static value funcLog10Euler(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LOG10E);
 		}
-		static value funcLn2(script_machine * machine, int argc, value const * argv) {
+		static value funcLn2(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LN2);
 		}
-		static value funcLn10(script_machine * machine, int argc, value const * argv) {
+		static value funcLn10(script_machine* machine, int argc, const value* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LN10);
 		}
 	};
