@@ -1637,7 +1637,7 @@ gstd::value DxScript::Func_MatrixInverse(gstd::script_machine* machine, int argc
 
 	D3DXMATRIX mat;
 	for (size_t i = 0; i < 16; ++i) {
-		mat.x[i] = arg0.index_as_array(i).as_real();
+		*((float*)&mat._11 + i) = arg0.index_as_array(i).as_real();
 	}
 	D3DXMatrixInverse(&mat, nullptr, &mat);
 
@@ -1658,7 +1658,7 @@ gstd::value DxScript::Func_MatrixAdd(gstd::script_machine* machine, int argc, co
 	for (size_t i = 0; i < 16; ++i) {
 		const value& v0 = arg0.index_as_array(i);
 		const value& v1 = arg1.index_as_array(i);
-		mat.x[i] = v0.as_real() + v1.as_real();
+		*((float*)&mat._11 + i) = v0.as_real() + v1.as_real();
 	}
 
 	std::vector<float> matVec;
@@ -1678,7 +1678,7 @@ gstd::value DxScript::Func_MatrixSubtract(gstd::script_machine* machine, int arg
 	for (size_t i = 0; i < 16; ++i) {
 		const value& v0 = arg0.index_as_array(i);
 		const value& v1 = arg1.index_as_array(i);
-		mat.x[i] = v0.as_real() - v1.as_real();
+		*((float*)&mat._11 + i) = v0.as_real() - v1.as_real();
 	}
 
 	std::vector<float> matVec;
@@ -1698,7 +1698,7 @@ gstd::value DxScript::Func_MatrixMultiply(gstd::script_machine* machine, int arg
 	for (size_t i = 0; i < 16; ++i) {
 		const value& v0 = arg0.index_as_array(i);
 		const value& v1 = arg1.index_as_array(i);
-		mat.x[i] = v0.as_real() * v1.as_real();
+		*((float*)&mat._11 + i) = v0.as_real() * v1.as_real();
 	}
 
 	std::vector<float> matVec;
@@ -1718,7 +1718,7 @@ gstd::value DxScript::Func_MatrixDivide(gstd::script_machine* machine, int argc,
 	for (size_t i = 0; i < 16; ++i) {
 		const value& v0 = arg0.index_as_array(i);
 		const value& v1 = arg1.index_as_array(i);
-		mat.x[i] = v0.as_real() / v1.as_real();
+		*((float*)&mat._11 + i) = v0.as_real() / v1.as_real();
 	}
 
 	std::vector<float> matVec;
@@ -1734,7 +1734,7 @@ gstd::value DxScript::Func_MatrixTranspose(gstd::script_machine* machine, int ar
 
 	D3DXMATRIX mat;
 	for (size_t i = 0; i < 16; ++i) {
-		mat.x[i] = arg0.index_as_array(i).as_real();
+		*((float*)&mat._11 + i) = arg0.index_as_array(i).as_real();
 	}
 	D3DXMatrixTranspose(&mat, &mat);
 
@@ -1751,7 +1751,7 @@ gstd::value DxScript::Func_MatrixDeterminant(gstd::script_machine* machine, int 
 
 	D3DXMATRIX mat;
 	for (size_t i = 0; i < 16; ++i) {
-		mat.x[i] = arg0.index_as_array(i).as_real();
+		*((float*)&mat._11 + i) = arg0.index_as_array(i).as_real();
 	}
 
 	double det = D3DXMatrixDeterminant(&mat);
@@ -3332,7 +3332,7 @@ gstd::value DxScript::Func_ObjShader_SetMatrix(gstd::script_machine* machine, in
 	if (shader == NULL)return value();
 
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
-	gstd::value sMatrix = argv[2];
+	const gstd::value& sMatrix = argv[2];
 	type_data::type_kind kind = sMatrix.get_type()->get_kind();
 	if (kind != type_data::tk_array)return value();
 	int arrayLength = sMatrix.length_as_array();
@@ -3342,7 +3342,7 @@ gstd::value DxScript::Func_ObjShader_SetMatrix(gstd::script_machine* machine, in
 	for (int iRow = 0; iRow < 4; iRow++) {
 		for (int iCol = 0; iCol < 4; iCol++) {
 			int index = iRow * 4 + iCol;
-			value& arrayValue = sMatrix.index_as_array(index);
+			const value& arrayValue = sMatrix.index_as_array(index);
 			double fValue = arrayValue.as_real();
 			matrix.m[iRow][iCol] = fValue;
 		}
@@ -3370,7 +3370,7 @@ gstd::value DxScript::Func_ObjShader_SetMatrixArray(gstd::script_machine* machin
 	int dataLength = array.length_as_array();
 	std::vector<D3DXMATRIX> listMatrix;
 	for (int iArray = 0; iArray < dataLength; ++iArray) {
-		value& sMatrix = array.index_as_array(iArray);
+		const value& sMatrix = array.index_as_array(iArray);
 		type_data::type_kind kind = sMatrix.get_type()->get_kind();
 		if (kind != type_data::tk_array)return value();
 		int arrayLength = sMatrix.length_as_array();
@@ -3380,7 +3380,7 @@ gstd::value DxScript::Func_ObjShader_SetMatrixArray(gstd::script_machine* machin
 		for (int iRow = 0; iRow < 4; ++iRow) {
 			for (int iCol = 0; iCol < 4; ++iCol) {
 				int index = iRow * 4 + iCol;
-				value& arrayValue = sMatrix.index_as_array(index);
+				const value& arrayValue = sMatrix.index_as_array(index);
 				double fValue = arrayValue.as_real();
 				matrix.m[iRow][iCol] = fValue;
 			}
@@ -3442,14 +3442,14 @@ gstd::value DxScript::Func_ObjShader_SetFloatArray(gstd::script_machine* machine
 	if (shader == NULL)return value();
 
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
-	gstd::value array = argv[2];
+	const gstd::value& array = argv[2];
 	type_data::type_kind kind = array.get_type()->get_kind();
 	if (kind != type_data::tk_array)return value();
 
 	int dataLength = array.length_as_array();
 	std::vector<float> listFloat;
 	for (int iArray = 0; iArray < dataLength; ++iArray) {
-		value& aValue = array.index_as_array(iArray);
+		const value& aValue = array.index_as_array(iArray);
 		float fValue = (float)aValue.as_real();
 		listFloat.push_back(fValue);
 	}
@@ -4464,7 +4464,7 @@ gstd::value DxScript::Func_ObjFileT_GetLineText(gstd::script_machine* machine, i
 
 	int pos = (int)argv[1].as_real();
 	std::string line = obj->GetLine(pos);
-	std::wstring res = to_wide(line);
+	std::wstring res = StringUtility::ConvertMultiToWide(line);
 	return value(machine->get_engine()->get_string_type(), res);
 }
 gstd::value DxScript::Func_ObjFileT_SplitLineText(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -4474,7 +4474,7 @@ gstd::value DxScript::Func_ObjFileT_SplitLineText(gstd::script_machine* machine,
 	if (obj == NULL)return value(machine->get_engine()->get_string_type(), std::wstring());
 
 	int pos = (int)argv[1].as_real();
-	std::string delim = to_mbcs(argv[2].as_string());
+	std::string delim = StringUtility::ConvertWideToMulti(argv[2].as_string());
 	std::string line = obj->GetLine(pos);
 	std::vector<std::string> list = StringUtility::Split(line, delim);
 
@@ -4487,7 +4487,7 @@ gstd::value DxScript::Func_ObjFileT_AddLine(gstd::script_machine* machine, int a
 	DxTextFileObject* obj = dynamic_cast<DxTextFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
 
-	std::string str = to_mbcs(argv[1].as_string());
+	std::string str = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	obj->AddLine(str);
 	return value();
 }
@@ -4679,7 +4679,7 @@ gstd::value DxScript::Func_ObjFileB_ReadString(gstd::script_machine* machine, in
 			std::wstring wstr = StringUtility::ConvertMultiToWide(str, code);
 			str = StringUtility::ConvertWideToMulti(wstr, CP_ACP);
 		}
-		res = to_wide(str);
+		res = StringUtility::ConvertMultiToWide(str);
 	}
 	else if (code == CODE_UTF16LE || code == CODE_UTF16BE) {
 		int strSize = readSize / 2 * 2;
@@ -4697,7 +4697,7 @@ gstd::value DxScript::Func_ObjFileB_ReadString(gstd::script_machine* machine, in
 		memcpy(&res[0], data->GetPointer(), readSize);
 
 		std::string str = StringUtility::ConvertWideToMulti(res);
-		res = to_wide(str);
+		res = StringUtility::ConvertMultiToWide(str);
 	}
 
 	return value(machine->get_engine()->get_string_type(), res);

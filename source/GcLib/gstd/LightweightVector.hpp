@@ -333,9 +333,9 @@ namespace gstd {
 	}
 	template<typename T> void lightweight_vector<T>::pop_back() {
 		if (length > 0) --length;
-		//T temp;
-		//at[length] = temp;
-		memset(&at[length], 0x00, sizeof(T));
+		T temp;
+		at[length] = temp;
+		//memset(&at[length], 0x00, sizeof(T));
 	}
 
 	template<typename T> void lightweight_vector<T>::clear() {

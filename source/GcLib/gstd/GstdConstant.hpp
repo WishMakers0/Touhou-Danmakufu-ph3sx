@@ -28,15 +28,18 @@
 #pragma comment (lib, "psapi.lib")
 
 //pragma
-#pragma warning (disable:4786)//STL Warning抑止
-#pragma warning (disable:4018)//signed と unsigned の数値を比較
-#pragma warning (disable:4244)//double' から 'float' に変換
-#pragma warning (disable:4503)//
+#pragma warning (disable:4786) //STL Warning抑止
+#pragma warning (disable:4018) //signed と unsigned の数値を比較
+#pragma warning (disable:4244) //'...': conversion from x to y, possible loss of data.
+#pragma warning (disable:4503) //
 
-#pragma warning (disable:4302)// 切り詰めます。
-#pragma warning (disable:4305)// 'double' から 'FLOAT' へ切り詰めます。
-#pragma warning (disable:4819)//ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
-#pragma warning (disable:4996)//This function or variable may be unsafe. 
+#pragma warning (disable:4302) // 切り詰めます。
+#pragma warning (disable:4305) //'...': truncation from 'double' to 'FLOAT'.
+#pragma warning (disable:4819) //ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
+#pragma warning (disable:4996) //This function or variable may be unsafe. 
+
+#pragma warning (disable:26495) //Variable x is uninitialized. Always initialize a member variable.
+#pragma warning (disable:26812) //The enum type x is unscoped. Prefer 'enum class' over 'enum'.
 
 
 //define

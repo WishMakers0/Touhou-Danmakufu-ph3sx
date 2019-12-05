@@ -32,28 +32,6 @@ namespace std {
 
 using namespace gstd;
 
-std::string gstd::to_mbcs(std::wstring const & s) {
-	std::string result = StringUtility::ConvertWideToMulti(s);
-	//int len = std::wcstombs(NULL, s.c_str(), s.size());
-	//if(len < 0)
-	//	return "(BAD-DATA)";
-	//char * buffer = new char[len + 1];
-	//std::wcstombs(buffer, s.c_str(), len);
-	//std::string result(buffer, len);
-	//delete[] buffer;
-	return result;
-}
-
-std::wstring gstd::to_wide(std::string const & s) {
-	std::wstring result = StringUtility::ConvertMultiToWide(s);
-	//int len = std::mbstowcs(NULL, s.c_str(), s.size());
-	//wchar_t * buffer = new wchar_t[len + 1];
-	//std::mbstowcs(buffer, s.c_str(), len);
-	//std::wstring result(buffer, len);
-	//delete[] buffer;
-	return result;
-}
-
 double fmodl2(double i, double j) {
 	if (j < 0) {
 		//return (i < 0) ? -(-i % -j) : (i % -j) + j;
@@ -63,171 +41,6 @@ double fmodl2(double i, double j) {
 		//return (i < 0) ? -(-i % j) + j : i % j;
 		return (i < 0) ? -fmodl(-i, j) + j : fmodl(i, j);
 	}
-}
-
-
-/* value */
-
-value::value(type_data * t, std::wstring v) {
-	data = new body();
-	data->ref_count = 1;
-	data->type = t;
-	for (unsigned i = 0; i < v.size(); ++i)
-		data->array_value.push_back(value(t->get_element(), v[i]));
-}
-
-void value::append(type_data * t, value const & x) {
-	unique();
-	data->type = t;
-	data->array_value.push_back(x);
-}
-
-void value::concatenate(value const & x) {
-	unique();
-	unsigned l = data->array_value.length;
-	unsigned r = x.data->array_value.length;
-	unsigned t = l + r;
-	if (l == 0)
-		data->type = x.data->type;
-	while (data->array_value.capacity < t)
-		data->array_value.expand();
-	for (unsigned i = 0; i < r; ++i)
-		data->array_value[l + i] = x.data->array_value.at[i];
-	data->array_value.length = t;
-}
-
-double value::as_real() const {
-	if (data == NULL)
-		return 0.0L;
-	switch (data->type->get_kind()) {
-	case type_data::tk_real:
-		return data->real_value;
-	case type_data::tk_char:
-		return static_cast <float> (data->char_value);
-	case type_data::tk_boolean:
-		return (data->boolean_value) ? 1.0L : 0.0L;
-	case type_data::tk_array:
-		if (data->type->get_element()->get_kind() == type_data::tk_char)
-			return std::atof(to_mbcs(as_string()).c_str());
-		else
-			return 0.0L;
-	default:
-		assert(false);
-		return 0.0L;
-	}
-}
-
-wchar_t value::as_char() const {
-	if (data == NULL)
-		return 0.0L;
-	switch (data->type->get_kind()) {
-	case type_data::tk_real:
-		return data->real_value;
-	case type_data::tk_char:
-		return data->char_value;
-	case type_data::tk_boolean:
-		return (data->boolean_value) ? L'1' : L'0';
-	case type_data::tk_array:
-		return L'\0';
-	default:
-		assert(false);
-		return L'\0';
-	}
-}
-
-bool value::as_boolean() const {
-	if (data == NULL)
-		return false;
-	switch (data->type->get_kind()) {
-	case type_data::tk_real:
-		return data->real_value != 0.0L;
-	case type_data::tk_char:
-		return data->char_value != L'\0';
-	case type_data::tk_boolean:
-		return data->boolean_value;
-	case type_data::tk_array:
-		return data->array_value.size() != 0;
-	default:
-		assert(false);
-		return false;
-	}
-}
-
-std::wstring value::as_string() const {
-	if (data == NULL)
-		return L"(VOID)";
-	switch (data->type->get_kind()) {
-	case type_data::tk_real:
-	{
-		wchar_t buffer[128];
-		std::swprintf(buffer, L"%Lf", data->real_value);
-		return std::wstring(buffer);
-	}
-	case type_data::tk_char:
-	{
-		std::wstring result;
-		result += data->char_value;
-		return result;
-	}
-	case type_data::tk_boolean:
-		return (data->boolean_value) ? L"true" : L"false";
-	case type_data::tk_array:
-	{
-		if (data->type->get_element()->get_kind() == type_data::tk_char) {
-			std::wstring result;
-			for (unsigned i = 0; i < data->array_value.size(); ++i)
-				result += data->array_value[i].as_char();
-			return result;
-		}
-		else {
-			std::wstring result = L"[";
-			for (unsigned i = 0; i < data->array_value.size(); ++i) {
-				result += data->array_value[i].as_string();
-				if (i != data->array_value.size() - 1)
-					result += L",";
-			}
-			result += L"]";
-			return result;
-		}
-	}
-	default:
-		assert(false);
-		return L"(INTERNAL-ERROR)";
-	}
-}
-
-unsigned value::length_as_array() const {
-	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
-	return data->array_value.size();
-}
-
-value const & value::index_as_array(unsigned i) const {
-	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
-	assert(i < data->array_value.length);
-	return data->array_value[i];
-}
-
-value & value::index_as_array(unsigned i) {
-	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
-	assert(i < data->array_value.length);
-	return data->array_value[i];
-}
-
-type_data * value::get_type() const {
-	assert(data != NULL);
-	return data->type;
-}
-
-void value::overwrite(value const & source) {
-	assert(data != NULL);
-	if (data == source.data)return;
-
-	release();
-	*data = *source.data;
-	data->ref_count = 2;
-
-	//	* data = * source.data;
-	//	++(data->ref_count);
 }
 
 //--------------------------------------
@@ -611,7 +424,7 @@ void scanner::advance() {
 				ch = next_char();
 			}
 			ch = next_char();
-			string_value = to_wide(s);
+			string_value = StringUtility::ConvertMultiToWide(s);
 		}
 
 		if (q == L'\'') {
@@ -756,20 +569,6 @@ void scanner::advance() {
 value add(script_machine * machine, int argc, value const * argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
-		/*
-		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"Variable type mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"Array length mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		*/
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 #pragma push_macro("min")
@@ -779,7 +578,7 @@ value add(script_machine * machine, int argc, value const * argv) {
 #pragma pop_macro("min")
 
 		value result;
-		for (unsigned i = 0; i < countOp; ++i) {
+		for (size_t i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -795,21 +594,6 @@ value add(script_machine * machine, int argc, value const * argv) {
 value subtract(script_machine * machine, int argc, value const * argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
-		/*
-		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"Variable type mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"Array length mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		*/
-
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 #pragma push_macro("min")
@@ -819,7 +603,7 @@ value subtract(script_machine * machine, int argc, value const * argv) {
 #pragma pop_macro("min")
 
 		value result;
-		for (unsigned i = 0; i < countOp; ++i) {
+		for (size_t i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -838,21 +622,6 @@ value subtract(script_machine * machine, int argc, value const * argv) {
 value multiply(script_machine * machine, int argc, value const * argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
-		/*
-		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"Variable type mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"Array length mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		*/
-
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 #pragma push_macro("min")
@@ -862,7 +631,7 @@ value multiply(script_machine * machine, int argc, value const * argv) {
 #pragma pop_macro("min")
 
 		value result;
-		for (unsigned i = 0; i < countOp; ++i) {
+		for (size_t i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -881,21 +650,6 @@ value multiply(script_machine * machine, int argc, value const * argv) {
 value divide(script_machine * machine, int argc, value const * argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
-		/*
-		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"Variable type mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"Array length mismatch.\r\n";
-			machine->raise_error(error);
-			return value();
-		}
-		*/
-
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 #pragma push_macro("min")
@@ -905,7 +659,7 @@ value divide(script_machine * machine, int argc, value const * argv) {
 #pragma pop_macro("min")
 
 		value result;
-		for (unsigned i = 0; i < countOp; ++i) {
+		for (size_t i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);

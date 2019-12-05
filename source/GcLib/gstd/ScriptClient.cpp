@@ -756,7 +756,7 @@ value ScriptClientBase::CreateBooleanValue(bool b) {
 	return res;
 }
 value ScriptClientBase::CreateStringValue(std::string s) {
-	std::wstring wstr = to_wide(s);
+	std::wstring wstr = StringUtility::ConvertMultiToWide(s);
 	value res(GetEngine()->GetEngine()->get_type_manager()->get_string_type(), wstr);
 	return res;
 }
@@ -1142,7 +1142,7 @@ value ScriptClientBase::Func_RtoA(script_machine* machine, int argc, const value
 }
 value ScriptClientBase::Func_RtoS(script_machine* machine, int argc, const value* argv) {
 	std::string res = "";
-	std::string fmtV = to_mbcs(argv[0].as_string());
+	std::string fmtV = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	double num = argv[1].as_real();
 
 	try {
@@ -1188,11 +1188,11 @@ value ScriptClientBase::Func_RtoS(script_machine* machine, int argc, const value
 		res = "error format";
 	}
 
-	return value(machine->get_engine()->get_string_type(), to_wide(res));
+	return value(machine->get_engine()->get_string_type(), StringUtility::ConvertMultiToWide(res));
 }
 value ScriptClientBase::Func_VtoS(script_machine* machine, int argc, const value* argv) {
 	std::string res = "";
-	std::string fmtV = to_mbcs(argv[0].as_string());
+	std::string fmtV = StringUtility::ConvertWideToMulti(argv[0].as_string());
 
 	try {
 		int countIS = 0;
@@ -1220,13 +1220,13 @@ value ScriptClientBase::Func_VtoS(script_machine* machine, int argc, const value
 		else if (strstr(fmt, "f") != NULL)
 			res = StringUtility::Format(fmt, argv[1].as_real());
 		else if (strstr(fmt, "s") != NULL)
-			res = StringUtility::Format(fmt, to_mbcs(argv[1].as_string()).c_str());
+			res = StringUtility::Format(fmt, StringUtility::ConvertWideToMulti(argv[1].as_string()).c_str());
 	}
 	catch (...) {
 		res = "error format";
 	}
 
-	return value(machine->get_engine()->get_string_type(), to_wide(res));
+	return value(machine->get_engine()->get_string_type(), StringUtility::ConvertMultiToWide(res));
 }
 value ScriptClientBase::Func_AtoI(script_machine* machine, int argc, const value* argv) {
 	std::wstring str = argv[0].as_string();
@@ -1329,7 +1329,7 @@ value ScriptClientBase::Func_SetDefaultCommonDataArea(script_machine* machine, i
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string name = to_mbcs(argv[0].as_string());
+	std::string name = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	commonDataManager->SetDefaultAreaName(name);
 
 	return value();
@@ -1339,7 +1339,7 @@ value ScriptClientBase::Func_SetCommonData(script_machine* machine, int argc, co
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	std::string area = commonDataManager->GetDefaultAreaName();
 
-	std::string key = to_mbcs(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	value val = argv[1];
 	if (!commonDataManager->IsExists(area)) return value();
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
@@ -1351,7 +1351,7 @@ value ScriptClientBase::Func_GetCommonData(script_machine* machine, int argc, co
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	std::string area = commonDataManager->GetDefaultAreaName();
 
-	std::string key = to_mbcs(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	value dv = argv[1];
 	if (!commonDataManager->IsExists(area)) return dv;
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
@@ -1373,7 +1373,7 @@ value ScriptClientBase::Func_DeleteCommonData(script_machine* machine, int argc,
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	std::string area = commonDataManager->GetDefaultAreaName();
 
-	std::string key = to_mbcs(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	if (!commonDataManager->IsExists(area))return value();
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
 	data->DeleteValue(key);
@@ -1383,8 +1383,8 @@ value ScriptClientBase::Func_SetAreaCommonData(script_machine* machine, int argc
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
-	std::string key = to_mbcs(argv[1].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	value val = argv[2];
 
 	if (!commonDataManager->IsExists(area))return value();
@@ -1397,8 +1397,8 @@ value ScriptClientBase::Func_GetAreaCommonData(script_machine* machine, int argc
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
-	std::string key = to_mbcs(argv[1].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	value dv = argv[2];
 	if (!commonDataManager->IsExists(area))return dv;
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
@@ -1409,7 +1409,7 @@ value ScriptClientBase::Func_ClearAreaCommonData(script_machine* machine, int ar
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	if (!commonDataManager->IsExists(area))return value();
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
 	data->Clear();
@@ -1419,8 +1419,8 @@ value ScriptClientBase::Func_DeleteAreaCommonData(script_machine* machine, int a
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
-	std::string key = to_mbcs(argv[1].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	if (!commonDataManager->IsExists(area))return value();
 	gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
 	data->DeleteValue(key);
@@ -1430,7 +1430,7 @@ value ScriptClientBase::Func_DeleteAreaCommonDataAll(script_machine* machine, in
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	commonDataManager->Erase(area);
 
 	return value();
@@ -1439,7 +1439,7 @@ value ScriptClientBase::Func_CreateCommonDataArea(script_machine* machine, int a
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	commonDataManager->CreateArea(area);
 
 	return value();
@@ -1448,8 +1448,8 @@ value ScriptClientBase::Func_CopyCommonDataArea(script_machine* machine, int arg
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string areaDest = to_mbcs(argv[0].as_string());
-	std::string areaSrc = to_mbcs(argv[1].as_string());
+	std::string areaDest = StringUtility::ConvertWideToMulti(argv[0].as_string());
+	std::string areaSrc = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	if (commonDataManager->IsExists(areaSrc))
 		commonDataManager->CopyArea(areaDest, areaSrc);
 
@@ -1459,7 +1459,7 @@ value ScriptClientBase::Func_IsCommonDataAreaExists(script_machine* machine, int
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	bool res = commonDataManager->IsExists(area);
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -1476,7 +1476,7 @@ value ScriptClientBase::Func_GetCommonDataValueKeyList(script_machine* machine, 
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
 	std::vector<std::string> listKey;
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	if (commonDataManager->IsExists(area)) {
 		gstd::ref_count_ptr<ScriptCommonData> data = commonDataManager->GetData(area);
 		listKey = data->GetKeyList();
@@ -1732,8 +1732,8 @@ void ScriptCommonData::_WriteRecord(gstd::ByteBuffer &buffer, gstd::value& comVa
 		buffer.WriteInteger(arrayLength);
 
 		for (int iArray = 0; iArray < arrayLength; iArray++) {
-			value& arrayValue = comValue.index_as_array(iArray);
-			_WriteRecord(buffer, arrayValue);
+			const value& arrayValue = comValue.index_as_array(iArray);
+			_WriteRecord(buffer, const_cast<value&>(arrayValue));
 		}
 	}
 }
