@@ -1,15 +1,21 @@
+/*
+
 #include "Value.hpp"
 #include "GstdUtility.hpp"
 
 using namespace gstd;
 
 value::value(type_data* t, std::wstring v) {
-	data = std::make_shared<body>();
+	data = new body();
+	data->ref_count = 1;
 	data->type = t;
 	for (size_t i = 0U; i < v.size(); ++i)
 		data->array_value.push_back(value(t->get_element(), v[i]));
 }
 value& value::operator=(value const& source) {
+	if (source.data != nullptr) {
+		++(source.data->ref_count);
+	}
 	release();
 	data = source.data;
 	return *this;
@@ -40,26 +46,26 @@ void value::concatenate(value const& x) {
 }
 
 //Turns the value into a unique copy.
-void value::unique(bool forceCreate) const {
+void value::unique() const {
 	if (data == nullptr) {
-		data = std::make_shared<body>();
+		data = new body();
+		data->ref_count = 1;
 		data->type = nullptr;
 	}
-	else if (!data.unique() || forceCreate) {
-		data = std::make_shared<body>(*data);
-		//data.reset(data.get());
+	else if (data->ref_count > 1U) {
+		--(data->ref_count);
+		data = new body(*data);
+		data->ref_count = 1;
 	}
 }
 
 void value::overwrite(value const& source) {
-	if (data == source.data) return;
+	assert(data != NULL);
+	if (data == source.data)return;
 
-	//data = source.data;
-	memcpy(&(*data), &(*source.data), sizeof(body));
-	unique(true);
-
-	//	* data = * source.data;
-	//	++(data->ref_count);
+	release();
+	*data = *source.data;
+	data->ref_count = 2;
 }
 
 size_t value::length_as_array() const {
@@ -180,3 +186,4 @@ std::wstring value::as_string() const {
 		return L"(INTERNAL-ERROR)";
 	}
 }
+*/

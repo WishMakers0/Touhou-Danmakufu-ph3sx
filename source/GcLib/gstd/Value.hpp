@@ -1,12 +1,13 @@
 #pragma once
 
+/*
 #include "GstdConstant.hpp"
 #include "LightweightVector.hpp"
 
 namespace gstd {
 	class type_data {
 	public:
-		enum type_kind {
+		enum type_kind : uint8_t {
 			tk_real, tk_char, tk_boolean, tk_array
 		};
 
@@ -31,27 +32,34 @@ namespace gstd {
 		type_data& operator=(type_data const & source);
 	};
 
+	//TODO(?): turn the value class into many value classes for each value types
+	//actual TODO: use std::shared_ptr without breaking
 	class value {
 	public:
 		value() : data(nullptr) {}
 		value(type_data* t, double v) {
-			data = std::make_shared<body>();
+			data = new body();
+			data->ref_count = 1;
 			data->type = t;
 			data->real_value = v;
 		}
 		value(type_data* t, wchar_t v) {
-			data = std::make_shared<body>();
+			data = new body();
+			data->ref_count = 1;
 			data->type = t;
 			data->char_value = v;
 		}
 		value(type_data* t, bool v) {
-			data = std::make_shared<body>();
+			data = new body();
+			data->ref_count = 1;
 			data->type = t;
 			data->boolean_value = v;
 		}
 		value(type_data* t, std::wstring v);
 		value(const value& source) {
 			data = source.data;
+			if (data != nullptr)
+				++(data->ref_count);
 		}
 		~value() {
 			release();
@@ -60,7 +68,7 @@ namespace gstd {
 		value& operator=(value const& source);
 
 		bool has_data() const {
-			return data.get() != nullptr;
+			return data != nullptr;
 		}
 
 		void set(type_data* t, double v);
@@ -78,17 +86,21 @@ namespace gstd {
 		value& index_as_array(size_t i) const;
 		type_data* get_type() const;
 
-		void unique(bool forceCreate = false) const;
+		void unique() const;
 
 		void overwrite(value const& source);
 	private:
 		inline void release() {
-			if (data == nullptr) {
-				data.reset((body*)nullptr);
+			if (data != nullptr) {
+				--(data->ref_count);
+				if (data->ref_count == 0) {
+					delete data;
+				}
 			}
 		}
 
 		struct body {
+			size_t ref_count;
 			std::vector<value> array_value;
 			type_data* type = nullptr;
 
@@ -99,6 +111,7 @@ namespace gstd {
 			};
 		};
 
-		mutable std::shared_ptr<body> data = nullptr;
+		mutable body* data = nullptr;
 	};
 }
+*/

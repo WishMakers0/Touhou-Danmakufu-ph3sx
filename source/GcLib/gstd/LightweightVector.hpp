@@ -2,6 +2,7 @@
 
 //Currently not used, somehow broken.
 
+/*
 #pragma warning (disable:4786)
 #pragma warning (disable:4018)
 #pragma warning (disable:4244)
@@ -9,7 +10,6 @@
 #include <string>
 
 namespace gstd {
-	/*
 	template<typename T> 
 	class lightweight_vector_const_iterator : public std::_Iterator_base {
 	public:
@@ -177,19 +177,12 @@ namespace gstd {
 			return this->_Ptr;
 		}
 	};
-	*/
 
 	template<typename T>
 	class lightweight_vector {
 	public:
 		using pointer = T*;
-		using const_pointer = const T*;
-		/*
-		using iterator = lightweight_vector_iterator<T>;
-		using const_iterator = lightweight_vector_const_iterator<T>;
-		using reverse_iterator = std::reverse_iterator<iterator>;
-		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-		*/
+		using const_pointer = const T*;	
 
 		size_t length;
 		size_t capacity;
@@ -228,7 +221,11 @@ namespace gstd {
 			return at[length - 1];
 		}
 
-		/*
+		using iterator = lightweight_vector_iterator<T>;
+		using const_iterator = lightweight_vector_const_iterator<T>;
+		using reverse_iterator = std::reverse_iterator<iterator>;
+		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
 		iterator begin() {
 			return iterator(at);
 		}
@@ -254,7 +251,6 @@ namespace gstd {
 		const_reverse_iterator crend() {
 			return rend();
 		}
-		*/
 
 		void erase(T* pos);
 		void insert(T* pos, const T& value);
@@ -371,3 +367,4 @@ namespace gstd {
 		++length;
 	}
 }
+*/
