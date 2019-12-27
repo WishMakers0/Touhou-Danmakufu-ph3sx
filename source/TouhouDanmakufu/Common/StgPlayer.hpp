@@ -68,6 +68,9 @@ protected:
 	bool bForbidSpell_;
 	int yAutoItemCollect_;
 
+	bool enableStateEnd_;
+	bool enableShootdownEvent_;
+
 	void _InitializeRebirth();
 	void _Move();
 	void _AddIntersection();
@@ -127,6 +130,9 @@ public:
 	bool IsPermitSpell();
 	void SetForbidSpell(bool bForbid) { bForbidSpell_ = bForbid; }
 	bool IsWaitLastSpell();
+
+	void SetEnableStateEnd(bool bEnable) { enableStateEnd_ = bEnable; }
+	void SetEnableShootdownEvent(bool bEnable) { enableShootdownEvent_ = bEnable; }
 };
 
 

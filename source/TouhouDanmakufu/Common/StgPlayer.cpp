@@ -35,6 +35,9 @@ StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveO
 	bForbidSpell_ = false;
 	yAutoItemCollect_ = -256 * 256;
 
+	enableStateEnd_ = true;
+	enableShootdownEvent_ = true;
+
 	hitObjectID_ = DxScript::ID_INVALID;
 
 	_InitializeRebirth();
@@ -127,14 +130,15 @@ void StgPlayerObject::Work() {
 				}
 				if (!bEnemyLastSpell)
 					infoPlayer_->life_--;
-				scriptManager->RequestEventAll(StgStagePlayerScript::EV_PLAYER_SHOOTDOWN);
+				if (enableShootdownEvent_)
+					scriptManager->RequestEventAll(StgStagePlayerScript::EV_PLAYER_SHOOTDOWN);
 
-				if (infoPlayer_->life_ >= 0) {
+				if (infoPlayer_->life_ >= 0 || !enableStateEnd_) {
 					bVisible_ = false;
 					state_ = STATE_DOWN;
 					frameState_ = frameStateDown_;
 				}
-				else if (!StgSystemController::GetBase()->GetSystemInformation()->IsPackageMode()) {
+				else {
 					state_ = STATE_END;
 				}
 			}

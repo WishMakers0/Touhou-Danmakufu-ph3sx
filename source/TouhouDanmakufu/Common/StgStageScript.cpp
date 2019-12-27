@@ -284,6 +284,8 @@ function const stgFunction[] =
 	{ "GetPlayerScriptID", StgStageScript::Func_GetPlayerScriptID, 0 },
 	{ "SetPlayerItemScope", StgStageScript::Func_SetPlayerItemScope, 1 },
 	{ "GetPlayerItemScope", StgStageScript::Func_GetPlayerItemScope, 0 },
+	{ "SetPlayerStateEndEnable", StgStageScript::Func_SetPlayerStateEndEnable, 1 },
+	{ "SetPlayerShootdownEventEnable", StgStageScript::Func_SetPlayerShootdownEventEnable, 1 },
 
 	//STGã§í ä÷êîÅFìG
 	{ "GetEnemyBossSceneObjectID", StgStageScript::Func_GetEnemyBossSceneObjectID, 0 },
@@ -928,6 +930,28 @@ gstd::value StgStageScript::Func_GetPlayerItemScope(gstd::script_machine* machin
 	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0f);
 	return value(machine->get_engine()->get_real_type(), (double)obj->GetItemIntersectionRadius());
+}
+gstd::value StgStageScript::Func_SetPlayerStateEndEnable(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	if (obj == nullptr)return value();
+
+	bool bEnable = argv[0].as_boolean();
+	obj->SetEnableStateEnd(bEnable);
+
+	return value();
+}
+gstd::value StgStageScript::Func_SetPlayerShootdownEventEnable(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	if (obj == nullptr)return value();
+
+	bool bEnable = argv[0].as_boolean();
+	obj->SetEnableShootdownEvent(bEnable);
+
+	return value();
 }
 gstd::value StgStageScript::Func_GetPlayerX(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgStageScript* script = (StgStageScript*)machine->data;

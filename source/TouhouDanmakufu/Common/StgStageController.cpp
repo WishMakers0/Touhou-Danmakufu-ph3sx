@@ -176,6 +176,9 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		int idPlayer = objectManager->CreatePlayerObject();
 		objPlayer = ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
 
+		if (systemController_->GetSystemInformation()->IsPackageMode())
+			objPlayer->SetEnableStateEnd(false);
+
 		auto script = scriptManager_->LoadScript(pathPlayerScript, StgStageScript::TYPE_PLAYER);
 		_SetupReplayTargetCommonDataArea(script->GetScriptID());
 
