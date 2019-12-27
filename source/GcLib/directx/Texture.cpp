@@ -17,6 +17,8 @@ TextureData::TextureData() {
 	useMipMap_ = false;
 	useNonPowerOfTwo_ = false;
 
+	resourceSize_ = 0U;
+
 	ZeroMemory(&infoImage_, sizeof(D3DXIMAGE_INFO));
 	type_ = TYPE_TEXTURE;
 }
@@ -351,6 +353,36 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 		data->name_ = path;
 		D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
 
+		data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
+		switch (data->infoImage_.Format){
+		case D3DFMT_R5G6B5:
+		case D3DFMT_X1R5G5B5:
+		case D3DFMT_A1R5G5B5:
+		case D3DFMT_A8R3G3B2:
+		case D3DFMT_X4R4G4B4:
+			data->resourceSize_ *= 2U;
+			break;
+		case D3DFMT_R8G8B8:
+			data->resourceSize_ *= 3U;
+			break;
+		case D3DFMT_A8R8G8B8:
+		case D3DFMT_X8R8G8B8:
+		case D3DFMT_A2B10G10R10:
+		case D3DFMT_A8B8G8R8:
+		case D3DFMT_X8B8G8R8:
+		case D3DFMT_G16R16:
+		case D3DFMT_A2R10G10B10:
+			data->resourceSize_ *= 4U;
+			break;
+		case D3DFMT_A16B16G16R16:
+			data->resourceSize_ *= 8U;
+			break;
+		case D3DFMT_R3G3B2:
+		case D3DFMT_A8:
+		default:
+			break;
+		}
+
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Texture loaded. [%s]", path.c_str()));
 	}
 	catch (gstd::wexception& e) {
@@ -413,6 +445,8 @@ bool TextureManager::_CreateRenderTarget(std::wstring name) {
 		data->type_ = TextureData::TYPE_RENDER_TARGET;
 		data->infoImage_.Width = width;
 		data->infoImage_.Height = height;
+
+		data->resourceSize_ = width * height * 4U;
 
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Render target created. [%s]", name.c_str()));
 
@@ -502,6 +536,36 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 						HRESULT hr = D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &info);
 						if (FAILED(hr)) {
 							throw gstd::wexception("D3DXGetImageInfoFromFileInMemory failure.");
+						}
+
+						data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
+						switch (data->infoImage_.Format) {
+						case D3DFMT_R5G6B5:
+						case D3DFMT_X1R5G5B5:
+						case D3DFMT_A1R5G5B5:
+						case D3DFMT_A8R3G3B2:
+						case D3DFMT_X4R4G4B4:
+							data->resourceSize_ *= 2U;
+							break;
+						case D3DFMT_R8G8B8:
+							data->resourceSize_ *= 3U;
+							break;
+						case D3DFMT_A8R8G8B8:
+						case D3DFMT_X8R8G8B8:
+						case D3DFMT_A2B10G10R10:
+						case D3DFMT_A8B8G8R8:
+						case D3DFMT_X8B8G8R8:
+						case D3DFMT_G16R16:
+						case D3DFMT_A2R10G10B10:
+							data->resourceSize_ *= 4U;
+							break;
+						case D3DFMT_A16B16G16R16:
+							data->resourceSize_ *= 8U;
+							break;
+						case D3DFMT_R3G3B2:
+						case D3DFMT_A8:
+						default:
+							break;
 						}
 
 						data->infoImage_ = info;
@@ -662,10 +726,11 @@ bool TextureInfoPanel::_AddedLogger(HWND hTab) {
 
 	wndListView_.AddColumn(64, ROW_ADDRESS, L"Address");
 	wndListView_.AddColumn(96, ROW_NAME, L"Name");
-	wndListView_.AddColumn(48, ROW_FULLNAME, L"FullName");
+	wndListView_.AddColumn(64, ROW_FULLNAME, L"FullName");
 	wndListView_.AddColumn(32, ROW_COUNT_REFFRENCE, L"Ref");
 	wndListView_.AddColumn(48, ROW_WIDTH_IMAGE, L"Width");
 	wndListView_.AddColumn(48, ROW_HEIGHT_IMAGE, L"Height");
+	wndListView_.AddColumn(72, ROW_SIZE, L"Size");
 
 	Start();
 
@@ -715,6 +780,7 @@ void TextureInfoPanel::Update(TextureManager* manager) {
 			wndListView_.SetText(index, ROW_COUNT_REFFRENCE, StringUtility::Format(L"%d", countRef));
 			wndListView_.SetText(index, ROW_WIDTH_IMAGE, StringUtility::Format(L"%d", infoImage->Width));
 			wndListView_.SetText(index, ROW_HEIGHT_IMAGE, StringUtility::Format(L"%d", infoImage->Height));
+			wndListView_.SetText(index, ROW_SIZE, StringUtility::Format(L"%d", data->GetResourceSize()));
 
 			setKey.insert(key);
 		}

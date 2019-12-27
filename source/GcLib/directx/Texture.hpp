@@ -35,11 +35,15 @@ namespace directx {
 
 		IDirect3DSurface9* lpRenderSurface_;//バックバッファ実体(レンダリングターゲット用)
 		IDirect3DSurface9* lpRenderZ_;//バックバッファのZバッファ実体(レンダリングターゲット用)
+
+		size_t resourceSize_;
 	public:
 		TextureData();
 		virtual ~TextureData();
 		std::wstring GetName() { return name_; }
 		D3DXIMAGE_INFO GetImageInfo() { return infoImage_; }
+
+		size_t GetResourceSize() { return resourceSize_; }
 	};
 
 	class Texture : public gstd::FileManager::LoadObject {
@@ -130,6 +134,7 @@ namespace directx {
 			ROW_COUNT_REFFRENCE,
 			ROW_WIDTH_IMAGE,
 			ROW_HEIGHT_IMAGE,
+			ROW_SIZE,
 		};
 		int timeUpdateInterval_;
 		gstd::WListView wndListView_;
