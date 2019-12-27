@@ -110,37 +110,48 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 
 	int countAdapt = pDirect3D_->GetAdapterCount();
 
-	D3DPRESENT_PARAMETERS d3dpp = config_.IsWindowed() ? d3dppWin_ : d3dppFull_;
-	modeScreen_ = config_.IsWindowed() ? SCREENMODE_WINDOW : SCREENMODE_FULLSCREEN;
-	HRESULT hrDevice = -1;
-	if (config_.IsReferenceEnable()) {
-		hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-	}
-	else {
-		D3DCAPS9 caps;
-		pDirect3D_->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps);
-		if (caps.VertexShaderVersion >= D3DVS_VERSION(2, 0)) {
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-			if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_HARDWARE_VERTEXPROCESSING)");
-			if (FAILED(hrDevice)) {
-				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-				if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_SOFTWARE_VERTEXPROCESSING)");
-			}
+	{
+		D3DPRESENT_PARAMETERS d3dpp = config_.IsWindowed() ? d3dppWin_ : d3dppFull_;
+		modeScreen_ = config_.IsWindowed() ? SCREENMODE_WINDOW : SCREENMODE_FULLSCREEN;
+
+		constexpr DWORD modeBase = D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE;
+
+		HRESULT hrDevice = E_FAIL;
+
+		if (config_.IsReferenceEnable()) {
+			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd,
+				D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
 		}
 		else {
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-			if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_SOFTWARE_VERTEXPROCESSING)");
+			D3DCAPS9 caps;
+			pDirect3D_->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps);
+
+			if (caps.VertexShaderVersion >= D3DVS_VERSION(2, 0)) {
+				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
+					D3DCREATE_HARDWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
+				if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_HARDWARE_VERTEXPROCESSING)");
+				if (FAILED(hrDevice)) {
+					hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
+						D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
+					if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_SOFTWARE_VERTEXPROCESSING)");
+				}
+			}
+			else {
+				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
+					D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
+				if (!FAILED(hrDevice))Logger::WriteTop("DirectGraphics: Created device (D3DCREATE_SOFTWARE_VERTEXPROCESSING)");
+			}
+
+			if (FAILED(hrDevice)) {
+				Logger::WriteTop("DirectGraphics: Cannot create device with HAL.");
+				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd,
+					D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
+			}
 		}
 
 		if (FAILED(hrDevice)) {
-			Logger::WriteTop("DirectGraphics: Cannot create device with HAL.");
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
+			throw gstd::wexception("IDirect3DDevice9::CreateDevice failure.");
 		}
-
-	}
-
-	if (FAILED(hrDevice)) {
-		throw gstd::wexception("IDirect3DDevice9::CreateDevice failure.");
 	}
 
 	// BackSurfaceŽæ“¾
@@ -577,12 +588,11 @@ int DirectGraphics::GetScreenHeight() {
 double DirectGraphics::GetScreenWidthRatio() {
 	RECT rect;
 	::GetWindowRect(hAttachedWindow_, &rect);
-	double widthWindow = rect.right - rect.left;
+	double widthWindow = (double)rect.right - (double)rect.left;
 	double widthView = config_.GetScreenWidth();
 
 	DWORD style = ::GetWindowLong(hAttachedWindow_, GWL_STYLE);
-	if (modeScreen_ == SCREENMODE_WINDOW &&
-		(style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
+	if (modeScreen_ == SCREENMODE_WINDOW && (style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
 		widthWindow -= GetSystemMetrics(SM_CXEDGE) + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
 	}
 
@@ -591,12 +601,11 @@ double DirectGraphics::GetScreenWidthRatio() {
 double DirectGraphics::GetScreenHeightRatio() {
 	RECT rect;
 	::GetWindowRect(hAttachedWindow_, &rect);
-	double heightWindow = rect.bottom - rect.top;
+	double heightWindow = (double)rect.bottom - (double)rect.top;
 	double heightView = config_.GetScreenHeight();
 
 	DWORD style = ::GetWindowLong(hAttachedWindow_, GWL_STYLE);
-	if (modeScreen_ == SCREENMODE_WINDOW &&
-		(style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
+	if (modeScreen_ == SCREENMODE_WINDOW && (style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
 		heightWindow -=
 			GetSystemMetrics(SM_CYEDGE) + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
 	}
@@ -817,6 +826,7 @@ LRESULT DirectGraphicsPrimaryWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPAR
 		info->ptMaxSize.y = height;
 		return FALSE;
 	}
+	/*
 	case WM_KEYDOWN:
 	{
 		switch (wParam) {
@@ -826,6 +836,7 @@ LRESULT DirectGraphicsPrimaryWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPAR
 		}
 		return FALSE;
 	}
+	*/
 	case WM_SYSCHAR:
 	{
 		if (wParam == VK_RETURN)
