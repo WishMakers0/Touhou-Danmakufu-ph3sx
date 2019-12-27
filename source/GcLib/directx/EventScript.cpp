@@ -3089,7 +3089,8 @@ void DxScriptForEvent::AddArgumentValue(gstd::ref_count_ptr<EventValue> arg) {
 	else if (type == EventValue::TYPE_BOOLEAN)
 		vArg = value(machine_->get_engine()->get_boolean_type(), arg->GetBoolean());
 	else if (type == EventValue::TYPE_STRING)
-		vArg = value(machine_->get_engine()->get_string_type(), to_wide(arg->GetString()));
+		vArg = value(machine_->get_engine()->get_string_type(), 
+			StringUtility::ConvertMultiToWide(arg->GetString()));
 	ScriptClientBase::AddArgumentValue(vArg);
 }
 void DxScriptForEvent::Read(gstd::RecordBuffer& record) {
@@ -3143,7 +3144,7 @@ gstd::value DxScriptForEvent::Func_GetTarget(gstd::script_machine* machine, int 
 gstd::value DxScriptForEvent::Func_GetEventValue(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScriptForEvent* script = (DxScriptForEvent*)machine->data;
 	std::wstring wName = argv[0].as_string();
-	std::string name = to_mbcs(wName);
+	std::string name = StringUtility::ConvertWideToMulti(wName);
 	gstd::ref_count_ptr<EventValue> eValue = script->engine_->GetEventValue(name);
 	if (eValue == NULL)throw gstd::wexception(StringUtility::Format(L"‘¶Ý‚µ‚È‚¢•Ï”:%s", name.c_str()));
 
@@ -3153,13 +3154,14 @@ gstd::value DxScriptForEvent::Func_GetEventValue(gstd::script_machine* machine, 
 	else if (type == EventValue::TYPE_BOOLEAN)
 		return value(machine->get_engine()->get_boolean_type(), eValue->GetBoolean());
 	else if (type == EventValue::TYPE_STRING)
-		return value(machine->get_engine()->get_string_type(), to_wide(eValue->GetString()));
+		return value(machine->get_engine()->get_string_type(), 
+			StringUtility::ConvertMultiToWide(eValue->GetString()));
 	return gstd::value();
 }
 gstd::value DxScriptForEvent::Func_SetEventValue(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScriptForEvent* script = (DxScriptForEvent*)machine->data;
 	std::wstring wName = argv[0].as_string();
-	std::string name = to_mbcs(wName);
+	std::string name = StringUtility::ConvertWideToMulti(wName);
 	gstd::ref_count_ptr<EventValue> eValue = script->engine_->GetEventValue(name);
 	if (eValue == NULL)throw gstd::wexception(StringUtility::Format(L"‘¶Ý‚µ‚È‚¢•Ï”:%s", name.c_str()));
 
@@ -3170,7 +3172,7 @@ gstd::value DxScriptForEvent::Func_SetEventValue(gstd::script_machine* machine, 
 		eValue->SetBoolean(argv[1].as_boolean());
 	}
 	else if (argv[1].get_type() == machine->get_engine()->get_string_type()) {
-		eValue->SetString(to_mbcs(argv[1].as_string()));
+		eValue->SetString(StringUtility::ConvertWideToMulti(argv[1].as_string()));
 	}
 	return gstd::value();
 }

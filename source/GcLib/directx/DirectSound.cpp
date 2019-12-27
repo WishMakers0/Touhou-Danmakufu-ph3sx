@@ -1102,7 +1102,7 @@ bool SoundStreamingPlayerOgg::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 	LONG sizeWaveHeader = sizeof(wfh.cRIFF) + sizeof(wfh.iSizeRIFF) + sizeof(wfh.cType) +
 		sizeof(wfh.cFmt) + sizeof(wfh.iSizeFmt) + sizeof(wfh.WaveFmt) +
 		sizeof(wfh.cData) + sizeof(wfh.iSizeData);
-	LONG sizeData = (LONG)ceil(vi->channels * vi->rate * ov_time_total(&fileOgg_, -1) * 2);
+	LONG sizeData = (LONG)ceil((double)vi->channels * (double)vi->rate * ov_time_total(&fileOgg_, -1) * 2.0);
 
 	//WAVEHEADER‚Ì’†g‚ğ’è‹`
 	memcpy(wfh.cRIFF, "RIFF", 4);

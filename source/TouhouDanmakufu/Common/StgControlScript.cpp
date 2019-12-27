@@ -168,7 +168,7 @@ gstd::value StgControlScript::Func_SaveCommonDataAreaA1(gstd::script_machine* ma
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
 	std::wstring area = argv[0].as_string();
-	std::string sArea = to_mbcs(area);
+	std::string sArea = StringUtility::ConvertWideToMulti(area);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	ref_count_ptr<ScriptCommonData> commonData = commonDataManager->GetData(sArea);
 	if (commonData == NULL)
@@ -192,7 +192,7 @@ gstd::value StgControlScript::Func_LoadCommonDataAreaA1(gstd::script_machine* ma
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
 	std::wstring area = argv[0].as_string();
-	std::string sArea = to_mbcs(area);
+	std::string sArea = StringUtility::ConvertWideToMulti(area);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
 	std::wstring pathMain = infoSystem->GetMainScriptInformation()->GetScriptPath();
@@ -213,7 +213,7 @@ gstd::value StgControlScript::Func_SaveCommonDataAreaA2(gstd::script_machine* ma
 	StgControlScript* script = (StgControlScript*)machine->data;
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	ref_count_ptr<ScriptCommonData> commonData = commonDataManager->GetData(area);
 	if (commonData == NULL)
@@ -235,7 +235,7 @@ gstd::value StgControlScript::Func_LoadCommonDataAreaA2(gstd::script_machine* ma
 	StgControlScript* script = (StgControlScript*)machine->data;
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
 	std::wstring pathSave = argv[1].as_string();
@@ -944,7 +944,7 @@ gstd::value StgControlScript::Func_GetReplayUserData(gstd::script_machine* machi
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
 	int index = (int)argv[0].as_real();
-	std::string key = to_mbcs(argv[1].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[1].as_string());
 
 	ref_count_ptr<ReplayInformation> replayInfo;
 	if (index == ReplayInformation::INDEX_ACTIVE)replayInfo = infoSystem->GetActiveReplayInformation();
@@ -965,7 +965,7 @@ gstd::value StgControlScript::Func_SetReplayUserData(gstd::script_machine* machi
 	if (replayInfo == NULL)
 		script->RaiseError("The replay data is not found.");
 
-	std::string key = to_mbcs(argv[0].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	gstd::value val = argv[1];
 	replayInfo->SetUserData(key, val);
 	return value();
@@ -977,7 +977,7 @@ gstd::value StgControlScript::Func_IsReplayUserDataExists(gstd::script_machine* 
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 
 	int index = (int)argv[0].as_real();
-	std::string key = to_mbcs(argv[1].as_string());
+	std::string key = StringUtility::ConvertWideToMulti(argv[1].as_string());
 
 	ref_count_ptr<ReplayInformation> replayInfo;
 	if (index == ReplayInformation::INDEX_ACTIVE)replayInfo = infoSystem->GetActiveReplayInformation();

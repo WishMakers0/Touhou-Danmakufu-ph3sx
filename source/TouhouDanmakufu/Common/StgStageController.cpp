@@ -286,7 +286,7 @@ void StgStageController::_SetupReplayTargetCommonDataArea(int64_t idScript) {
 		ref_count_ptr<StgStageScript>::DownCast(scriptManager_->GetScript(idScript));
 	if (script == NULL)return;
 
-	gstd::value res = script->RequestEvent(StgStageScript::EV_REQUEST_REPLAY_TARGET_COMMON_AREA);
+	const gstd::value& res = script->RequestEvent(StgStageScript::EV_REQUEST_REPLAY_TARGET_COMMON_AREA);
 	if (!res.has_data())return;
 	type_data::type_kind kindRes = res.get_type()->get_kind();
 	if (kindRes != type_data::tk_array)return;
@@ -295,8 +295,8 @@ void StgStageController::_SetupReplayTargetCommonDataArea(int64_t idScript) {
 	std::set<std::string> listArea;
 	int arrayLength = res.length_as_array();
 	for (int iArray = 0; iArray < arrayLength; iArray++) {
-		value& arrayValue = res.index_as_array(iArray);
-		std::string area = to_mbcs(arrayValue.as_string());
+		const value& arrayValue = res.index_as_array(iArray);
+		std::string area = StringUtility::ConvertWideToMulti(arrayValue.as_string());
 		listArea.insert(area);
 	}
 

@@ -582,7 +582,7 @@ gstd::value StgStageScript::Func_SaveCommonDataAreaToReplayFile(gstd::script_mac
 	if (infoStage->IsReplay())
 		script->RaiseError(L"This function can only be called outside of replays.");
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	ref_count_ptr<ScriptCommonData> commonDataO = commonDataManager->GetData(area);
 	if (commonDataO == nullptr)
 		return value(machine->get_engine()->get_boolean_type(), false);
@@ -603,7 +603,7 @@ gstd::value StgStageScript::Func_LoadCommonDataAreaFromReplayFile(gstd::script_m
 	if (!infoStage->IsReplay())
 		script->RaiseError(L"This function can only be called during replays.");
 
-	std::string area = to_mbcs(argv[0].as_string());
+	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	ref_count_ptr<ScriptCommonData> commonDataS = replayStageData->GetCommonData(area);
 	if (commonDataS == nullptr)
 		return value(machine->get_engine()->get_boolean_type(), false);
