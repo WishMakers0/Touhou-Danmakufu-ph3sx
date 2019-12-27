@@ -115,20 +115,20 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 	{
 		std::ifstream file;
 		file.open(path, std::ios::binary);
-		if (!file.is_open()) return NULL;
+		if (!file.is_open()) return nullptr;
 
 		file.seekg(0, std::ios::end);
 		size_t size = file.tellg();
 		file.seekg(0, std::ios::beg);
 
-		if (size < 0x6) return NULL;
+		if (size < 0x6) return nullptr;
 		char header[0x6];
 		file.read(header, 0x6);
-		if (memcmp(header, REC_HEADER.c_str(), 0x6) != 0) return NULL;
+		if (memcmp(header, REC_HEADER.c_str(), 0x6) != 0) return nullptr;
 
 		size_t sizeFull = 0U;
 		std::stringstream fileDecomp;
-		if (!Compressor::Inflate(file, fileDecomp, size - 6U, &sizeFull)) return NULL;
+		if (!Compressor::Inflate(file, fileDecomp, size - 6U, &sizeFull)) return nullptr;
 
 		ByteBuffer tmpBuffer;
 		tmpBuffer.Copy(fileDecomp);
@@ -137,7 +137,7 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 	}
 
 	int version = rec.GetRecordAsInteger("version");
-	if (version != ReplayInformation::REPLAY_VERSION) return NULL;
+	if (version != ReplayInformation::REPLAY_VERSION) return nullptr;
 
 	ref_count_ptr<ReplayInformation> res = new ReplayInformation();
 	res->path_ = path;
@@ -205,7 +205,7 @@ ref_count_ptr<ScriptCommonData> ReplayInformation::StageData::GetCommonData(std:
 }
 void ReplayInformation::StageData::SetCommonData(std::string area, ref_count_ptr<ScriptCommonData> commonData) {
 	ref_count_ptr<RecordBuffer> record = new RecordBuffer();
-	if (commonData != NULL)
+	if (commonData != nullptr)
 		commonData->WriteRecord(*record);
 	mapCommonData_[area] = record;
 }
@@ -308,7 +308,7 @@ void ReplayInformationManager::UpdateInformationList(std::wstring pathScript) {
 		if (fileName.find(fileNameHead) == std::wstring::npos)continue;
 
 		ref_count_ptr<ReplayInformation> info = ReplayInformation::CreateFromFile(pathScript, fileName);
-		if (info == NULL)continue;
+		if (info == nullptr)continue;
 
 		std::wstring strKey = fileName.substr(fileNameHead.size());
 		strKey = PathProperty::GetFileNameWithoutExtension(strKey);
@@ -330,13 +330,13 @@ void ReplayInformationManager::UpdateInformationList(std::wstring pathScript) {
 std::vector<int> ReplayInformationManager::GetIndexList() {
 	std::vector<int> res;
 	std::map<int, ref_count_ptr<ReplayInformation> >::iterator itr;
-	for (itr = mapInfo_.begin(); itr != mapInfo_.end(); itr++) {
+	for (itr = mapInfo_.begin(); itr != mapInfo_.end(); ++itr) {
 		int key = itr->first;
 		res.push_back(key);
 	}
 	return res;
 }
 ref_count_ptr<ReplayInformation> ReplayInformationManager::GetInformation(int index) {
-	if (mapInfo_.find(index) == mapInfo_.end())return NULL;
+	if (mapInfo_.find(index) == mapInfo_.end())return nullptr;
 	return mapInfo_[index];
 }
