@@ -18,22 +18,22 @@
     <SccProjectName />
     <SccLocalPath />
     <ProjectGuid>{D57B6B3A-0DAB-4239-8BD0-4628FDA7F081}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -86,6 +86,8 @@
       <PrecompiledHeaderOutputFile>DnhExecutor\Release\DnhExecutor.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>DnhExecutor\Release\</ObjectFileName>
       <ProgramDataBaseFileName>DnhExecutor\Release\th_dnh.pdb</ProgramDataBaseFileName>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -119,8 +121,8 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <WarningLevel>Level3</WarningLevel>
-      <MinimalRebuild>true</MinimalRebuild>
+      <WarningLevel>Level2</WarningLevel>
+      <MinimalRebuild>false</MinimalRebuild>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -128,7 +130,10 @@
       <PrecompiledHeaderOutputFile>DnhExecutor/Debug/DnhExecutor.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>DnhExecutor/Debug/</ObjectFileName>
       <ProgramDataBaseFileName>DnhExecutor\Debug\th_dnh.pdb</ProgramDataBaseFileName>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <OpenMPSupport>true</OpenMPSupport>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -190,6 +195,7 @@
     <ClCompile Include="source\GcLib\gstd\ScriptClient.cpp" />
     <ClCompile Include="source\GcLib\gstd\Task.cpp" />
     <ClCompile Include="source\GcLib\gstd\Thread.cpp" />
+    <ClCompile Include="source\GcLib\gstd\Value.cpp" />
     <ClCompile Include="source\GcLib\gstd\Window.cpp" />
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhCommon.cpp" />
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhGcLibImpl.cpp" />
@@ -254,6 +260,7 @@
     <ClInclude Include="source\GcLib\gstd\SmartPointer.hpp" />
     <ClInclude Include="source\GcLib\gstd\Task.hpp" />
     <ClInclude Include="source\GcLib\gstd\Thread.hpp" />
+    <ClInclude Include="source\GcLib\gstd\Value.hpp" />
     <ClInclude Include="source\GcLib\gstd\Window.hpp" />
     <ClInclude Include="source\TouhouDanmakufu\Common\DnhCommon.hpp" />
     <ClInclude Include="source\TouhouDanmakufu\Common\DnhConstant.hpp" />

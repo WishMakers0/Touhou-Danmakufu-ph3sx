@@ -179,6 +179,9 @@
     <ClCompile Include="source\GcLib\gstd\ArchiveFile.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
+    <ClCompile Include="source\GcLib\gstd\Value.cpp">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\GcLib\gstd\Application.hpp">
@@ -368,6 +371,9 @@
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\ArchiveFile.h">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\gstd\Value.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
   </ItemGroup>
