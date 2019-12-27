@@ -27,12 +27,35 @@ namespace std {
 	using::iswdigit;
 	using::iswalpha;
 }
+
 #endif
+
+using namespace gstd;
 
 #undef min
 #undef max
 
-using namespace gstd;
+std::string gstd::to_mbcs(std::wstring const& s) {
+	std::string result = StringUtility::ConvertWideToMulti(s);
+	//int len = std::wcstombs(NULL, s.c_str(), s.size());
+	//if(len < 0)
+	//	return "(BAD-DATA)";
+	//char * buffer = new char[len + 1];
+	//std::wcstombs(buffer, s.c_str(), len);
+	//std::string result(buffer, len);
+	//delete[] buffer;
+	return result;
+}
+
+std::wstring gstd::to_wide(std::string const& s) {
+	std::wstring result = StringUtility::ConvertMultiToWide(s);
+	//int len = std::mbstowcs(NULL, s.c_str(), s.size());
+	//wchar_t * buffer = new wchar_t[len + 1];
+	//std::mbstowcs(buffer, s.c_str(), len);
+	//std::wstring result(buffer, len);
+	//delete[] buffer;
+	return result;
+}
 
 double fmodl2(double i, double j) {
 	if (j < 0) {
@@ -45,13 +68,178 @@ double fmodl2(double i, double j) {
 	}
 }
 
+
+/* value */
+
+value::value(type_data* t, std::wstring v) {
+	data = new body();
+	data->ref_count = 1;
+	data->type = t;
+	for (unsigned i = 0; i < v.size(); ++i)
+		data->array_value.push_back(value(t->get_element(), v[i]));
+}
+
+void value::append(type_data* t, value const& x) {
+	unique();
+	data->type = t;
+	data->array_value.push_back(x);
+}
+
+void value::concatenate(value const& x) {
+	unique();
+	unsigned l = data->array_value.length;
+	unsigned r = x.data->array_value.length;
+	unsigned t = l + r;
+	if (l == 0)
+		data->type = x.data->type;
+	while (data->array_value.capacity < t)
+		data->array_value.expand();
+	for (unsigned i = 0; i < r; ++i)
+		data->array_value[l + i] = x.data->array_value.at[i];
+	data->array_value.length = t;
+}
+
+double value::as_real() const {
+	if (data == NULL)
+		return 0.0L;
+	switch (data->type->get_kind()) {
+	case type_data::tk_real:
+		return data->real_value;
+	case type_data::tk_char:
+		return static_cast <float> (data->char_value);
+	case type_data::tk_boolean:
+		return (data->boolean_value) ? 1.0L : 0.0L;
+	case type_data::tk_array:
+		if (data->type->get_element()->get_kind() == type_data::tk_char)
+			return std::atof(to_mbcs(as_string()).c_str());
+		else
+			return 0.0L;
+	default:
+		assert(false);
+		return 0.0L;
+	}
+}
+
+wchar_t value::as_char() const {
+	if (data == NULL)
+		return 0.0L;
+	switch (data->type->get_kind()) {
+	case type_data::tk_real:
+		return data->real_value;
+	case type_data::tk_char:
+		return data->char_value;
+	case type_data::tk_boolean:
+		return (data->boolean_value) ? L'1' : L'0';
+	case type_data::tk_array:
+		return L'\0';
+	default:
+		assert(false);
+		return L'\0';
+	}
+}
+
+bool value::as_boolean() const {
+	if (data == NULL)
+		return false;
+	switch (data->type->get_kind()) {
+	case type_data::tk_real:
+		return data->real_value != 0.0L;
+	case type_data::tk_char:
+		return data->char_value != L'\0';
+	case type_data::tk_boolean:
+		return data->boolean_value;
+	case type_data::tk_array:
+		return data->array_value.size() != 0;
+	default:
+		assert(false);
+		return false;
+	}
+}
+
+std::wstring value::as_string() const {
+	if (data == NULL)
+		return L"(VOID)";
+	switch (data->type->get_kind()) {
+	case type_data::tk_real:
+	{
+		wchar_t buffer[128];
+		std::swprintf(buffer, L"%Lf", data->real_value);
+		return std::wstring(buffer);
+	}
+	case type_data::tk_char:
+	{
+		std::wstring result;
+		result += data->char_value;
+		return result;
+	}
+	case type_data::tk_boolean:
+		return (data->boolean_value) ? L"true" : L"false";
+	case type_data::tk_array:
+	{
+		if (data->type->get_element()->get_kind() == type_data::tk_char) {
+			std::wstring result;
+			for (unsigned i = 0; i < data->array_value.size(); ++i)
+				result += data->array_value[i].as_char();
+			return result;
+		}
+		else {
+			std::wstring result = L"[";
+			for (unsigned i = 0; i < data->array_value.size(); ++i) {
+				result += data->array_value[i].as_string();
+				if (i != data->array_value.size() - 1)
+					result += L",";
+			}
+			result += L"]";
+			return result;
+		}
+	}
+	default:
+		assert(false);
+		return L"(INTERNAL-ERROR)";
+	}
+}
+
+unsigned value::length_as_array() const {
+	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
+	return data->array_value.size();
+}
+
+value const& value::index_as_array(unsigned i) const {
+	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
+	assert(i < data->array_value.length);
+	return data->array_value[i];
+}
+
+value& value::index_as_array(unsigned i) {
+	assert(data != NULL && data->type->get_kind() == type_data::tk_array);
+	assert(i < data->array_value.length);
+	return data->array_value[i];
+}
+
+type_data* value::get_type() const {
+	assert(data != NULL);
+	return data->type;
+}
+
+void value::overwrite(value const& source) {
+	assert(data != NULL);
+	if (data == source.data)return;
+
+	release();
+	*data = *source.data;
+	data->ref_count = 2;
+
+	//	* data = * source.data;
+	//	++(data->ref_count);
+}
+
 //--------------------------------------
 
 /* parser_error */
 
 class parser_error : public gstd::wexception {
 public:
-	parser_error(std::wstring const & the_message) : gstd::wexception(the_message) {}
+	parser_error(std::wstring const& the_message) : gstd::wexception(the_message) {}
 
 private:
 
@@ -65,7 +253,7 @@ enum token_kind {
 	tk_asterisk, tk_slash, tk_percent, tk_caret, tk_e, tk_g, tk_ge, tk_l, tk_le, tk_ne, tk_exclamation, tk_ampersand,
 	tk_and_then, tk_vertical, tk_or_else, tk_at, tk_add_assign, tk_subtract_assign, tk_multiply_assign, tk_divide_assign,
 	tk_remainder_assign, tk_power_assign, tk_range, tk_ALTERNATIVE, tk_ASCENT, tk_BREAK, tk_CASE, tk_DESCENT, tk_ELSE,
-	tk_FUNCTION, tk_IF, tk_IN, tk_LET, tk_LOCAL, tk_LOOP, /*tk_CONTINUE,*/ tk_OTHERS, tk_REAL, tk_RETURN,
+	tk_FUNCTION, tk_IF, tk_IN, tk_LET, tk_LOCAL, tk_LOOP, tk_CONTINUE, tk_OTHERS, tk_REAL, tk_RETURN,
 	tk_SUB, tk_TASK, tk_TIMES, tk_WHILE, tk_YIELD, tk_WAIT,
 	/*tk_bitwise_not, tk_bitwise_and, tk_bitwise_or, tk_bitwise_xor, tk_bitwise_left, tk_bitwise_right,*/
 };
@@ -82,8 +270,8 @@ const char* token_kind_str[] = {
 
 class scanner {
 	int encoding;
-	const char* current;
-	const char* endPoint;
+	char const* current;
+	char const* endPoint;
 
 	inline wchar_t current_char();
 	inline wchar_t index_from_current_char(int index);
@@ -96,7 +284,7 @@ public:
 	std::wstring string_value;
 	int line;
 
-	scanner(const char* source, const char* end) : current(source), line(1) {
+	scanner(char const* source, char const* end) : current(source), line(1) {
 		endPoint = end;
 		encoding = Encoding::SHIFT_JIS;
 		if (Encoding::IsUtf16Le(source, 2)) {
@@ -109,12 +297,13 @@ public:
 		advance();
 	}
 
-	scanner(const scanner& source) :
+	scanner(scanner const& source) :
 		encoding(source.encoding),
 		current(source.current), endPoint(source.endPoint),
 		next(source.next),
 		word(source.word),
-		line(source.line) {}
+		line(source.line) {
+	}
 
 	void skip();
 	void advance();
@@ -136,12 +325,12 @@ wchar_t scanner::index_from_current_char(int index) {
 	wchar_t res = L'\0';
 	if (encoding == Encoding::UTF16LE) {
 		const char* pos = current + index * 2;
-		if (pos >= endPoint) return L'\0';
+		if (pos >= endPoint)return L'\0';
 		res = (wchar_t&)current[index * 2];
 	}
 	else {
 		const char* pos = current + index;
-		if (pos >= endPoint) return L'\0';
+		if (pos >= endPoint)return L'\0';
 		res = current[index];
 	}
 
@@ -199,7 +388,7 @@ void scanner::skip() {
 void scanner::AddLog(wchar_t* data) {
 	{
 		wchar_t* pStart = (wchar_t*)current;
-		wchar_t* pEnd = (wchar_t*)(current + std::min(16, (ptrdiff_t)(endPoint - current)));
+		wchar_t* pEnd = (wchar_t*)(current + std::min(16, endPoint - current));
 		std::wstring wstr = std::wstring(pStart, pEnd);
 		//Logger::WriteTop(StringUtility::Format(L"%s current=%d, endPoint=%d, val=%d, ch=%s", data, pStart, endPoint, (wchar_t)*current, wstr.c_str()));
 	}
@@ -426,7 +615,7 @@ void scanner::advance() {
 				ch = next_char();
 			}
 			ch = next_char();
-			string_value = StringUtility::ConvertMultiToWide(s);
+			string_value = to_wide(s);
 		}
 
 		if (q == L'\'') {
@@ -459,8 +648,8 @@ void scanner::advance() {
 		case L'x':
 			char_value = 0;
 			while (std::isxdigit(ch)) {
-				wchar_t _ch = towlower(ch);
-				char_value = char_value * 16 + ((_ch >= L'a') ? _ch - L'a' + 10 : _ch - L'0');
+				char_value = char_value * 16 + (ch >= L'a') ? ch - L'a' + 10 : (ch >= L'A') ?
+					ch - L'A' + 10 : ch - L'0';
 				ch = next_char();
 			}
 			break;
@@ -478,16 +667,16 @@ void scanner::advance() {
 			next = tk_real;
 			real_value = 0.0;
 			do {
-				real_value = real_value * 10.0 + (ch - L'0');
+				real_value = real_value * 10. + (ch - L'0');
 				ch = next_char();
 			} while (std::iswdigit(ch));
 
 			wchar_t ch2 = index_from_current_char(1);
 			if (ch == L'.' && std::iswdigit(ch2)) {
 				ch = next_char();
-				double d = 1.0;
+				float d = 1;
 				while (std::iswdigit(ch)) {
-					d = d * 0.1;
+					d = d / 10;
 					real_value = real_value + d * (ch - L'0');
 					ch = next_char();
 				}
@@ -512,7 +701,7 @@ void scanner::advance() {
 				word = std::string(pStart, pEnd);
 			}
 
-			if (word == "alternative" || word == "switch")
+			if (word == "alternative")
 				next = tk_ALTERNATIVE;
 			else if (word == "ascent")
 				next = tk_ASCENT;
@@ -536,7 +725,7 @@ void scanner::advance() {
 				next = tk_LOCAL;
 			else if (word == "loop")
 				next = tk_LOOP;
-			else if (word == "others" || word == "default")
+			else if (word == "others")
 				next = tk_OTHERS;
 			else if (word == "real")
 				next = tk_REAL;
@@ -554,10 +743,8 @@ void scanner::advance() {
 				next = tk_YIELD;
 			else if (word == "wait")
 				next = tk_WAIT;
-			/*
 			else if (word == "continue")
 				next = tk_CONTINUE;
-			*/
 		}
 		else {
 			next = tk_invalid;
@@ -568,16 +755,30 @@ void scanner::advance() {
 
 /* operations */
 
-value add(script_machine* machine, int argc, const value* argv) {
+value add(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
+		/*
+		if (argv[0].get_type() != argv[1].get_type()) {
+			std::wstring error;
+			error += L"Variable type mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		if (argv[0].length_as_array() != argv[1].length_as_array()) {
+			std::wstring error;
+			error += L"Array length mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		*/
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 		size_t countOp = argv[0].length_as_array();
 		if (rightIsArray) countOp = std::min(countOp, argv[1].length_as_array());
 
 		value result;
-		for (size_t i = 0; i < countOp; ++i) {
+		for (unsigned i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -590,16 +791,31 @@ value add(script_machine* machine, int argc, const value* argv) {
 		return value(machine->get_engine()->get_real_type(), argv[0].as_real() + argv[1].as_real());
 }
 
-value subtract(script_machine* machine, int argc, const value* argv) {
+value subtract(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
+		/*
+		if (argv[0].get_type() != argv[1].get_type()) {
+			std::wstring error;
+			error += L"Variable type mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		if (argv[0].length_as_array() != argv[1].length_as_array()) {
+			std::wstring error;
+			error += L"Array length mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		*/
+
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 		size_t countOp = argv[0].length_as_array();
 		if (rightIsArray) countOp = std::min(countOp, argv[1].length_as_array());
 
 		value result;
-		for (size_t i = 0; i < countOp; ++i) {
+		for (unsigned i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -615,16 +831,31 @@ value subtract(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value multiply(script_machine* machine, int argc, const value* argv) {
+value multiply(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
+		/*
+		if (argv[0].get_type() != argv[1].get_type()) {
+			std::wstring error;
+			error += L"Variable type mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		if (argv[0].length_as_array() != argv[1].length_as_array()) {
+			std::wstring error;
+			error += L"Array length mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		*/
+
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 		size_t countOp = argv[0].length_as_array();
 		if (rightIsArray) countOp = std::min(countOp, argv[1].length_as_array());
 
 		value result;
-		for (size_t i = 0; i < countOp; ++i) {
+		for (unsigned i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -640,16 +871,31 @@ value multiply(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value divide(script_machine* machine, int argc, const value* argv) {
+value divide(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
+		/*
+		if (argv[0].get_type() != argv[1].get_type()) {
+			std::wstring error;
+			error += L"Variable type mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		if (argv[0].length_as_array() != argv[1].length_as_array()) {
+			std::wstring error;
+			error += L"Array length mismatch.\r\n";
+			machine->raise_error(error);
+			return value();
+		}
+		*/
+
 		bool rightIsArray = argv[1].get_type()->get_kind() == type_data::tk_array;
 
 		size_t countOp = argv[0].length_as_array();
 		if (rightIsArray) countOp = std::min(countOp, argv[1].length_as_array());
 
 		value result;
-		for (size_t i = 0; i < countOp; ++i) {
+		for (unsigned i = 0; i < countOp; ++i) {
 			value v[2];
 			v[0] = argv[0].index_as_array(i);
 			if (rightIsArray) v[1] = argv[1].index_as_array(i);
@@ -665,7 +911,7 @@ value divide(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value remainder(script_machine* machine, int argc, const value* argv) {
+value remainder(script_machine* machine, int argc, value const* argv) {
 	double x = argv[0].as_real();
 	double y = argv[1].as_real();
 	return value(machine->get_engine()->get_real_type(), fmodl2(x, y));
@@ -674,7 +920,7 @@ value remainder(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value modc(script_machine* machine, int argc, const value* argv) {
+value modc(script_machine* machine, int argc, value const* argv) {
 	double x = argv[0].as_real();
 	double y = argv[1].as_real();
 	return value(machine->get_engine()->get_real_type(), fmod(x, y));
@@ -683,10 +929,10 @@ value modc(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value negative(script_machine* machine, int argc, const value* argv) {
+value negative(script_machine* machine, int argc, value const* argv) {
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
 		value result;
-		for (size_t i = 0; i < argv[0].length_as_array(); ++i) {
+		for (unsigned i = 0; i < argv[0].length_as_array(); ++i) {
 			value v = argv[0].index_as_array(i);
 			result.append(argv[0].get_type(), negative(machine, 1, &v));
 		}
@@ -699,14 +945,14 @@ value negative(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value power(script_machine* machine, int argc, const value* argv) {
+value power(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_real_type(), std::pow(argv[0].as_real(), argv[1].as_real()));
 }
 
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value compare(script_machine* machine, int argc, const value* argv) {
+value compare(script_machine* machine, int argc, value const* argv) {
 	if (argv[0].get_type() == argv[1].get_type()) {
 		int r = 0;
 
@@ -737,7 +983,7 @@ value compare(script_machine* machine, int argc, const value* argv) {
 
 		case type_data::tk_array:
 		{
-			for (size_t i = 0; i < argv[0].length_as_array(); ++i) {
+			for (unsigned i = 0; i < argv[0].length_as_array(); ++i) {
 				if (i >= argv[1].length_as_array()) {
 					r = +1;	//"123" > "12"
 					break;
@@ -769,12 +1015,13 @@ value compare(script_machine* machine, int argc, const value* argv) {
 	}
 }
 
-value predecessor(script_machine* machine, int argc, const value* argv) {
+value predecessor(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 1);
 	assert(argv[0].has_data());
 	switch (argv[0].get_type()->get_kind()) {
 	case type_data::tk_real:
 		return value(argv[0].get_type(), argv[0].as_real() - 1);
+
 	case type_data::tk_char:
 	{
 		wchar_t c = argv[0].as_char();
@@ -793,12 +1040,13 @@ value predecessor(script_machine* machine, int argc, const value* argv) {
 	}
 }
 
-value successor(script_machine* machine, int argc, const value* argv) {
+value successor(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 1);
 	assert(argv[0].has_data());
 	switch (argv[0].get_type()->get_kind()) {
 	case type_data::tk_real:
 		return value(argv[0].get_type(), argv[0].as_real() + 1);
+
 	case type_data::tk_char:
 	{
 		wchar_t c = argv[0].as_char();
@@ -820,30 +1068,30 @@ value successor(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value true_(script_machine* machine, int argc, const value* argv) {
+value true_(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_boolean_type(), true);
 }
 
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value false_(script_machine* machine, int argc, const value* argv) {
+value false_(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_boolean_type(), false);
 }
 
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value not_(script_machine* machine, int argc, const value* argv) {
+value not_(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_boolean_type(), !argv[0].as_boolean());
 }
 
-value length(script_machine* machine, int argc, const value* argv) {
+value length(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 1);
 	return value(machine->get_engine()->get_real_type(), (double)argv[0].length_as_array());
 }
 
-value index(script_machine* machine, int argc, const value* argv) {
+value index(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
@@ -873,7 +1121,7 @@ value index(script_machine* machine, int argc, const value* argv) {
 	return const_cast<value&>(result);
 }
 
-value index_writable(script_machine* machine, int argc, const value* argv) {
+value index_writable(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
@@ -904,7 +1152,7 @@ value index_writable(script_machine* machine, int argc, const value* argv) {
 	return result;
 }
 
-value slice(script_machine* machine, int argc, const value* argv) {
+value slice(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 3);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
@@ -948,7 +1196,7 @@ value slice(script_machine* machine, int argc, const value* argv) {
 	return result;
 }
 
-value erase(script_machine* machine, int argc, const value* argv) {
+value erase(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
@@ -991,7 +1239,7 @@ value erase(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value append(script_machine* machine, int argc, const value* argv) {
+value append(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
@@ -1016,7 +1264,7 @@ value append(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value concatenate(script_machine* machine, int argc, const value* argv) {
+value concatenate(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array || argv[1].get_type()->get_kind() != type_data::tk_array) {
@@ -1041,7 +1289,7 @@ value concatenate(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value round(script_machine* machine, int argc, const value* argv) {
+value round(script_machine* machine, int argc, value const* argv) {
 	double r = std::floorl(argv[0].as_real() + 0.5);
 	return value(machine->get_engine()->get_real_type(), r);
 }
@@ -1049,7 +1297,7 @@ value round(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value truncate(script_machine* machine, int argc, const value* argv) {
+value truncate(script_machine* machine, int argc, value const* argv) {
 	double r = argv[0].as_real();
 	r = (r > 0) ? std::floorl(r) : std::ceill(r);
 	return value(machine->get_engine()->get_real_type(), r);
@@ -1058,21 +1306,21 @@ value truncate(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value ceil(script_machine* machine, int argc, const value* argv) {
+value ceil(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_real_type(), std::ceil(argv[0].as_real()));
 }
 
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value floor(script_machine* machine, int argc, const value* argv) {
+value floor(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_real_type(), std::floor(argv[0].as_real()));
 }
 
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value absolute(script_machine* machine, int argc, const value* argv) {
+value absolute(script_machine* machine, int argc, value const* argv) {
 	double r = std::fabsl(argv[0].as_real());
 	return value(machine->get_engine()->get_real_type(), r);
 }
@@ -1080,7 +1328,7 @@ value absolute(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value assert_(script_machine* machine, int argc, const value* argv) {
+value assert_(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 	if (!argv[0].as_boolean()) {
 		machine->raise_error(argv[1].as_string());
@@ -1099,7 +1347,7 @@ int64_t bitDoubleToInt(double val) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseNot(script_machine* machine, int argc, const value* argv) {
+value bitwiseNot(script_machine* machine, int argc, value const* argv) {
 	int64_t val = bitDoubleToInt(argv[0].as_real());
 	return value(machine->get_engine()->get_real_type(), (double)(~val));
 }
@@ -1107,7 +1355,7 @@ value bitwiseNot(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseAnd(script_machine* machine, int argc, const value* argv) {
+value bitwiseAnd(script_machine* machine, int argc, value const* argv) {
 	int64_t val1 = bitDoubleToInt(argv[0].as_real());
 	int64_t val2 = bitDoubleToInt(argv[1].as_real());
 	return value(machine->get_engine()->get_real_type(), (double)(val1 & val2));
@@ -1116,7 +1364,7 @@ value bitwiseAnd(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseOr(script_machine* machine, int argc, const value* argv) {
+value bitwiseOr(script_machine* machine, int argc, value const* argv) {
 	int64_t val1 = bitDoubleToInt(argv[0].as_real());
 	int64_t val2 = bitDoubleToInt(argv[1].as_real());
 	return value(machine->get_engine()->get_real_type(), (double)(val1 | val2));
@@ -1125,7 +1373,7 @@ value bitwiseOr(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseXor(script_machine* machine, int argc, const value* argv) {
+value bitwiseXor(script_machine* machine, int argc, value const* argv) {
 	int64_t val1 = bitDoubleToInt(argv[0].as_real());
 	int64_t val2 = bitDoubleToInt(argv[1].as_real());
 	return value(machine->get_engine()->get_real_type(), (double)(val1 ^ val2));
@@ -1134,7 +1382,7 @@ value bitwiseXor(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseLeft(script_machine* machine, int argc, const value* argv) {
+value bitwiseLeft(script_machine* machine, int argc, value const* argv) {
 	int64_t val1 = bitDoubleToInt(argv[0].as_real());
 	double val2 = argv[1].as_real();
 
@@ -1151,7 +1399,7 @@ value bitwiseLeft(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value bitwiseRight(script_machine* machine, int argc, const value* argv) {
+value bitwiseRight(script_machine* machine, int argc, value const* argv) {
 	int64_t val1 = bitDoubleToInt(argv[0].as_real());
 	double val2 = argv[1].as_real();
 
@@ -1168,7 +1416,7 @@ value bitwiseRight(script_machine* machine, int argc, const value* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value isNull(script_machine* machine, int argc, const value* argv) {
+value isNull(script_machine* machine, int argc, value const* argv) {
 	return value(machine->get_engine()->get_boolean_type(), !(argv[0].has_data()));
 }
 
@@ -1220,8 +1468,7 @@ public:
 		int variable;
 	};
 
-	class scope : public std::map<std::string, symbol> {
-	public:
+	struct scope : public std::map < std::string, symbol > {
 		script_engine::block_kind kind;
 
 		scope(script_engine::block_kind the_kind) : kind(the_kind) {}
@@ -1233,9 +1480,9 @@ public:
 	bool error;
 	std::wstring error_message;
 	int error_line;
-	std::map<std::string, script_engine::block*> events;
+	std::map < std::string, script_engine::block* > events;
 
-	parser(script_engine* e, scanner* s, int funcc, const function* funcv);
+	parser(script_engine* e, scanner* s, int funcc, function const* funcv);
 
 	virtual ~parser() {}
 
@@ -1251,69 +1498,28 @@ public:
 	int parse_arguments(script_engine::block* block);
 	void parse_statements(script_engine::block* block);
 	void parse_inline_block(script_engine::block* block, script_engine::block_kind kind);
-	void parse_block(script_engine::block* block, const std::vector<std::string>* args, bool adding_result);
+	void parse_block(script_engine::block* block, std::vector < std::string > const* args, bool adding_result);
 private:
-	void register_function(const function& func);
-	symbol* search(const std::string& name);
+	void register_function(function const& func);
+	symbol* search(std::string const& name);
 	symbol* search_result();
-	void scan_current_scope(int level, const std::vector<std::string>* args, bool adding_result);
-	void write_operation(script_engine::block* block, const char* name, int clauses);
-	void write_operation(script_engine::block* block, symbol* fSym, int clauses);
+	void scan_current_scope(int level, std::vector < std::string > const* args, bool adding_result);
+	void write_operation(script_engine::block* block, char const* name, int clauses);
 
 	typedef script_engine::code code;
-
-	symbol symbolNot;
-	symbol symbolNeg;
-	symbol symbolPred;
-	symbol symbolSucc;
-	symbol symbolAbs;
-	symbol symbolAdd;
-	symbol symbolSub;
-	symbol symbolMul;
-	symbol symbolDiv;
-	symbol symbolModr;
-	symbol symbolPow;
-	symbol symbolIndex;
-	symbol symbolIndexW;
-	symbol symbolSlice;
-	symbol symbolAppend;
-	symbol symbolConcat;
-	symbol symbolCompare;
 };
 
-parser::parser(script_engine* e, scanner* s, int funcc, const function* funcv) : engine(e), lex(s), frame(), error(false) {
+parser::parser(script_engine* e, scanner* s, int funcc, function const* funcv) : engine(e), lex(s), frame(), error(false) {
 	frame.push_back(scope(script_engine::bk_normal));
 
 	for (int i = 0; i < sizeof(operations) / sizeof(function); ++i)
 		register_function(operations[i]);
 
-	{
-		scope* baseFrame = &frame[0];
-
-		symbolNot = (*baseFrame->find("not")).second;
-		symbolNeg = (*baseFrame->find("negative")).second;
-		symbolPred = (*baseFrame->find("predecessor")).second;
-		symbolSucc = (*baseFrame->find("successor")).second;
-		symbolAbs = (*baseFrame->find("absolute")).second;
-		symbolAdd = (*baseFrame->find("add")).second;
-		symbolSub = (*baseFrame->find("subtract")).second;
-		symbolMul = (*baseFrame->find("multiply")).second;
-		symbolDiv = (*baseFrame->find("divide")).second;
-		symbolModr = (*baseFrame->find("remainder")).second;
-		symbolPow = (*baseFrame->find("power")).second;
-		symbolIndex = (*baseFrame->find("index_")).second;
-		symbolIndexW = (*baseFrame->find("index!")).second;
-		symbolAppend = (*baseFrame->find("append")).second;
-		symbolSlice = (*baseFrame->find("slice")).second;
-		symbolConcat = (*baseFrame->find("concatenate")).second;
-		symbolCompare = (*baseFrame->find("compare")).second;
-	}
-
 	for (int i = 0; i < funcc; ++i)
 		register_function(funcv[i]);
 
 	try {
-		scan_current_scope(0, nullptr, false);
+		scan_current_scope(0, NULL, false);
 		parse_statements(engine->main_block);
 		if (lex->next != tk_end) {
 			std::wstring error;
@@ -1321,14 +1527,14 @@ parser::parser(script_engine* e, scanner* s, int funcc, const function* funcv) :
 			throw parser_error(error);
 		}
 	}
-	catch (parser_error& e) {
+	catch (parser_error & e) {
 		error = true;
 		error_message = e.what();
 		error_line = lex->line;
 	}
 }
 
-void parser::register_function(const function& func) {
+void parser::register_function(function const& func) {
 	symbol s;
 	s.level = 0;
 	s.sub = engine->new_block(0, script_engine::bk_function);
@@ -1339,25 +1545,25 @@ void parser::register_function(const function& func) {
 	frame[0][func.name] = s;
 }
 
-parser::symbol* parser::search(const std::string& name) {
+parser::symbol* parser::search(std::string const& name) {
 	for (int i = frame.size() - 1; i >= 0; --i) {
 		if (frame[i].find(name) != frame[i].end())
 			return &(frame[i][name]);
 	}
-	return nullptr;
+	return NULL;
 }
 
 parser::symbol* parser::search_result() {
 	for (int i = frame.size() - 1; i >= 0; --i) {
-		if (frame[i].find("result") != frame[i].end())
-			return &(frame[i]["result"]);
+		if (frame[i].find("$rslt") != frame[i].end())
+			return &(frame[i]["$rslt"]);
 		if (frame[i].kind == script_engine::bk_sub || frame[i].kind == script_engine::bk_microthread)
-			return nullptr;
+			return NULL;
 	}
-	return nullptr;
+	return NULL;
 }
 
-void parser::scan_current_scope(int level, const std::vector<std::string>* args, bool adding_result) {
+void parser::scan_current_scope(int level, std::vector < std::string > const* args, bool adding_result) {
 	//先読みして識別子を登録する
 	scanner lex2(*lex);
 	try {
@@ -1368,17 +1574,17 @@ void parser::scan_current_scope(int level, const std::vector<std::string>* args,
 		if (adding_result) {
 			symbol s;
 			s.level = level;
-			s.sub = nullptr;
+			s.sub = NULL;
 			s.variable = var;
 			++var;
-			(*current_frame)["result"] = s;
+			(*current_frame)["$rslt"] = s;
 		}
 
-		if (args != nullptr) {
-			for (size_t i = 0; i < args->size(); ++i) {
+		if (args != NULL) {
+			for (unsigned i = 0; i < args->size(); ++i) {
 				symbol s;
 				s.level = level;
-				s.sub = nullptr;
+				s.sub = NULL;
 				s.variable = var;
 				++var;
 				(*current_frame)[(*args)[i]] = s;
@@ -1415,7 +1621,7 @@ void parser::scan_current_scope(int level, const std::vector<std::string>* args,
 					s.level = level;
 					s.sub = engine->new_block(level + 1, kind);
 					s.sub->name = lex2.word;
-					s.sub->func = nullptr;
+					s.sub->func = NULL;
 					s.variable = -1;
 					(*current_frame)[lex2.word] = s;
 					lex2.advance();
@@ -1438,7 +1644,7 @@ void parser::scan_current_scope(int level, const std::vector<std::string>* args,
 				lex2.advance();
 				if (cur == 0) {
 #ifdef __SCRIPT_H__NO_CHECK_DUPLICATED
-					if (lex2.word == "result") {
+					if (lex2.word == "$rslt") {
 #endif
 						if (current_frame->find(lex2.word) != current_frame->end()) {
 							std::wstring error;
@@ -1450,7 +1656,7 @@ void parser::scan_current_scope(int level, const std::vector<std::string>* args,
 #endif
 					symbol s;
 					s.level = level;
-					s.sub = nullptr;
+					s.sub = NULL;
 					s.variable = var;
 					++var;
 					(*current_frame)[lex2.word] = s;
@@ -1470,26 +1676,16 @@ void parser::scan_current_scope(int level, const std::vector<std::string>* args,
 	}
 }
 
-void parser::write_operation(script_engine::block* block, const char* name, int clauses) {
+void parser::write_operation(script_engine::block* block, char const* name, int clauses) {
 	symbol* s = search(name);
-	assert(s != nullptr);
+	assert(s != NULL);
 	if (s->sub->arguments != clauses) {
 		std::wstring error;
-		error += L"Incorrect argument count for the function.";
+		error += L"Argument count must remain the same when overwriting functions.";
 		throw parser_error(error);
 	}
+
 	block->codes.push_back(script_engine::code(lex->line, script_engine::pc_call_and_push_result, s->sub, clauses));
-}
-void parser::write_operation(script_engine::block* block, symbol* fSym, int clauses) {
-	assert(fSym != nullptr);
-	if (fSym->sub->arguments != clauses) {
-		std::wstring error;
-		error += L"Incorrect argument count for the function.";
-		error += StringUtility::FormatToWide("\r\n(%s; expected %d, got %d)",
-			fSym->sub->name.c_str(), fSym->sub->arguments, clauses);
-		throw parser_error(error);
-	}
-	block->codes.push_back(script_engine::code(lex->line, script_engine::pc_call_and_push_result, fSym->sub, clauses));
 }
 
 void parser::parse_parentheses(script_engine::block* block) {
@@ -1531,7 +1727,7 @@ void parser::parse_clause(script_engine::block* block) {
 	}
 	else if (lex->next == tk_word) {
 		symbol* s = search(lex->word);
-		if (s == nullptr) {
+		if (s == NULL) {
 			std::wstring error;
 			error += StringUtility::FormatToWide("%s is not defined.\r\n", lex->word.c_str());
 			throw parser_error(error);
@@ -1539,10 +1735,10 @@ void parser::parse_clause(script_engine::block* block) {
 
 		lex->advance();
 
-		if (s->sub != nullptr) {
+		if (s->sub != NULL) {
 			if (s->sub->kind != script_engine::bk_function) {
 				std::wstring error;
-				error += L"Tasks cannot have return values.\r\n";
+				error += L"Tasks cannot return values.\r\n";
 				throw parser_error(error);
 			}
 
@@ -1566,7 +1762,7 @@ void parser::parse_clause(script_engine::block* block) {
 		block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_string_type(), std::wstring())));
 		while (lex->next != tk_close_bra) {
 			parse_expression(block);
-			write_operation(block, &symbolAppend, 2);
+			write_operation(block, "append", 2);
 			if (lex->next != tk_comma) break;
 			lex->advance();
 		}
@@ -1580,7 +1776,7 @@ void parser::parse_clause(script_engine::block* block) {
 	else if (lex->next == tk_open_abs) {
 		lex->advance();
 		parse_expression(block);
-		write_operation(block, &symbolAbs, 1);
+		write_operation(block, "absolute", 1);
 		if (lex->next != tk_close_abs) {
 			std::wstring error;
 			error += L"\"|\" is required.\r\n";
@@ -1603,7 +1799,7 @@ void parser::parse_suffix(script_engine::block* block) {
 	if (lex->next == tk_caret) {
 		lex->advance();
 		parse_suffix(block); //再帰
-		write_operation(block, &symbolPow, 2);
+		write_operation(block, "power", 2);
 	}
 	else {
 		while (lex->next == tk_open_bra) {
@@ -1613,10 +1809,10 @@ void parser::parse_suffix(script_engine::block* block) {
 			if (lex->next == tk_range) {
 				lex->advance();
 				parse_expression(block);
-				write_operation(block, &symbolSlice, 3);
+				write_operation(block, "slice", 3);
 			}
 			else {
-				write_operation(block, &symbolIndex, 2);
+				write_operation(block, "index_", 2);
 			}
 
 			if (lex->next != tk_close_bra) {
@@ -1637,12 +1833,12 @@ void parser::parse_prefix(script_engine::block* block) {
 	else if (lex->next == tk_minus) {
 		lex->advance();
 		parse_prefix(block);	//再帰
-		write_operation(block, &symbolNeg, 1);
+		write_operation(block, "negative", 1);
 	}
 	else if (lex->next == tk_exclamation) {
 		lex->advance();
 		parse_prefix(block);	//再帰
-		write_operation(block, &symbolNot, 1);
+		write_operation(block, "not", 1);
 	}
 	else {
 		parse_suffix(block);
@@ -1652,22 +1848,20 @@ void parser::parse_prefix(script_engine::block* block) {
 void parser::parse_product(script_engine::block* block) {
 	parse_prefix(block);
 	while (lex->next == tk_asterisk || lex->next == tk_slash || lex->next == tk_percent) {
-		symbol* func =
-			(lex->next == tk_asterisk) ? &symbolMul : (lex->next == tk_slash) ? &symbolDiv : &symbolModr;
+		char const* name = (lex->next == tk_asterisk) ? "multiply" : (lex->next == tk_slash) ? "divide" : "remainder";
 		lex->advance();
 		parse_prefix(block);
-		write_operation(block, func, 2);
+		write_operation(block, name, 2);
 	}
 }
 
 void parser::parse_sum(script_engine::block* block) {
 	parse_product(block);
 	while (lex->next == tk_tilde || lex->next == tk_plus || lex->next == tk_minus) {
-		symbol* func = 
-			(lex->next == tk_tilde) ? &symbolConcat : (lex->next == tk_plus) ? &symbolAdd : &symbolSub;
+		char const* name = (lex->next == tk_tilde) ? "concatenate" : (lex->next == tk_plus) ? "add" : "subtract";
 		lex->advance();
 		parse_product(block);
-		write_operation(block, func, 2);
+		write_operation(block, name, 2);
 	}
 }
 
@@ -1690,7 +1884,7 @@ void parser::parse_comparison(script_engine::block* block) {
 		token_kind op = lex->next;
 		lex->advance();
 		parse_sum(block);
-		write_operation(block, &symbolCompare, 2);
+		write_operation(block, "compare", 2);
 		switch (op) {
 		case tk_e:
 			block->codes.push_back(code(lex->line, script_engine::pc_compare_e));
@@ -1762,13 +1956,19 @@ void parser::parse_statements(script_engine::block* block) {
 
 		if (lex->next == tk_word) {
 			symbol* s = search(lex->word);
-			if (s == nullptr) {
+			if (s == NULL) {
 				std::wstring error;
 				error += StringUtility::FormatToWide("%s is not defined.\r\n", lex->word.c_str());
 				throw parser_error(error);
 			}
 			lex->advance();
 			switch (lex->next) {
+			case tk_assign:
+				lex->advance();
+				parse_expression(block);
+				block->codes.push_back(code(lex->line, script_engine::pc_assign, s->level, s->variable));
+				break;
+
 			case tk_open_bra:
 				block->codes.push_back(code(lex->line, script_engine::pc_push_variable_writable, s->level, s->variable));
 				while (lex->next == tk_open_bra) {
@@ -1780,7 +1980,7 @@ void parser::parse_statements(script_engine::block* block) {
 						throw parser_error(error);
 					}
 					lex->advance();
-					write_operation(block, &symbolIndexW, 2);
+					write_operation(block, "index!", 2);
 				}
 				if (lex->next != tk_assign) {
 					std::wstring error;
@@ -1792,12 +1992,6 @@ void parser::parse_statements(script_engine::block* block) {
 				block->codes.push_back(code(lex->line, script_engine::pc_assign_writable));
 				break;
 
-			case tk_assign:
-				lex->advance();
-				parse_expression(block);
-				block->codes.push_back(code(lex->line, script_engine::pc_assign, s->level, s->variable));
-				break;
-
 			case tk_add_assign:
 			case tk_subtract_assign:
 			case tk_multiply_assign:
@@ -1805,25 +1999,25 @@ void parser::parse_statements(script_engine::block* block) {
 			case tk_remainder_assign:
 			case tk_power_assign:
 			{
-				symbol* f;
+				char const* f;
 				switch (lex->next) {
 				case tk_add_assign:
-					f = &symbolAdd;
+					f = "add";
 					break;
 				case tk_subtract_assign:
-					f = &symbolSub;
+					f = "subtract";
 					break;
 				case tk_multiply_assign:
-					f = &symbolMul;
+					f = "multiply";
 					break;
 				case tk_divide_assign:
-					f = &symbolDiv;
+					f = "divide";
 					break;
 				case tk_remainder_assign:
-					f = &symbolModr;
+					f = "remainder";
 					break;
 				case tk_power_assign:
-					f = &symbolPow;
+					f = "power";
 					break;
 				}
 				lex->advance();
@@ -1840,7 +2034,7 @@ void parser::parse_statements(script_engine::block* block) {
 			case tk_inc:
 			case tk_dec:
 			{
-				symbol* f = (lex->next == tk_inc) ? &symbolSucc : &symbolPred;
+				char const* f = (lex->next == tk_inc) ? "successor" : "predecessor";
 				lex->advance();
 
 				block->codes.push_back(code(lex->line, script_engine::pc_push_variable, s->level, s->variable));
@@ -1849,7 +2043,7 @@ void parser::parse_statements(script_engine::block* block) {
 			}
 			break;
 			default:
-				if (s->sub == nullptr) {
+				if (s->sub == NULL) {
 					std::wstring error;
 					error += L"You cannot call a variable as if it were a function or a subroutine.\r\n";
 					throw parser_error(error);
@@ -1893,15 +2087,17 @@ void parser::parse_statements(script_engine::block* block) {
 			lex->advance();
 			if (lex->next == tk_open_par) {
 				parse_parentheses(block);
-				int ip = block->codes.length;
+				int ip = block->codes.size();
 				block->codes.push_back(code(lex->line, script_engine::pc_loop_count));
 				parse_inline_block(block, script_engine::bk_loop);
+				block->codes.push_back(code(lex->line, script_engine::pc_continue_marker));
 				block->codes.push_back(code(lex->line, script_engine::pc_loop_back, ip));
 				block->codes.push_back(code(lex->line, script_engine::pc_pop));
 			}
 			else {
-				int ip = block->codes.length;
+				int ip = block->codes.size();
 				parse_inline_block(block, script_engine::bk_loop);
+				block->codes.push_back(code(lex->line, script_engine::pc_continue_marker));
 				block->codes.push_back(code(lex->line, script_engine::pc_loop_back, ip));
 			}
 			need_semicolon = false;
@@ -1909,25 +2105,27 @@ void parser::parse_statements(script_engine::block* block) {
 		else if (lex->next == tk_TIMES) {
 			lex->advance();
 			parse_parentheses(block);
-			int ip = block->codes.length;
+			int ip = block->codes.size();
 			if (lex->next == tk_LOOP) {
 				lex->advance();
 			}
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_count));
 			parse_inline_block(block, script_engine::bk_loop);
+			block->codes.push_back(code(lex->line, script_engine::pc_continue_marker));
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_back, ip));
 			block->codes.push_back(code(lex->line, script_engine::pc_pop));
 			need_semicolon = false;
 		}
 		else if (lex->next == tk_WHILE) {
 			lex->advance();
-			int ip = block->codes.length;
+			int ip = block->codes.size();
 			parse_parentheses(block);
 			if (lex->next == tk_LOOP) {
 				lex->advance();
 			}
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_if));
 			parse_inline_block(block, script_engine::bk_loop);
+			block->codes.push_back(code(lex->line, script_engine::pc_continue_marker));
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_back, ip));
 			need_semicolon = false;
 		}
@@ -1989,15 +2187,15 @@ void parser::parse_statements(script_engine::block* block) {
 				block->codes.push_back(code(lex->line, script_engine::pc_swap));
 			}
 
-			int ip = block->codes.length;
+			int ip = block->codes.size();
 
 			block->codes.push_back(code(lex->line, script_engine::pc_dup2));
-			write_operation(block, &symbolCompare, 2);
+			write_operation(block, "compare", 2);
 
 			block->codes.push_back(code(lex->line, back ? script_engine::pc_loop_descent : script_engine::pc_loop_ascent));
 
 			if (back) {
-				write_operation(block, &symbolPred, 1);
+				write_operation(block, "predecessor", 1);
 			}
 
 			script_engine::block* b = engine->new_block(block->level + 1, script_engine::bk_loop);
@@ -2007,8 +2205,10 @@ void parser::parse_statements(script_engine::block* block) {
 			block->codes.push_back(code(lex->line, script_engine::pc_dup));
 			block->codes.push_back(code(lex->line, script_engine::pc_call, b, 1));
 
+			block->codes.push_back(code(lex->line, script_engine::pc_continue_marker));
+
 			if (!back) {
-				write_operation(block, &symbolSucc, 1);
+				write_operation(block, "successor", 1);
 			}
 
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_back, ip));
@@ -2060,7 +2260,7 @@ void parser::parse_statements(script_engine::block* block) {
 
 					block->codes.push_back(code(lex->line, script_engine::pc_dup));
 					parse_expression(block);
-					write_operation(block, &symbolCompare, 2);
+					write_operation(block, "compare", 2);
 					block->codes.push_back(code(lex->line, script_engine::pc_compare_e));
 					block->codes.push_back(code(lex->line, script_engine::pc_dup));
 					block->codes.push_back(code(lex->line, script_engine::pc_case_if));
@@ -2096,12 +2296,10 @@ void parser::parse_statements(script_engine::block* block) {
 			lex->advance();
 			block->codes.push_back(code(lex->line, script_engine::pc_break_loop));
 		}
-		/*
 		else if (lex->next == tk_CONTINUE) {
 			lex->advance();
 			block->codes.push_back(code(lex->line, script_engine::pc_loop_continue));
 		}
-		*/
 		else if (lex->next == tk_RETURN) {
 			lex->advance();
 			switch (lex->next) {
@@ -2113,7 +2311,7 @@ void parser::parse_statements(script_engine::block* block) {
 			default:
 				parse_expression(block);
 				symbol* s = search_result();
-				if (s == nullptr) {
+				if (s == NULL) {
 					std::wstring error;
 					error += L"Only functions may return a value.\r\n";
 					throw parser_error(error);
@@ -2209,11 +2407,11 @@ void parser::parse_statements(script_engine::block* block) {
 
 void parser::parse_inline_block(script_engine::block* block, script_engine::block_kind kind) {
 	script_engine::block* b = engine->new_block(block->level + 1, kind);
-	parse_block(b, nullptr, false);
+	parse_block(b, NULL, false);
 	block->codes.push_back(code(lex->line, script_engine::pc_call, b, 0));
 }
 
-void parser::parse_block(script_engine::block* block, const std::vector<std::string>* args, bool adding_result) {
+void parser::parse_block(script_engine::block* block, std::vector < std::string > const* args, bool adding_result) {
 	if (lex->next != tk_open_cur) {
 		std::wstring error;
 		error += L"\"{\" is required.\r\n";
@@ -2225,8 +2423,8 @@ void parser::parse_block(script_engine::block* block, const std::vector<std::str
 
 	scan_current_scope(block->level, args, adding_result);
 
-	if (args != nullptr) {
-		for (size_t i = 0; i < args->size(); ++i) {
+	if (args != NULL) {
+		for (unsigned i = 0; i < args->size(); ++i) {
 			symbol* s = search((*args)[i]);
 			block->codes.push_back(code(lex->line, script_engine::pc_assign, s->level, s->variable));
 		}
@@ -2253,7 +2451,7 @@ script_type_manager::script_type_manager() {
 }
 
 type_data* script_type_manager::get_array_type(type_data* element) {
-	for (std::list<type_data>::iterator i = types.begin(); i != types.end(); ++i) {
+	for (std::list < type_data >::iterator i = types.begin(); i != types.end(); ++i) {
 		if (i->get_kind() == type_data::tk_array && i->get_element() == element) {
 			return &*i;
 		}
@@ -2263,9 +2461,8 @@ type_data* script_type_manager::get_array_type(type_data* element) {
 
 /* script_engine */
 
-script_engine::script_engine(script_type_manager* a_type_manager, const std::string& source, int funcc, const function* funcv) :
-	type_manager(a_type_manager) 
-{
+script_engine::script_engine(script_type_manager* a_type_manager, std::string const& source, int funcc, function const* funcv) :
+	type_manager(a_type_manager) {
 	main_block = new_block(0, bk_normal);
 
 	const char* end = &source[0] + source.size();
@@ -2279,9 +2476,8 @@ script_engine::script_engine(script_type_manager* a_type_manager, const std::str
 	error_line = p.error_line;
 }
 
-script_engine::script_engine(script_type_manager * a_type_manager, const std::vector<char>& source, int funcc, const function* funcv) :
-	type_manager(a_type_manager) 
-{
+script_engine::script_engine(script_type_manager* a_type_manager, std::vector<char> const& source, int funcc, function const* funcv) :
+	type_manager(a_type_manager) {
 	main_block = new_block(0, bk_normal);
 
 	if (false) {
@@ -2305,29 +2501,29 @@ script_engine::~script_engine() {
 	blocks.clear();
 }
 
-/* script_machine*/
+/* script_machine */
 
 script_machine::script_machine(script_engine* the_engine) {
 	assert(!the_engine->get_error());
 	engine = the_engine;
 
-	first_using_environment = nullptr;
-	last_using_environment = nullptr;
-	first_garbage_environment = nullptr;
-	last_garbage_environment = nullptr;
+	first_using_environment = NULL;
+	last_using_environment = NULL;
+	first_garbage_environment = NULL;
+	last_garbage_environment = NULL;
 
 	error = false;
 	bTerminate = false;
 }
 
 script_machine::~script_machine() {
-	while (first_using_environment != nullptr) {
+	while (first_using_environment != NULL) {
 		environment* object = first_using_environment;
 		first_using_environment = first_using_environment->succ;
 		delete object;
 	}
 
-	while (first_garbage_environment != nullptr) {
+	while (first_garbage_environment != NULL) {
 		environment* object = first_garbage_environment;
 		first_garbage_environment = first_garbage_environment->succ;
 		delete object;
@@ -2335,16 +2531,16 @@ script_machine::~script_machine() {
 }
 
 script_machine::environment* script_machine::new_environment(environment* parent, script_engine::block* b) {
-	environment* result = nullptr;
+	environment* result = NULL;
 
-	if (first_garbage_environment != nullptr) {
+	if (first_garbage_environment != NULL) {
 		//ごみ回収
 		result = first_garbage_environment;
 		first_garbage_environment = result->succ;
-		*((result->succ != nullptr) ? &result->succ->pred : &last_garbage_environment) = result->pred;
+		*((result->succ != NULL) ? &result->succ->pred : &last_garbage_environment) = result->pred;
 	}
 
-	if (result == nullptr) {
+	if (result == NULL) {
 		result = new environment;
 	}
 
@@ -2359,8 +2555,8 @@ script_machine::environment* script_machine::new_environment(environment* parent
 
 	//使用中リストへの追加
 	result->pred = last_using_environment;
-	result->succ = nullptr;
-	*((result->pred != nullptr) ? &result->pred->succ : &first_using_environment) = result;
+	result->succ = NULL;
+	*((result->pred != NULL) ? &result->pred->succ : &first_using_environment) = result;
 	last_using_environment = result;
 
 	return result;
@@ -2370,13 +2566,13 @@ void script_machine::dispose_environment(environment* object) {
 	assert(object->ref_count == 0);
 
 	//使用中リストからの削除
-	*((object->pred != nullptr) ? &object->pred->succ : &first_using_environment) = object->succ;
-	*((object->succ != nullptr) ? &object->succ->pred : &last_using_environment) = object->pred;
+	*((object->pred != NULL) ? &object->pred->succ : &first_using_environment) = object->succ;
+	*((object->succ != NULL) ? &object->succ->pred : &last_using_environment) = object->pred;
 
 	//ごみリストへの追加
 	object->pred = last_garbage_environment;
-	object->succ = nullptr;
-	*((object->pred != nullptr) ? &object->pred->succ : &first_garbage_environment) = object;
+	object->succ = NULL;
+	*((object->pred != NULL) ? &object->pred->succ : &first_garbage_environment) = object;
 	last_garbage_environment = object;
 }
 
@@ -2384,11 +2580,11 @@ void script_machine::run() {
 	if (bTerminate)return;
 
 	assert(!error);
-	if (first_using_environment == nullptr) {
+	if (first_using_environment == NULL) {
 		error_line = -1;
 		threads.clear();
-		threads.insert(threads.begin(), new_environment(nullptr, engine->main_block));
-		current_thread_index = threads.begin();
+		threads.push_back(new_environment(NULL, engine->main_block));
+		current_thread_index = 0;
 		finished = false;
 		stopped = false;
 		resuming = false;
@@ -2418,22 +2614,24 @@ void script_machine::call(std::string event_name) {
 	assert(!error);
 	assert(!stopped);
 	if (engine->events.find(event_name) != engine->events.end()) {
-		run();	//念のため "Just in case"
+		run();	//念のため
 
-		environment*& env = *threads.begin();
+		int threadIndex = current_thread_index;
+		current_thread_index = 0;
 
 		script_engine::block* event = engine->events[event_name];
-		++(env->ref_count);
-		env = new_environment(env, event);
+		++(threads[0]->ref_count);
+		threads[0] = new_environment(threads[0], event);
 
 		finished = false;
-		environment* epp = env->parent->parent;
+		environment* epp = threads[0]->parent->parent;
 		call_start_parent_environment_list.push_back(epp);
 		while (!finished && !bTerminate) {
 			advance();
 		}
 		call_start_parent_environment_list.pop_back();
 		finished = false;
+		current_thread_index = threadIndex;
 	}
 }
 
@@ -2443,14 +2641,14 @@ bool script_machine::has_event(std::string event_name) {
 }
 
 int script_machine::get_current_line() {
-	environment* current = *current_thread_index;
-	script_engine::code * c = &(current->sub->codes.at[current->ip]);
+	environment* current = threads.at[current_thread_index];
+	script_engine::code* c = &(current->sub->codes[current->ip]);
 	return c->line;
 }
 
 void script_machine::advance() {
-	//assert(current_thread_index < threads.length);
-	environment* current = *current_thread_index;
+	assert(current_thread_index < threads.length);
+	environment* current = threads.at[current_thread_index];
 
 	if (current->waitCount > 0) {
 		yield();
@@ -2458,17 +2656,17 @@ void script_machine::advance() {
 		return;
 	}
 
-	if (current->ip >= current->sub->codes.length) {
+	if (current->ip >= current->sub->codes.size()) {
 		environment* removing = current;
-		environment* parent = current->parent;
+		current = current->parent;
 
 		bool bFinish = false;
-		if (parent == nullptr)	//The coroutine
+		if (current == NULL)
 			bFinish = true;
 		else {
 			if (call_start_parent_environment_list.size() > 1) {
 				environment* env = *call_start_parent_environment_list.rbegin();
-				if (parent == env)
+				if (current == env)
 					bFinish = true;
 			}
 		}
@@ -2477,19 +2675,30 @@ void script_machine::advance() {
 			finished = true;
 		}
 		else {
-			*current_thread_index = parent;
+			threads[current_thread_index] = current;
 
 			if (removing->has_result) {
-				assert(parent != nullptr && removing->variables.size() > 0);
-				parent->stack.push_back(removing->variables[0]);
+				assert(current != NULL && removing->variables.length > 0);
+				current->stack.push_back(removing->variables.at[0]);
 			}
 			else if (removing->sub->kind == script_engine::bk_microthread) {
-				current_thread_index = threads.erase(current_thread_index);
+				threads.erase(threads.begin() + current_thread_index);
 				yield();
 			}
 
+/*
+#ifndef NDEBUG
+			assert(removing->stack.length == 0);
+			if (removing->stack.length > 0) {
+				for (int i = 0; i < removing->stack.length; ++i) {
+					removing->stack.pop_back();
+				}
+			}
+#endif
+*/
 			for (; ; ) {
-				if (--(removing->ref_count) > 0)
+				--(removing->ref_count);
+				if (removing->ref_count > 0)
 					break;
 				environment* next = removing->parent;
 				dispose_environment(removing);
@@ -2498,24 +2707,24 @@ void script_machine::advance() {
 		}
 	}
 	else {
-		script_engine::code* c = &(current->sub->codes.at[current->ip]);
+		script_engine::code* c = &(current->sub->codes[current->ip]);
 		error_line = c->line;
 		++(current->ip);
 
 		switch (c->command) {
 		case script_engine::pc_assign:
 		{
-			stack_t * stack = &current->stack;
+			stack_t* stack = &current->stack;
 			assert(stack->length > 0);
-			for (environment* i = current; i != nullptr; i = i->parent) {
+			for (environment* i = current; i != NULL; i = i->parent) {
 				if (i->sub->level == c->level) {
-					variables_t * vars = &i->variables;
+					variables_t* vars = &i->variables;
 					if (vars->length <= c->variable) {
 						while (vars->capacity <= c->variable) vars->expand();
 						vars->length = c->variable + 1;
 					}
-					value * dest = &(vars->at[c->variable]);
-					value * src = &stack->at[stack->length - 1];
+					value* dest = &(vars->at[c->variable]);
+					value* src = &stack->at[stack->length - 1];
 					if (dest->has_data() && dest->get_type() != src->get_type()
 						&& !(dest->get_type()->get_kind() == type_data::tk_array
 							&& src->get_type()->get_kind() == type_data::tk_array
@@ -2534,10 +2743,10 @@ void script_machine::advance() {
 
 		case script_engine::pc_assign_writable:
 		{
-			stack_t * stack = &current->stack;
+			stack_t* stack = &current->stack;
 			assert(stack->length >= 2);
-			value * dest = &stack->at[stack->length - 2];
-			value * src = &stack->at[stack->length - 1];
+			value* dest = &stack->at[stack->length - 2];
+			value* src = &stack->at[stack->length - 1];
 			if (dest->has_data() && dest->get_type() != src->get_type()
 				&& !(dest->get_type()->get_kind() == type_data::tk_array && src->get_type()->get_kind() == type_data::tk_array
 					&& (dest->length_as_array() > 0 || src->length_as_array() > 0))) {
@@ -2554,68 +2763,54 @@ void script_machine::advance() {
 		}
 		break;
 
+		case script_engine::pc_continue_marker:	//Dummy token for pc_loop_continue
+			break;
+		case script_engine::pc_loop_continue:
 		case script_engine::pc_break_loop:
 		case script_engine::pc_break_routine:
 			for (environment* i = current; i != nullptr; i = i->parent) {
-				i->ip = i->sub->codes.length;
+				i->ip = i->sub->codes.size();
 
-				if (c->command == script_engine::pc_break_loop) {
-					if (i->sub->kind == script_engine::bk_loop) {
+				if (c->command == script_engine::pc_break_loop || c->command == script_engine::pc_loop_continue) {
+					bool exit = false;
+					switch (i->sub->kind) {
+					case script_engine::bk_loop:
+					{
+						script_engine::command_kind targetCommand = script_engine::pc_loop_back;
+						if (c->command == script_engine::pc_loop_continue) 
+							targetCommand = script_engine::pc_continue_marker;
+
 						environment* e = i->parent;
 						assert(e != nullptr);
 						do
 							++(e->ip);
-						while (e->sub->codes.at[e->ip - 1].command != script_engine::pc_loop_back);
+						while (e->sub->codes[e->ip - 1].command != targetCommand);
+					}
+					case script_engine::bk_microthread:	//Prevents catastrophes.
+					case script_engine::bk_function:
+						exit = true;
+					default:
 						break;
 					}
+					if (exit) break;
 				}
 				else {
 					if (i->sub->kind == script_engine::bk_sub || i->sub->kind == script_engine::bk_function
 						|| i->sub->kind == script_engine::bk_microthread)
 						break;
 					else if (i->sub->kind == script_engine::bk_loop)
-						i->parent->stack.clear(); /*小細工もいいところ*/
+						i->parent->stack.clear();
 				}
 			}
 			break;
-			/*
-			case script_engine::pc_loop_continue:
-			{
-				for (environment* i = current; i != nullptr; i = i->parent) {
-					i->ip = i->sub->codes.length;
-
-					if (i->sub->kind == script_engine::bk_loop) {
-						environment* e = i->parent;
-
-
-						//Logger::WriteTop(StringUtility::Format("__continue: length=%d", e->ip));
-						for (int i = 0; i < e->sub->codes.length; ++i) {
-							Logger::WriteTop(std::to_string(e->sub->codes[i].command));
-						}
-
-						script_engine::code* ptr = &(e->sub->codes.at[e->ip - 1]);
-
-						while (ptr->command != script_engine::pc_loop_back) {
-							++(e->ip);
-							++ptr;
-						}
-						e->ip = ptr->ip;
-						++(e->ip);
-						//e->ip--;
-						break;
-					}
-				}
-				break;
-			}
-			*/
 		case script_engine::pc_call:
 		case script_engine::pc_call_and_push_result:
 		{
-			stack_t * current_stack = &current->stack;
+			stack_t* current_stack = &current->stack;
 			assert(current_stack->length >= c->arguments);
-			if (c->sub->func != nullptr) {
+			if (c->sub->func != NULL) {
 				//ネイティブ呼び出し
-				value * argv = &((*current_stack).at[current_stack->length - c->arguments]);
+				value* argv = &((*current_stack).at[current_stack->length - c->arguments]);
 				value ret;
 				ret = c->sub->func(this, c->arguments, argv);
 				if (stopped) {
@@ -2635,10 +2830,10 @@ void script_machine::advance() {
 				//マイクロスレッド起動
 				++(current->ref_count);
 				environment* e = new_environment(current, c->sub);
-				threads.insert(++current_thread_index, e);
-				--current_thread_index;
+				++current_thread_index;
+				threads.insert(threads.begin() + current_thread_index, e);
 				//引数の積み替え
-				for (size_t i = 0; i < c->arguments; ++i) {
+				for (unsigned i = 0; i < c->arguments; ++i) {
 					e->stack.push_back(current_stack->at[current_stack->length - 1]);
 					current_stack->pop_back();
 				}
@@ -2648,9 +2843,9 @@ void script_machine::advance() {
 				++(current->ref_count);
 				environment* e = new_environment(current, c->sub);
 				e->has_result = c->command == script_engine::pc_call_and_push_result;
-				*current_thread_index = e;
+				threads[current_thread_index] = e;
 				//引数の積み替え
-				for (size_t i = 0; i < c->arguments; ++i) {
+				for (unsigned i = 0; i < c->arguments; ++i) {
 					e->stack.push_back(current_stack->at[current_stack->length - 1]);
 					current_stack->pop_back();
 				}
@@ -2668,7 +2863,7 @@ void script_machine::advance() {
 		{
 			bool exit = true;
 			if (c->command != script_engine::pc_case_next) {
-				stack_t * current_stack = &current->stack;
+				stack_t* current_stack = &current->stack;
 				exit = current_stack->at[current_stack->length - 1].as_boolean();
 				if (c->command == script_engine::pc_case_if_not)
 					exit = !exit;
@@ -2677,7 +2872,7 @@ void script_machine::advance() {
 			if (exit) {
 				int nested = 0;
 				for (; ; ) {
-					switch (current->sub->codes.at[current->ip].command) {
+					switch (current->sub->codes[current->ip].command) {
 					case script_engine::pc_case_begin:
 						++nested;
 						break;
@@ -2710,8 +2905,8 @@ next:
 		case script_engine::pc_compare_le:
 		case script_engine::pc_compare_ne:
 		{
-			stack_t * stack = &current->stack;
-			value & t = stack->at[stack->length - 1];
+			stack_t* stack = &current->stack;
+			value& t = stack->at[stack->length - 1];
 			float r = t.as_real();
 			bool b;
 			switch (c->command) {
@@ -2740,7 +2935,7 @@ next:
 
 		case script_engine::pc_dup:
 		{
-			stack_t * stack = &current->stack;
+			stack_t* stack = &current->stack;
 			assert(stack->length > 0);
 			stack->push_back(stack->at[stack->length - 1]);
 		}
@@ -2748,12 +2943,11 @@ next:
 
 		case script_engine::pc_dup2:
 		{
-			stack_t * stack = &current->stack;
+			stack_t* stack = &current->stack;
 			int len = stack->length;
 			assert(len >= 2);
-			//6
-			stack->push_back(stack->at[len - 2]);	//6
-			stack->push_back(stack->at[len - 1]);	//6 6
+			stack->push_back(stack->at[len - 2]);
+			stack->push_back(stack->at[len - 1]);
 		}
 		break;
 
@@ -2763,12 +2957,12 @@ next:
 
 		case script_engine::pc_loop_ascent:
 		{
-			stack_t * stack = &current->stack;
-			value * i = &stack->at[stack->length - 1];
+			stack_t* stack = &current->stack;
+			value* i = &stack->at[stack->length - 1];
 			if (i->as_real() <= 0) {
 				do
 					++(current->ip);
-				while (current->sub->codes.at[current->ip - 1].command != script_engine::pc_loop_back);
+				while (current->sub->codes[current->ip - 1].command != script_engine::pc_loop_back);
 			}
 			current->stack.pop_back();
 		}
@@ -2776,12 +2970,12 @@ next:
 
 		case script_engine::pc_loop_descent:
 		{
-			stack_t * stack = &current->stack;
-			value * i = &stack->at[stack->length - 1];
+			stack_t* stack = &current->stack;
+			value* i = &stack->at[stack->length - 1];
 			if (i->as_real() >= 0) {
 				do
 					++(current->ip);
-				while (current->sub->codes.at[current->ip - 1].command != script_engine::pc_loop_back);
+				while (current->sub->codes[current->ip - 1].command != script_engine::pc_loop_back);
 			}
 			current->stack.pop_back();
 		}
@@ -2789,8 +2983,8 @@ next:
 
 		case script_engine::pc_loop_count:
 		{
-			stack_t * stack = &current->stack;
-			value * i = &stack->at[stack->length - 1];
+			stack_t* stack = &current->stack;
+			value* i = &stack->at[stack->length - 1];
 			assert(i->get_type()->get_kind() == type_data::tk_real);
 			float r = i->as_real();
 			if (r > 0)
@@ -2798,20 +2992,20 @@ next:
 			else {
 				do
 					++(current->ip);
-				while (current->sub->codes.at[current->ip - 1].command != script_engine::pc_loop_back);
+				while (current->sub->codes[current->ip - 1].command != script_engine::pc_loop_back);
 			}
 		}
 		break;
 
 		case script_engine::pc_loop_if:
 		{
-			stack_t * stack = &current->stack;
+			stack_t* stack = &current->stack;
 			bool c = stack->at[stack->length - 1].as_boolean();
 			current->stack.pop_back();
 			if (!c) {
 				do
 					++(current->ip);
-				while (current->sub->codes.at[current->ip - 1].command != script_engine::pc_loop_back);
+				while (current->sub->codes[current->ip - 1].command != script_engine::pc_loop_back);
 			}
 		}
 		break;
@@ -2827,16 +3021,16 @@ next:
 
 		case script_engine::pc_push_variable:
 		case script_engine::pc_push_variable_writable:
-			for (environment* i = current; i != nullptr; i = i->parent) {
+			for (environment* i = current; i != NULL; i = i->parent) {
 				if (i->sub->level == c->level) {
-					variables_t * vars = &i->variables;
+					variables_t* vars = &i->variables;
 					if (vars->length <= c->variable || !((*vars).at[c->variable].has_data())) {
 						std::wstring error;
 						error += L"You may not use a variable that has not yet been assigned a value.\r\n";
 						raise_error(error);
 					}
 					else {
-						value * var = &(*vars).at[c->variable];
+						value* var = &(*vars).at[c->variable];
 						if (c->command == script_engine::pc_push_variable_writable)
 							var->unique();
 						current->stack.push_back(*var);
@@ -2856,17 +3050,18 @@ next:
 		}
 		break;
 
-		case script_engine::pc_yield:
-			yield();
-			break;
+		
 		case script_engine::pc_wait:
 		{
 			stack_t* stack = &current->stack;
 			value* t = &(stack->at[stack->length - 1]);
 			current->waitCount = (int)(t->as_real() + 0.01) - 1;
+		}
+		//Fallthrough
+		case script_engine::pc_yield:
 			yield();
 			break;
-		}
+
 		default:
 			assert(false);
 		}

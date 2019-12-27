@@ -28,8 +28,6 @@
 #include <string>
 #include <map>
 
-#include "LightweightVector.hpp"
-#include "Value.hpp"
 #include "Logger.hpp"
 
 
@@ -38,15 +36,295 @@
 
 //-------- 汎用
 namespace gstd {
+	std::string to_mbcs(std::wstring const& s);
+	std::wstring to_wide(std::string const& s);
+
+	template < typename T >
+	class lightweight_vector {
+	public:
+		unsigned length;
+		unsigned capacity;
+		T* at;
+
+		lightweight_vector() : length(0), capacity(0), at(NULL) {}
+
+		lightweight_vector(lightweight_vector const& source);
+
+		~lightweight_vector() {
+			if (at != NULL) {
+				delete[] at;
+			}
+		}
+
+		lightweight_vector& operator = (lightweight_vector const& source);
+
+		void expand();
+
+		void push_back(T const& value) {
+			if (length == capacity) expand();
+			at[length] = value;
+			++length;
+		}
+
+		void pop_back() {
+			--length;
+
+			T temp;
+			at[length] = temp;
+		}
+
+		void clear() {
+			length = 0;
+		}
+
+		void release() {
+			length = 0;
+			if (at != NULL) {
+				delete[] at;
+				at = NULL;
+				capacity = 0;
+			}
+		}
+
+		unsigned size() const {
+			return length;
+		}
+
+		T& operator[] (unsigned i) {
+			return at[i];
+		}
+
+		T const& operator[] (unsigned i) const {
+			return at[i];
+		}
+
+		T& back() {
+			return at[length - 1];
+		}
+
+		T* begin() {
+			return &at[0];
+		}
+
+		void erase(T* pos);
+		void insert(T* pos, T const& value);
+	};
+
+	template < typename T >
+	lightweight_vector < T >::lightweight_vector(lightweight_vector const& source) {
+		length = source.length;
+		capacity = source.capacity;
+		if (source.capacity > 0) {
+			at = new T[source.capacity];
+			for (int i = length - 1; i >= 0; --i)
+				at[i] = source.at[i];
+		}
+		else {
+			at = NULL;
+		}
+	}
+
+	template < typename T >
+	lightweight_vector < T >& lightweight_vector < T >::operator = (lightweight_vector < T > const& source) {
+		if (at != NULL) delete[] at;
+		length = source.length;
+		capacity = source.capacity;
+		if (source.capacity > 0) {
+			at = new T[source.capacity];
+			for (int i = length - 1; i >= 0; --i)
+				at[i] = source.at[i];
+		}
+		else {
+			at = NULL;
+		}
+		return *this;
+	}
+
+	template < typename T >
+	void lightweight_vector < T >::expand() {
+		if (capacity == 0) {
+			//delete[] at;
+			capacity = 4;
+			at = new T[4];
+		}
+		else {
+			capacity *= 2;
+			T* n = new T[capacity];
+			for (int i = length - 1; i >= 0; --i)
+				n[i] = at[i];
+			delete[] at;
+			at = n;
+		}
+	}
+
+	template < typename T >
+	void lightweight_vector < T >::erase(T* pos) {
+		--length;
+		for (T* i = pos; i < at + length; ++i) {
+			*i = *(i + 1);
+		}
+	}
+
+	template < typename T >
+	void lightweight_vector < T >::insert(T* pos, T const& value) {
+		if (length == capacity) {
+			unsigned pos_index = pos - at;
+			expand();
+			pos = at + pos_index;
+		}
+		for (T* i = at + length; i > pos; --i) {
+			*i = *(i - 1);
+		}
+		*pos = value;
+		++length;
+	}
+
+	//-------- ここから
+
+	class type_data {
+	public:
+		enum type_kind : uint8_t {
+			tk_real, tk_char, tk_boolean, tk_array
+		};
+
+		type_data(type_kind k, type_data* t = NULL) : kind(k), element(t) {}
+
+		type_data(type_data const& source) : kind(source.kind), element(source.element) {}
+
+		//デストラクタはデフォルトに任せる
+
+		type_kind get_kind() {
+			return kind;
+		}
+
+		type_data* get_element() {
+			return element;
+		}
+
+	private:
+		type_kind kind;
+		type_data* element;
+
+		type_data& operator = (type_data const& source);
+	};
+
+	class value {
+	public:
+		value() : data(nullptr) {}
+		value(type_data* t, double v) {
+			data = new body();
+			data->ref_count = 1;
+			data->type = t;
+			data->real_value = v;
+		}
+		value(type_data* t, wchar_t v) {
+			data = new body();
+			data->ref_count = 1;
+			data->type = t;
+			data->char_value = v;
+		}
+		value(type_data* t, bool v) {
+			data = new body();
+			data->ref_count = 1;
+			data->type = t;
+			data->boolean_value = v;
+		}
+		value(type_data* t, std::wstring v);
+		value(value const& source) {
+			data = source.data;
+			if (data != nullptr)
+				++(data->ref_count);
+		}
+
+		~value() {
+			release();
+		}
+
+		value& operator = (value const& source) {
+			if (source.data != nullptr) {
+				++(source.data->ref_count);
+			}
+			release();
+			data = source.data;
+			return *this;
+		}
+
+		bool has_data() const {
+			return data != nullptr;
+		}
+
+		void set(type_data* t, double v) {
+			unique();
+			data->type = t;
+			data->real_value = v;
+		}
+
+		void set(type_data* t, bool v) {
+			unique();
+			data->type = t;
+			data->boolean_value = v;
+		}
+
+		void append(type_data* t, value const& x);
+		void concatenate(value const& x);
+
+		double as_real() const;
+		wchar_t as_char() const;
+		bool as_boolean() const;
+		std::wstring as_string() const;
+		unsigned length_as_array() const;
+		value const& index_as_array(unsigned i) const;
+		value& index_as_array(unsigned i);
+		type_data* get_type() const;
+
+		void unique() const {
+			if (data == nullptr) {
+				data = new body();
+				data->ref_count = 1;
+				data->type = nullptr;
+			}
+			else if (data->ref_count > 1) {
+				--(data->ref_count);
+				data = new body(*data);
+				data->ref_count = 1;
+			}
+		}
+
+		void overwrite(const value& source);	//危険！外から呼ぶな
+
+	private:
+		inline void release() {
+			if (data != nullptr) {
+				--(data->ref_count);
+				if (data->ref_count == 0) {
+					delete data;
+				}
+			}
+		}
+		struct body {
+			int ref_count;
+			type_data* type;
+			lightweight_vector < value > array_value;
+
+			union {
+				double real_value;
+				wchar_t char_value;
+				bool boolean_value;
+			};
+		};
+
+		mutable body* data;
+	};
+
 	class script_engine;
 	class script_machine;
 
-	typedef value (*callback)(script_machine* machine, int argc, value const* argv);
+	typedef value(*callback) (script_machine* machine, int argc, value const* argv);
 
 	struct function {
-		const char* name;
+		char const* name;
 		callback func;
-		size_t arguments;
+		unsigned arguments;
 	};
 
 	class script_type_manager {
@@ -71,10 +349,10 @@ namespace gstd {
 
 		type_data* get_array_type(type_data* element);
 	private:
-		script_type_manager(const script_type_manager&);
-		script_type_manager& operator=(const script_type_manager& source);
+		script_type_manager(script_type_manager const&);
+		script_type_manager& operator = (script_type_manager const& source);
 
-		std::list<type_data> types;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		std::list < type_data > types;	//中身のポインタを使うのでアドレスが変わらないようにlist
 		type_data* real_type;
 		type_data* char_type;
 		type_data* boolean_type;
@@ -83,8 +361,8 @@ namespace gstd {
 
 	class script_engine {
 	public:
-		script_engine(script_type_manager* a_type_manager, const std::string& source, int funcc, function const* funcv);
-		script_engine(script_type_manager* a_type_manager, const std::vector<char>& source, int funcc, function const* funcv);
+		script_engine(script_type_manager* a_type_manager, std::string const& source, int funcc, function const* funcv);
+		script_engine(script_type_manager* a_type_manager, std::vector<char> const& source, int funcc, function const* funcv);
 		virtual ~script_engine();
 
 		void* data;	//クライアント用空間
@@ -93,7 +371,7 @@ namespace gstd {
 			return error;
 		}
 
-		std::wstring & get_error_message() {
+		std::wstring& get_error_message() {
 			return error_message;
 		}
 
@@ -131,8 +409,8 @@ namespace gstd {
 #endif
 
 		//コピー、代入演算子の自動生成を無効に
-		script_engine(const script_engine& source);
-		script_engine& operator=(const script_engine& source);
+		script_engine(script_engine const& source);
+		script_engine& operator = (script_engine const& source);
 
 		//エラー
 		bool error;
@@ -143,11 +421,11 @@ namespace gstd {
 		script_type_manager* type_manager;
 
 		//中間コード
-		enum command_kind {
+		enum command_kind : uint8_t {
 			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, pc_call, pc_call_and_push_result, pc_case_begin,
 			pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
 			pc_compare_le, pc_compare_ne, pc_dup, pc_dup2,
-			pc_loop_ascent, pc_loop_back, pc_loop_count, pc_loop_descent, pc_loop_if, /*pc_loop_continue,*/
+			pc_loop_ascent, pc_loop_back, pc_loop_count, pc_loop_descent, pc_loop_if, pc_loop_continue, pc_continue_marker,
 			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait
 		};
 
@@ -161,11 +439,11 @@ namespace gstd {
 			union {
 				struct {
 					int level;	//assign/push_variableの変数の環境位置
-					size_t variable;	//assign/push_variableの変数のインデックス
+					unsigned variable;	//assign/push_variableの変数のインデックス
 				};
 				struct {
 					block* sub;	//call/call_and_push_resultの飛び先
-					size_t arguments;	//call/call_and_push_resultの引数の数
+					unsigned arguments;	//call/call_and_push_resultの引数の数
 				};
 				struct {
 					int ip;	//loop_backの戻り先
@@ -176,23 +454,24 @@ namespace gstd {
 
 			code(int the_line, command_kind the_command) : line(the_line), command(the_command) {}
 
-			code(int the_line, command_kind the_command, int the_level, size_t the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
+			code(int the_line, command_kind the_command, int the_level, unsigned the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
 
-			code(int the_line, command_kind the_command, block * the_sub, size_t the_arguments) : line(the_line), command(the_command), sub(the_sub),
-				arguments(the_arguments) {}
+			code(int the_line, command_kind the_command, block* the_sub, int the_arguments) : line(the_line), command(the_command), sub(the_sub),
+				arguments(the_arguments) {
+			}
 
 			code(int the_line, command_kind the_command, int the_ip) : line(the_line), command(the_command), ip(the_ip) {}
 
 			code(int the_line, command_kind the_command, value& the_data) : line(the_line), command(the_command), data(the_data) {}
 		};
 
-		enum block_kind {
+		enum block_kind : uint8_t {
 			bk_normal, bk_loop, bk_sub, bk_function, bk_microthread
 		};
 
 		friend struct block;
 
-		typedef lightweight_vector<code> codes_t;
+		typedef std::vector<code> codes_t;
 
 		struct block {
 			int level;
@@ -203,12 +482,13 @@ namespace gstd {
 			block_kind kind;
 
 			block(int the_level, block_kind the_kind) :
-				level(the_level), arguments(0), name(), func(nullptr), codes(), kind(the_kind) {}
+				level(the_level), arguments(0), name(), func(NULL), codes(), kind(the_kind) {
+			}
 		};
 
-		std::list<block> blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		std::list < block > blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
 		block* main_block;
-		std::map<std::string, block*> events;
+		std::map < std::string, block* > events;
 
 		block* new_block(int level, block_kind kind) {
 			block x(level, kind);
@@ -255,12 +535,12 @@ namespace gstd {
 			return error_line;
 		}
 
-		void raise_error(const std::wstring& message) {
+		void raise_error(std::wstring const& message) {
 			error = true;
 			error_message = message;
 			finished = true;
 		}
-		void terminate(const std::wstring& message) {
+		void terminate(std::wstring const& message) {
 			bTerminate = true;
 			error = true;
 			error_message = message;
@@ -277,8 +557,8 @@ namespace gstd {
 
 	private:
 		script_machine();
-		script_machine(const script_machine& source);
-		script_machine& operator=(const script_machine& source);
+		script_machine(script_machine const& source);
+		script_machine& operator = (script_machine const& source);
 
 		script_engine* engine;
 
@@ -288,16 +568,15 @@ namespace gstd {
 
 		bool bTerminate;
 
-		typedef lightweight_vector<value> variables_t;
-		typedef lightweight_vector<value> stack_t;
+		typedef lightweight_vector < value > variables_t;
+		typedef lightweight_vector < value > stack_t;
 
 		struct environment {
-			environment* pred;	//双方向リンクリスト
-			environment* succ;
+			environment* pred, * succ;	//双方向リンクリスト
 			environment* parent;
 			int ref_count;
-			script_engine::block * sub;
-			size_t ip;
+			script_engine::block* sub;
+			unsigned ip;
 			variables_t variables;
 			stack_t stack;
 			bool has_result;
@@ -312,19 +591,19 @@ namespace gstd {
 		environment* new_environment(environment* parent, script_engine::block* b);
 		void dispose_environment(environment* object);
 
-		typedef std::list<environment*> threads_t;
+		typedef lightweight_vector<environment*> threads_t;
 
 		threads_t threads;
-		std::list<environment*>::iterator current_thread_index;
+		unsigned current_thread_index;
 		bool finished;
 		bool stopped;
 		bool resuming;
 
 		void yield() {
-			if (current_thread_index == threads.begin())
-				current_thread_index = std::prev(threads.end());
-			else
+			if (current_thread_index > 0)
 				--current_thread_index;
+			else
+				current_thread_index = threads.size() - 1;
 		}
 
 		void advance();
@@ -336,65 +615,65 @@ namespace gstd {
 	template<int num>
 	class constant {
 	public:
-		static value func(script_machine* machine, int argc, const value* argv) {
+		static value func(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), (double)num);
 		}
 	};
 
 	class mconstant {
 	public:
-		static value funcPi(script_machine* machine, int argc, const value* argv) {
+		static value funcPi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI);
 		}
-		static value funcPiX2(script_machine* machine, int argc, const value* argv) {
+		static value funcPiX2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_X2);
 		}
-		static value funcPiX4(script_machine* machine, int argc, const value* argv) {
+		static value funcPiX4(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_X4);
 		}
-		static value funcPi2(script_machine* machine, int argc, const value* argv) {
+		static value funcPi2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_2);
 		}
-		static value funcPi4(script_machine* machine, int argc, const value* argv) {
+		static value funcPi4(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_PI_4);
 		}
-		static value func1Pi(script_machine* machine, int argc, const value* argv) {
+		static value func1Pi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_1_PI);
 		}
-		static value func2Pi(script_machine* machine, int argc, const value* argv) {
+		static value func2Pi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_2_PI);
 		}
-		static value funcSqrtPi(script_machine* machine, int argc, const value* argv) {
+		static value funcSqrtPi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRTP);
 		}
-		static value func1SqrtPi(script_machine* machine, int argc, const value* argv) {
+		static value func1SqrtPi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_1_SQRTP);
 		}
-		static value func2SqrtPi(script_machine* machine, int argc, const value* argv) {
+		static value func2SqrtPi(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_2_SQRTP);
 		}
-		static value funcSqrt2(script_machine* machine, int argc, const value* argv) {
+		static value funcSqrt2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2);
 		}
-		static value funcSqrt2_2(script_machine* machine, int argc, const value* argv) {
+		static value funcSqrt2_2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2_2);
 		}
-		static value funcSqrt2_X2(script_machine* machine, int argc, const value* argv) {
+		static value funcSqrt2_X2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_SQRT2_X2);
 		}
-		static value funcEuler(script_machine* machine, int argc, const value* argv) {
+		static value funcEuler(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_E);
 		}
-		static value funcLog2Euler(script_machine* machine, int argc, const value* argv) {
+		static value funcLog2Euler(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LOG2E);
 		}
-		static value funcLog10Euler(script_machine* machine, int argc, const value* argv) {
+		static value funcLog10Euler(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LOG10E);
 		}
-		static value funcLn2(script_machine* machine, int argc, const value* argv) {
+		static value funcLn2(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LN2);
 		}
-		static value funcLn10(script_machine* machine, int argc, const value* argv) {
+		static value funcLn10(script_machine* machine, int argc, value const* argv) {
 			return value(machine->get_engine()->get_real_type(), GM_LN10);
 		}
 	};
