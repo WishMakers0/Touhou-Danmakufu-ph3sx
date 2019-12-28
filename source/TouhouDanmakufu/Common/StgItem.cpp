@@ -214,8 +214,11 @@ void StgItemManager::Render(int targetPriority) {
 		device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
 
 		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+			graphics->SetBlendMode(blendMode[iBlend]);
+
 			std::vector<StgItemRenderer*>* listRenderer =
 				listItemData_->GetRendererList(blendMode[iBlend] - 1);
+
 			int iRender = 0;
 			for (iRender = 0; iRender < listRenderer->size(); iRender++)
 				(listRenderer->at(iRender))->Render(this);

@@ -550,7 +550,7 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 
 	std::vector<char> _res(tmpCh, tmpCh + sizeBuf);
 
-	if (true) {
+	if (false) {
 		std::wstring pathTest = PathProperty::GetModuleDirectory() + 
 			StringUtility::Format(L"temp\\script_incl_%s.txt", PathProperty::GetFileName(pathSource).c_str());
 		File file(pathTest);

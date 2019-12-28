@@ -2,6 +2,11 @@
 #include"Logger.hpp"
 using namespace gstd;
 
+std::wstring operator+(std::wstring l, const std::wstring& r) {
+	l += r;
+	return l;
+}
+
 //================================================================
 //DebugUtility
 void DebugUtility::DumpMemoryLeaksOnExit() {

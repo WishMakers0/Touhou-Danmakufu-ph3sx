@@ -38,6 +38,7 @@
 #pragma warning (disable:4819) //ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
 #pragma warning (disable:4996) //This function or variable may be unsafe. 
 
+#pragma warning (disable:26451) //Arithmetic overflow : ..... (io.2)
 #pragma warning (disable:26495) //Variable x is uninitialized. Always initialize a member variable.
 #pragma warning (disable:26812) //The enum type x is unscoped. Prefer 'enum class' over 'enum'.
 
