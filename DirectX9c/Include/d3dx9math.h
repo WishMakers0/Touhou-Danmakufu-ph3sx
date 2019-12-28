@@ -18,7 +18,8 @@
 #endif
 #pragma warning(disable:4201) // anonymous unions warning
 
-
+#pragma warning (disable:26495) //Variable x is uninitialized. Always initialize a member variable.
+#pragma warning (disable:26812) //The enum type x is unscoped. Prefer 'enum class' over 'enum'.
 
 //===========================================================================
 //

@@ -2,6 +2,9 @@
 
 using namespace gstd;
 
+//Key string for encryption, change this to whatever you want.
+static const std::string ARCHIVE_MASTER_KEY = "Tenxka's clay dildoes";
+
 /**********************************************************
 //ArchiveFileEntry
 **********************************************************/
@@ -18,6 +21,9 @@ void ArchiveFileEntry::_WriteEntryRecord(std::stringstream& buf) {
 	buf.write((char*)&sizeFull, sizeof(uint32_t));
 	buf.write((char*)&sizeStored, sizeof(uint32_t));
 	buf.write((char*)&offsetPos, sizeof(uint32_t));
+
+	buf.write((char*)&keyBase, sizeof(uint8_t));
+	buf.write((char*)&keyStep, sizeof(uint8_t));
 }
 void ArchiveFileEntry::_ReadEntryRecord(std::stringstream& buf) {
 	uint32_t directorySize = 0U;
@@ -34,7 +40,11 @@ void ArchiveFileEntry::_ReadEntryRecord(std::stringstream& buf) {
 	buf.read((char*)&sizeFull, sizeof(uint32_t));
 	buf.read((char*)&sizeStored, sizeof(uint32_t));
 	buf.read((char*)&offsetPos, sizeof(uint32_t));
+
+	buf.read((char*)&keyBase, sizeof(uint8_t));
+	buf.read((char*)&keyStep, sizeof(uint8_t));
 }
+
 /**********************************************************
 //FileArchiver
 **********************************************************/
@@ -44,11 +54,45 @@ FileArchiver::FileArchiver() {
 FileArchiver::~FileArchiver() {
 
 }
+
+//-------------------------------------------------------------------------------------------------------------
+
+//Change these to however you want.
+void FileArchiver::GetKeyHashHeader(std::string& key, uint8_t& keyBase, uint8_t& keyStep) {
+	uint32_t hash = std::hash<std::string>{}(std::string(key));
+	keyBase = (hash & 0x000000ff) ^ 0x55;
+	keyStep = ((hash & 0x0000ff00) >> 8) ^ 0xc8;
+}
+void FileArchiver::GetKeyHashFile(std::wstring& key, uint8_t headerBase, uint8_t headerStep,
+	uint8_t& keyBase, uint8_t& keyStep) 
+{
+	uint32_t hash = std::hash<std::wstring>{}(key);
+	keyBase = ((hash & 0xff000000) >> 24) ^ 0x4a;
+	keyStep = ((hash & 0x00ff0000) >> 16) ^ 0xeb;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void FileArchiver::EncodeBlock(char* data, size_t count, uint8_t& base, uint8_t step) {
+	for (size_t i = 0; i < count; ++i) {
+		data[i] ^= base;
+		base = (uint8_t)(((uint32_t)base + (uint32_t)step) % 0xff);
+		//base ^= ~((step & 0x66) ^ 0xcc);
+	}
+}
 bool FileArchiver::CreateArchiveFile(std::wstring path) {
 	bool res = true;
 
+	DeleteFile(path.c_str());
+
+	uint8_t headerKeyBase = 0;
+	uint8_t headerKeyStep = 0;
+	GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_MASTER_KEY), headerKeyBase, headerKeyStep);
+
+	std::wstring pathTmp = StringUtility::Format(L"%s_tmp", path.c_str());
+
 	std::ofstream fileArchive;
-	fileArchive.open(path, std::ios::binary);
+	fileArchive.open(pathTmp, std::ios::binary);
 
 	if (!fileArchive.is_open())
 		throw gstd::wexception(StringUtility::Format(L"Cannot create an archive at [%s].", path.c_str()).c_str());
@@ -71,13 +115,23 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 		std::ifstream file;
 		file.open(entry->name, std::ios::binary);
 		if (!file.is_open())
-			throw gstd::wexception(StringUtility::Format(L"Cannot open file for reading. [%s]", path.c_str()).c_str());
+			throw gstd::wexception(StringUtility::Format(L"Cannot open file for reading. [%s]", (entry->name).c_str()).c_str());
 
 		file.seekg(0, std::ios::end);
 		entry->sizeFull = file.tellg();
 		entry->sizeStored = entry->sizeFull;
 		entry->offsetPos = fileArchive.tellp();
 		file.seekg(0, std::ios::beg);
+
+		uint8_t localKeyBase = 0;
+		uint8_t localKeyStep = 0;
+		{
+			std::wstring strHash = StringUtility::Format(L"%s%s", entry->directory.c_str(), entry->name.c_str());
+			GetKeyHashFile(strHash, headerKeyBase, headerKeyStep, localKeyBase, localKeyStep);
+		}
+
+		entry->keyBase = localKeyBase;
+		entry->keyStep = localKeyStep;
 
 		//Small files actually get bigger upon compression.
 		if (entry->sizeFull < 0x100) entry->compressionType = ArchiveFileEntry::CT_NONE;
@@ -140,7 +194,82 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 	fileArchive.write((char*)&header.headerSize, sizeof(uint32_t));
 
 	fileArchive.close();
+
+	res = EncryptArchive(path, &header, headerKeyBase, headerKeyStep);
+
 	return res;
+}
+
+bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, uint8_t keyBase, uint8_t keyStep) {
+	std::wstring pathTmp = StringUtility::Format(L"%s_tmp", path.c_str());
+
+	std::ifstream src;
+	src.open(pathTmp, std::ios::binary);
+
+	std::ofstream dest;
+	dest.open(path, std::ios::binary);
+
+	constexpr size_t CHUNK = 4096U;
+	char buf[CHUNK];
+
+	size_t read = 0U;
+	uint8_t headerBase = keyBase;
+
+	{
+		src.read(buf, sizeof(ArchiveFileHeader));
+		EncodeBlock(buf, sizeof(ArchiveFileHeader), headerBase, keyStep);
+		dest.write(buf, sizeof(ArchiveFileHeader));
+	}
+
+	{
+		for (auto itr = listEntry_.begin(); itr != listEntry_.end(); ++itr) {
+			auto entry = *itr;
+			size_t count = entry->sizeStored;
+
+			uint8_t localBase = entry->keyBase;
+
+			src.seekg(entry->offsetPos, std::ios::beg);
+			dest.seekp(entry->offsetPos, std::ios::beg);
+
+			do {
+				src.read(buf, CHUNK);
+				read = src.gcount();
+				if (read > count) read = count;
+
+				EncodeBlock(buf, read, localBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+
+				dest.write(buf, read);
+				count -= read;
+			} while (count > 0U && read > 0U);
+		}
+	}
+
+	src.clear(std::ios::eofbit);
+
+	{
+		size_t infoSize = header->headerSize;
+
+		src.seekg(header->headerOffset, std::ios::beg);
+		dest.seekp(header->headerOffset, std::ios::beg);
+
+		do {
+			src.read(buf, CHUNK);
+			read = src.gcount();
+			if (read > infoSize) read = infoSize;
+
+			EncodeBlock(buf, read, headerBase, keyStep);
+
+			dest.write(buf, read);
+			infoSize -= read;
+		} while (infoSize > 0U && read > 0U);
+	}
+
+	src.close();
+	dest.close();
+
+	DeleteFile(pathTmp.c_str());
+
+	return true;
 }
 
 /**********************************************************
@@ -159,9 +288,12 @@ bool ArchiveFile::Open() {
 
 	bool res = true;
 	try {
+		FileArchiver::GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_MASTER_KEY), keyBase_, keyStep_);
+
 		ArchiveFileHeader header;
 
 		file_.read((char*)&header, sizeof(ArchiveFileHeader));
+		FileArchiver::EncodeBlock((char*)&header, sizeof(ArchiveFileHeader), keyBase_, keyStep_);
 
 		if (memcmp(header.magic, HEADER_ARCHIVEFILE, ArchiveFileHeader::MAGIC_LENGTH) != 0) throw gstd::wexception();
 
@@ -170,8 +302,16 @@ bool ArchiveFile::Open() {
 		std::stringstream bufInfo;
 		file_.seekg(header.headerOffset, std::ios::beg);
 		{
-			bufInfo.seekg(0, std::ios::beg);
-			Compressor::Inflate(file_, bufInfo, header.headerSize, &headerSizeTrue);
+			char* tmpBufInfo = new char[header.headerSize];
+			file_.read(tmpBufInfo, header.headerSize);
+
+			FileArchiver::EncodeBlock(tmpBufInfo, header.headerSize, keyBase_, keyStep_);
+
+			std::stringstream sTmpBufInfo;
+			sTmpBufInfo.write(tmpBufInfo, header.headerSize);
+			Compressor::Inflate(sTmpBufInfo, bufInfo, header.headerSize, &headerSizeTrue);
+
+			delete[] tmpBufInfo;
 		}
 
 		bufInfo.clear();
@@ -187,6 +327,8 @@ bool ArchiveFile::Open() {
 			file.Close();
 		}
 		*/
+
+		file_.clear(std::ios::eofbit);
 
 		for (size_t iEntry = 0U; iEntry < header.entryCount; iEntry++) {
 			ArchiveFileEntry* entry = new ArchiveFileEntry();
@@ -255,6 +397,10 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry
 			res = new ByteBuffer();
 			res->SetSize(entry->sizeFull);
 			file.read(res->GetPointer(), entry->sizeFull);
+
+			uint8_t keyBase = entry->keyBase;
+			FileArchiver::EncodeBlock(res->GetPointer(), entry->sizeFull, keyBase, entry->keyStep);
+
 			break;
 		}
 		case ArchiveFileEntry::CT_ZLIB:
@@ -263,9 +409,20 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry
 			res = new ByteBuffer();
 			//res->SetSize(entry->sizeFull);
 
-			std::stringstream stream;
-			Compressor::Inflate(file, stream, entry->sizeStored, nullptr);
+			char* tmp = new char[entry->sizeStored];
+			file.read(tmp, entry->sizeStored);
 
+			uint8_t keyBase = entry->keyBase;
+			FileArchiver::EncodeBlock(tmp, entry->sizeStored, keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+
+			size_t sizeVerif = 0U;
+
+			std::stringstream streamTmp;
+			streamTmp.write(tmp, entry->sizeStored);
+			delete[] tmp;
+
+			std::stringstream stream;
+			Compressor::Inflate(streamTmp, stream, entry->sizeStored, &sizeVerif);
 			res->Copy(stream);
 
 			break;
@@ -294,128 +451,3 @@ ref_count_ptr<ByteBuffer> ArchiveFile::GetBuffer(std::string name)
 	return res;
 }
 */
-
-/**********************************************************
-//Compressor
-**********************************************************/
-template<typename TIN, typename TOUT>
-bool Compressor::Deflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
-	bool ret = true;
-
-	const size_t CHUNK = 16384U;
-	char in[CHUNK];
-	char out[CHUNK];
-
-	int returnState = 0;
-	size_t countBytes = 0U;
-
-	z_stream stream;
-	stream.zalloc = Z_NULL;
-	stream.zfree = Z_NULL;
-	stream.opaque = Z_NULL;
-	returnState = deflateInit(&stream, Z_DEFAULT_COMPRESSION);
-	if (returnState != Z_OK) return false;
-
-	try {
-		int flushType = Z_NO_FLUSH;
-
-		do {
-			bufIn.read(in, CHUNK);
-			size_t read = bufIn.gcount();
-			if (read > count) {
-				flushType = Z_FINISH;
-				read = count;
-			}
-			else if (read < CHUNK) { 
-				flushType = Z_FINISH; 
-			}
-
-			if (read > 0) {
-				stream.next_in = (Bytef*)in;
-				stream.avail_in = bufIn.gcount();
-
-				do {
-					stream.next_out = (Bytef*)out;
-					stream.avail_out = CHUNK;
-
-					returnState = deflate(&stream, flushType);
-
-					size_t availWrite = CHUNK - stream.avail_out;
-					countBytes += availWrite;
-					if (returnState != Z_STREAM_ERROR)
-						bufOut.write(out, availWrite);
-					else throw returnState;
-				} while (stream.avail_out == 0);
-			}
-			count -= read;
-		} while (count > 0U && flushType != Z_FINISH);
-	}
-	catch (int&) {
-		ret = false;
-	}
-
-	deflateEnd(&stream);
-	if (res) *res = countBytes;
-	return ret;
-}
-template<typename TIN, typename TOUT>
-bool Compressor::Inflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
-	bool ret = true;
-
-	const size_t CHUNK = 16384U;
-	char in[CHUNK];
-	char out[CHUNK];
-
-	int returnState = 0;
-	size_t countBytes = 0U;
-
-	z_stream stream;
-	stream.zalloc = Z_NULL;
-	stream.zfree = Z_NULL;
-	stream.opaque = Z_NULL;
-	stream.avail_in = 0;
-	stream.next_in = Z_NULL;
-	returnState = inflateInit(&stream);
-	if (returnState != Z_OK) return false;
-
-	try {
-		size_t read = 0U;
-
-		do {
-			bufIn.read(in, CHUNK);
-			read = bufIn.gcount();
-			if (read > count) read = count;
-
-			if (read > 0U) {
-				stream.avail_in = read;
-				stream.next_in = (Bytef*)in;
-
-				do {
-					stream.next_out = (Bytef*)out;
-					stream.avail_out = CHUNK;
-
-					returnState = inflate(&stream, Z_NO_FLUSH);
-					switch (returnState) {
-					case Z_NEED_DICT:
-					case Z_DATA_ERROR:
-					case Z_MEM_ERROR:
-					case Z_STREAM_ERROR:
-						throw returnState;
-					}
-
-					size_t availWrite = CHUNK - stream.avail_out;
-					countBytes += availWrite;
-					bufOut.write(out, availWrite);
-				} while (stream.avail_out == 0);
-			}
-			count -= read;
-		} while (count > 0U && read > 0U);
-	}
-	catch (int&) {
-		ret = false;
-	}
-
-	inflateEnd(&stream);
-	if (res) *res = countBytes;
-	return ret;
-}

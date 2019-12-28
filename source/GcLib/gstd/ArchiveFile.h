@@ -39,12 +39,14 @@ namespace gstd {
 		uint32_t sizeFull;
 		uint32_t sizeStored;
 		uint32_t offsetPos;
+		uint8_t keyBase;
+		uint8_t keyStep;
 
 		std::wstring archiveParent;
 
 		const size_t GetRecordSize() {
 			return static_cast<size_t>(directory.size() * sizeof(wchar_t) + name.size() * sizeof(wchar_t) +
-				sizeof(uint32_t) * 5 + sizeof(TypeCompression));
+				sizeof(uint32_t) * 5 + sizeof(TypeCompression) + sizeof(uint8_t) * 2);
 		}
 
 		void _WriteEntryRecord(std::stringstream& buf);
@@ -64,6 +66,14 @@ namespace gstd {
 
 		void AddEntry(ArchiveFileEntry* entry) { listEntry_.push_back(entry); }
 		bool CreateArchiveFile(std::wstring path);
+
+		bool EncryptArchive(std::wstring path, ArchiveFileHeader* header, uint8_t keyBase, uint8_t keyStep);
+
+		static void GetKeyHashHeader(std::string& key, uint8_t& keyBase, uint8_t& keyStep);
+		static void GetKeyHashFile(std::wstring& key, uint8_t headerBase, uint8_t headerStep, 
+			uint8_t& keyBase, uint8_t& keyStep);
+
+		static void EncodeBlock(char* data, size_t count, uint8_t& base, uint8_t step);
 	};
 
 	/**********************************************************
@@ -74,6 +84,8 @@ namespace gstd {
 		std::wstring basePath_;
 		std::ifstream file_;
 		std::multimap<std::wstring, ArchiveFileEntry*> mapEntry_;
+		uint8_t keyBase_;
+		uint8_t keyStep_;
 	public:
 		ArchiveFile(std::wstring path);
 		virtual ~ArchiveFile();
@@ -94,8 +106,126 @@ namespace gstd {
 	class Compressor {
 	public:
 		template<typename TIN, typename TOUT>
-		static bool Deflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res);
+		static bool Deflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
+			bool ret = true;
+
+			const size_t CHUNK = 16384U;
+			char in[CHUNK];
+			char out[CHUNK];
+
+			int returnState = 0;
+			size_t countBytes = 0U;
+
+			z_stream stream;
+			stream.zalloc = Z_NULL;
+			stream.zfree = Z_NULL;
+			stream.opaque = Z_NULL;
+			returnState = deflateInit(&stream, Z_DEFAULT_COMPRESSION);
+			if (returnState != Z_OK) return false;
+
+			try {
+				int flushType = Z_NO_FLUSH;
+
+				do {
+					bufIn.read(in, CHUNK);
+					size_t read = bufIn.gcount();
+					if (read > count) {
+						flushType = Z_FINISH;
+						read = count;
+					}
+					else if (read < CHUNK) {
+						flushType = Z_FINISH;
+					}
+
+					if (read > 0) {
+						stream.next_in = (Bytef*)in;
+						stream.avail_in = bufIn.gcount();
+
+						do {
+							stream.next_out = (Bytef*)out;
+							stream.avail_out = CHUNK;
+
+							returnState = deflate(&stream, flushType);
+
+							size_t availWrite = CHUNK - stream.avail_out;
+							countBytes += availWrite;
+							if (returnState != Z_STREAM_ERROR)
+								bufOut.write(out, availWrite);
+							else throw returnState;
+						} while (stream.avail_out == 0);
+					}
+					count -= read;
+				} while (count > 0U && flushType != Z_FINISH);
+			}
+			catch (int&) {
+				ret = false;
+			}
+
+			deflateEnd(&stream);
+			if (res) *res = countBytes;
+			return ret;
+		}
+
 		template<typename TIN, typename TOUT>
-		static bool Inflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res);
+		static bool Inflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
+			bool ret = true;
+
+			const size_t CHUNK = 16384U;
+			char in[CHUNK];
+			char out[CHUNK];
+
+			int returnState = 0;
+			size_t countBytes = 0U;
+
+			z_stream stream;
+			stream.zalloc = Z_NULL;
+			stream.zfree = Z_NULL;
+			stream.opaque = Z_NULL;
+			stream.avail_in = 0;
+			stream.next_in = Z_NULL;
+			returnState = inflateInit(&stream);
+			if (returnState != Z_OK) return false;
+
+			try {
+				size_t read = 0U;
+
+				do {
+					bufIn.read(in, CHUNK);
+					read = bufIn.gcount();
+					if (read > count) read = count;
+
+					if (read > 0U) {
+						stream.avail_in = read;
+						stream.next_in = (Bytef*)in;
+
+						do {
+							stream.next_out = (Bytef*)out;
+							stream.avail_out = CHUNK;
+
+							returnState = inflate(&stream, Z_NO_FLUSH);
+							switch (returnState) {
+							case Z_NEED_DICT:
+							case Z_DATA_ERROR:
+							case Z_MEM_ERROR:
+							case Z_STREAM_ERROR:
+								throw returnState;
+							}
+
+							size_t availWrite = CHUNK - stream.avail_out;
+							countBytes += availWrite;
+							bufOut.write(out, availWrite);
+						} while (stream.avail_out == 0);
+					}
+					count -= read;
+				} while (count > 0U && read > 0U);
+			}
+			catch (int&) {
+				ret = false;
+			}
+
+			inflateEnd(&stream);
+			if (res) *res = countBytes;
+			return ret;
+		}
 	};
 }
