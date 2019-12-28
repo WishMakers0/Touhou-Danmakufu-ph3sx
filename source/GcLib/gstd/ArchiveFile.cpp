@@ -3,7 +3,7 @@
 using namespace gstd;
 
 //Key string for encryption, change this to whatever you want.
-static const std::string ARCHIVE_MASTER_KEY = "Tenxka's clay dildoes";
+static const std::string ARCHIVE_ENCRYPTION_KEY = "Mima for Touhou 18";
 
 /**********************************************************
 //ArchiveFileEntry
@@ -87,7 +87,7 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 
 	uint8_t headerKeyBase = 0;
 	uint8_t headerKeyStep = 0;
-	GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_MASTER_KEY), headerKeyBase, headerKeyStep);
+	GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_ENCRYPTION_KEY), headerKeyBase, headerKeyStep);
 
 	std::wstring pathTmp = StringUtility::Format(L"%s_tmp", path.c_str());
 
@@ -288,7 +288,7 @@ bool ArchiveFile::Open() {
 
 	bool res = true;
 	try {
-		FileArchiver::GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_MASTER_KEY), keyBase_, keyStep_);
+		FileArchiver::GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_ENCRYPTION_KEY), keyBase_, keyStep_);
 
 		ArchiveFileHeader header;
 
