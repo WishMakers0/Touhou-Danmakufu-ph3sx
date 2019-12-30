@@ -2,9 +2,6 @@
 
 using namespace gstd;
 
-//Key string for encryption, change this to whatever you want.
-static const std::string ARCHIVE_ENCRYPTION_KEY = "Mima for Touhou 18";
-
 /**********************************************************
 //ArchiveFileEntry
 **********************************************************/
@@ -58,28 +55,29 @@ FileArchiver::~FileArchiver() {
 //-------------------------------------------------------------------------------------------------------------
 
 //Change these to however you want.
-void FileArchiver::GetKeyHashHeader(std::string& key, uint8_t& keyBase, uint8_t& keyStep) {
+void FileArchiver::GetKeyHashHeader(std::string& key, byte& keyBase, byte& keyStep) {
 	uint32_t hash = std::hash<std::string>{}(std::string(key));
 	keyBase = (hash & 0x000000ff) ^ 0x55;
 	keyStep = ((hash & 0x0000ff00) >> 8) ^ 0xc8;
 }
-void FileArchiver::GetKeyHashFile(std::wstring& key, uint8_t headerBase, uint8_t headerStep,
-	uint8_t& keyBase, uint8_t& keyStep) 
+void FileArchiver::GetKeyHashFile(std::wstring& key, byte headerBase, byte headerStep,
+	byte& keyBase, byte& keyStep)
 {
 	uint32_t hash = std::hash<std::wstring>{}(key);
 	keyBase = ((hash & 0xff000000) >> 24) ^ 0x4a;
 	keyStep = ((hash & 0x00ff0000) >> 16) ^ 0xeb;
 }
+void FileArchiver::EncodeBlock(byte* data, size_t count, byte& base, byte step) {
+	for (size_t i = 0; i < count; ++i) {
+		data[i] ^= base;
+		base = (byte)(((uint32_t)base + (uint32_t)step) % 0x100);
+	}
+}
 
 //-------------------------------------------------------------------------------------------------------------
 
-void FileArchiver::EncodeBlock(char* data, size_t count, uint8_t& base, uint8_t step) {
-	for (size_t i = 0; i < count; ++i) {
-		data[i] ^= base;
-		base = (uint8_t)(((uint32_t)base + (uint32_t)step) % 0xff);
-		//base ^= ~((step & 0x66) ^ 0xcc);
-	}
-}
+static std::string ARCHIVE_ENCRYPTION_KEY = "Mima for Touhou 18";
+
 bool FileArchiver::CreateArchiveFile(std::wstring path) {
 	bool res = true;
 
@@ -87,7 +85,7 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 
 	uint8_t headerKeyBase = 0;
 	uint8_t headerKeyStep = 0;
-	GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_ENCRYPTION_KEY), headerKeyBase, headerKeyStep);
+	GetKeyHashHeader(ARCHIVE_ENCRYPTION_KEY, headerKeyBase, headerKeyStep);
 
 	std::wstring pathTmp = StringUtility::Format(L"%s_tmp", path.c_str());
 
@@ -123,8 +121,8 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 		entry->offsetPos = fileArchive.tellp();
 		file.seekg(0, std::ios::beg);
 
-		uint8_t localKeyBase = 0;
-		uint8_t localKeyStep = 0;
+		byte localKeyBase = 0;
+		byte localKeyStep = 0;
 		{
 			std::wstring strHash = StringUtility::Format(L"%s%s", entry->directory.c_str(), entry->name.c_str());
 			GetKeyHashFile(strHash, headerKeyBase, headerKeyStep, localKeyBase, localKeyStep);
@@ -217,7 +215,7 @@ bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, 
 
 	{
 		src.read(buf, sizeof(ArchiveFileHeader));
-		EncodeBlock(buf, sizeof(ArchiveFileHeader), headerBase, keyStep);
+		EncodeBlock((byte*)buf, sizeof(ArchiveFileHeader), headerBase, keyStep);
 		dest.write(buf, sizeof(ArchiveFileHeader));
 	}
 
@@ -226,7 +224,8 @@ bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, 
 			auto entry = *itr;
 			size_t count = entry->sizeStored;
 
-			uint8_t localBase = entry->keyBase;
+			byte localBase = entry->keyBase;
+			byte localStep = (entry->keyStep << 3) ^ (entry->keyStep & 0x66);
 
 			src.seekg(entry->offsetPos, std::ios::beg);
 			dest.seekp(entry->offsetPos, std::ios::beg);
@@ -236,7 +235,7 @@ bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, 
 				read = src.gcount();
 				if (read > count) read = count;
 
-				EncodeBlock(buf, read, localBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+				EncodeBlock((byte*)buf, read, localBase, localStep);
 
 				dest.write(buf, read);
 				count -= read;
@@ -257,7 +256,7 @@ bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, 
 			read = src.gcount();
 			if (read > infoSize) read = infoSize;
 
-			EncodeBlock(buf, read, headerBase, keyStep);
+			EncodeBlock((byte*)buf, read, headerBase, keyStep);
 
 			dest.write(buf, read);
 			infoSize -= read;
@@ -288,12 +287,12 @@ bool ArchiveFile::Open() {
 
 	bool res = true;
 	try {
-		FileArchiver::GetKeyHashHeader(const_cast<std::string&>(ARCHIVE_ENCRYPTION_KEY), keyBase_, keyStep_);
+		FileArchiver::GetKeyHashHeader(ARCHIVE_ENCRYPTION_KEY, keyBase_, keyStep_);
 
 		ArchiveFileHeader header;
 
 		file_.read((char*)&header, sizeof(ArchiveFileHeader));
-		FileArchiver::EncodeBlock((char*)&header, sizeof(ArchiveFileHeader), keyBase_, keyStep_);
+		FileArchiver::EncodeBlock((byte*)&header, sizeof(ArchiveFileHeader), keyBase_, keyStep_);
 
 		if (memcmp(header.magic, HEADER_ARCHIVEFILE, ArchiveFileHeader::MAGIC_LENGTH) != 0) throw gstd::wexception();
 
@@ -305,7 +304,7 @@ bool ArchiveFile::Open() {
 			char* tmpBufInfo = new char[header.headerSize];
 			file_.read(tmpBufInfo, header.headerSize);
 
-			FileArchiver::EncodeBlock(tmpBufInfo, header.headerSize, keyBase_, keyStep_);
+			FileArchiver::EncodeBlock((byte*)tmpBufInfo, header.headerSize, keyBase_, keyStep_);
 
 			std::stringstream sTmpBufInfo;
 			sTmpBufInfo.write(tmpBufInfo, header.headerSize);
@@ -399,7 +398,8 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry
 			file.read(res->GetPointer(), entry->sizeFull);
 
 			uint8_t keyBase = entry->keyBase;
-			FileArchiver::EncodeBlock(res->GetPointer(), entry->sizeFull, keyBase, entry->keyStep);
+			FileArchiver::EncodeBlock((byte*)res->GetPointer(), entry->sizeFull, 
+				keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
 
 			break;
 		}
@@ -413,7 +413,8 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry
 			file.read(tmp, entry->sizeStored);
 
 			uint8_t keyBase = entry->keyBase;
-			FileArchiver::EncodeBlock(tmp, entry->sizeStored, keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+			FileArchiver::EncodeBlock((byte*)tmp, entry->sizeStored, 
+				keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
 
 			size_t sizeVerif = 0U;
 

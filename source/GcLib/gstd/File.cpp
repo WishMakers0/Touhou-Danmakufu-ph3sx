@@ -603,13 +603,7 @@ bool ManagedFileReader::Open() {
 	if (type_ == TYPE_NORMAL) {
 		res = file_->Open();
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		res = file_->Open();
-		if (res) {
-			file_->Seek(entry_->offsetPos);
-		}
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		buffer_ = FileManager::GetBase()->_GetByteBuffer(entry_);
 		res = buffer_ != NULL;
 	}
@@ -625,8 +619,8 @@ void ManagedFileReader::Close() {
 int ManagedFileReader::GetFileSize() {
 	int res = 0;
 	if (type_ == TYPE_NORMAL)res = file_->GetSize();
-	else if (type_ == TYPE_ARCHIVED)res = entry_->sizeFull;
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED && buffer_ != NULL)res = buffer_->GetSize();
+	else if ((type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) && buffer_ != NULL)
+		res = entry_->sizeFull;
 	return res;
 }
 DWORD ManagedFileReader::Read(LPVOID buf, DWORD size) {
@@ -634,14 +628,7 @@ DWORD ManagedFileReader::Read(LPVOID buf, DWORD size) {
 	if (type_ == TYPE_NORMAL) {
 		res = file_->Read(buf, size);
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		int read = size;
-		if (entry_->sizeFull < offset_ + size) {
-			read = entry_->sizeFull - offset_;
-		}
-		res = file_->Read(buf, read);
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		int read = size;
 		if (buffer_->GetSize() < offset_ + size) {
 			read = buffer_->GetSize() - offset_;
@@ -658,11 +645,11 @@ BOOL ManagedFileReader::SetFilePointerBegin() {
 	if (type_ == TYPE_NORMAL) {
 		res = file_->SetFilePointerBegin();
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		res = file_->Seek(entry_->offsetPos);
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
-
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
+		if (buffer_ != NULL) {
+			offset_ = buffer_->GetSize();
+			res = TRUE;
+		}
 	}
 	return res;
 }
@@ -672,11 +659,7 @@ BOOL ManagedFileReader::SetFilePointerEnd() {
 		res = file_->SetFilePointerEnd();
 		offset_ = file_->GetSize();
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		res = file_->Seek(entry_->offsetPos + entry_->sizeFull);
-		offset_ = entry_->sizeFull;
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		if (buffer_ != NULL) {
 			offset_ = buffer_->GetSize();
 			res = TRUE;
@@ -689,10 +672,7 @@ BOOL ManagedFileReader::Seek(LONG offset) {
 	if (type_ == TYPE_NORMAL) {
 		res = file_->Seek(offset);
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		res = file_->Seek(entry_->offsetPos + offset);
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		if (buffer_ != NULL) {
 			res = TRUE;
 		}
@@ -706,10 +686,7 @@ LONG ManagedFileReader::GetFilePointer() {
 	if (type_ == TYPE_NORMAL) {
 		res = file_->GetFilePointer();
 	}
-	else if (type_ == TYPE_ARCHIVED) {
-		res = file_->GetFilePointer() - entry_->offsetPos;
-	}
-	else if (type_ == TYPE_ARCHIVED_COMPRESSED) {
+	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		if (buffer_ != NULL) {
 			res = offset_;
 		}

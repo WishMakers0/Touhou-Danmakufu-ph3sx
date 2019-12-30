@@ -39,14 +39,14 @@ namespace gstd {
 		uint32_t sizeFull;
 		uint32_t sizeStored;
 		uint32_t offsetPos;
-		uint8_t keyBase;
-		uint8_t keyStep;
+		byte keyBase;
+		byte keyStep;
 
 		std::wstring archiveParent;
 
 		const size_t GetRecordSize() {
 			return static_cast<size_t>(directory.size() * sizeof(wchar_t) + name.size() * sizeof(wchar_t) +
-				sizeof(uint32_t) * 5 + sizeof(TypeCompression) + sizeof(uint8_t) * 2);
+				sizeof(uint32_t) * 5 + sizeof(TypeCompression) + sizeof(byte) * 2);
 		}
 
 		void _WriteEntryRecord(std::stringstream& buf);
@@ -67,13 +67,13 @@ namespace gstd {
 		void AddEntry(ArchiveFileEntry* entry) { listEntry_.push_back(entry); }
 		bool CreateArchiveFile(std::wstring path);
 
-		bool EncryptArchive(std::wstring path, ArchiveFileHeader* header, uint8_t keyBase, uint8_t keyStep);
+		bool EncryptArchive(std::wstring path, ArchiveFileHeader* header, byte keyBase, byte keyStep);
 
-		static void GetKeyHashHeader(std::string& key, uint8_t& keyBase, uint8_t& keyStep);
-		static void GetKeyHashFile(std::wstring& key, uint8_t headerBase, uint8_t headerStep, 
-			uint8_t& keyBase, uint8_t& keyStep);
+		static void GetKeyHashHeader(std::string& key, byte& keyBase, byte& keyStep);
+		static void GetKeyHashFile(std::wstring& key, byte headerBase, byte headerStep,
+			byte& keyBase, byte& keyStep);
 
-		static void EncodeBlock(char* data, size_t count, uint8_t& base, uint8_t step);
+		static void EncodeBlock(byte* data, size_t count, byte& base, byte step);
 	};
 
 	/**********************************************************
