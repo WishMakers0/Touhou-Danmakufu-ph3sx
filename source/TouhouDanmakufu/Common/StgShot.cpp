@@ -2267,15 +2267,30 @@ void StgCurveLaserObject::Work() {
 	_DeleteInAutoDeleteFrame();
 	//	_AddIntersectionRelativeTarget();
 	--frameGrazeInvalid_;
+
+	if (lastAngle_ != GetDirectionAngle()) {
+		lastAngle_ = GetDirectionAngle();
+		c_ = cos(lastAngle_);
+		s_ = sin(lastAngle_);
+	}
 }
 void StgCurveLaserObject::_Move() {
 	StgMoveObject::_Move();
 	DxScriptRenderObject::SetX(posX_);
 	DxScriptRenderObject::SetY(posY_);
 
-	Position pos;
-	pos.x = posX_;
-	pos.y = posY_;
+	LaserNode pos;
+	pos.pos.x = posX_;
+	pos.pos.y = posY_;
+	{
+		double wRender = widthRender_ / 2.0;
+
+		double nx = -wRender * s_;
+		double ny = wRender * c_;
+
+		pos.vertOff[0] = { posX_ + nx, posY_ + ny };
+		pos.vertOff[1] = { posX_ - nx, posY_ - ny };
+	}
 
 	listPosition_.push_front(pos);
 	if (listPosition_.size() > length_) {
@@ -2289,15 +2304,15 @@ void StgCurveLaserObject::_DeleteInAutoClip() {
 	RECT rect = shotManager->GetShotAutoDeleteClipRect();
 
 	bool bDelete = listPosition_.size() > 0;
-	std::list<Position>::iterator itr = listPosition_.begin();
+	std::list<LaserNode>::iterator itr = listPosition_.begin();
 
 	size_t i = 0;
 	for (; itr != listPosition_.end(); ++itr, ++i) {
 		if (i % 2 == 1) continue;	//lmao
 
-		Position& pos = (*itr);
-		bool bXOut = pos.x < rect.left || pos.x > rect.right;
-		bool bYOut = pos.y < rect.top || pos.y > rect.bottom;
+		LaserNode& pos = (*itr);
+		bool bXOut = pos.pos.x < rect.left || pos.pos.x > rect.right;
+		bool bYOut = pos.pos.y < rect.top || pos.pos.y > rect.bottom;
 		if (!bXOut && !bYOut) {
 			bDelete = false;
 			break;
@@ -2327,7 +2342,7 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 
 	size_t countPos = listPosition_.size();
-	std::list<Position>::iterator itr = listPosition_.begin();
+	std::list<LaserNode>::iterator itr = listPosition_.begin();
 
 	float iLengthS = invalidLengthStart_ * 0.5f;
 	float iLengthE = 0.5f + (1.0f - invalidLengthStart_) * 0.5f;
@@ -2341,12 +2356,12 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 			continue;
 		}
 
-		std::list<Position>::iterator itrNext = std::next(itr);
+		std::list<LaserNode>::iterator itrNext = std::next(itr);
 
-		double posXS = (*itr).x;
-		double posYS = (*itr).y;
-		double posXE = (*itrNext).x;
-		double posYE = (*itrNext).y;
+		double posXS = (*itr).pos.x;
+		double posYS = (*itr).pos.y;
+		double posXE = (*itrNext).pos.x;
+		double posYE = (*itrNext).pos.y;
 		++itr;
 		/*
 				if(iPos == 0)
@@ -2389,8 +2404,8 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 	StgShotRenderer* renderer = nullptr;
-	if (delay_ > 0) {
-		//’x‰„ŽžŠÔ
+
+	if ((delay_ > 0) && (listPosition_.size() <= length_)) {
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
 			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
@@ -2399,34 +2414,18 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		else {
 			renderer = shotData->GetRenderer(objDelayBlendType);
 		}
-	}
-	else {
-		int objBlendType = GetBlendType();
-		int shotBlendType = objBlendType;
-		if (objBlendType == DirectGraphics::MODE_BLEND_NONE) {
-			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
-			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
-		}
-		else {
-			renderer = shotData->GetRenderer(objBlendType);
-		}
-	}
-	if (renderer == nullptr)return;
+		if (renderer == nullptr)return;
 
-	D3DCOLOR color;
-
-	if (delay_ > 0) {
 		RECT rcSrc = shotData->GetDelayRect();
 		RECT rcDest = shotData->GetDelayDest();
 
 		double expa = 0.5f + (double)delay_ / 30.0f * 2;
 		if (expa > 3.5)expa = 3.5;
 
-		double ang = GetDirectionAngle() + Math::DegreeToRadian(270);
-		double c = cos(ang);
-		double s = sin(ang);
+		double sX = listPosition_.back().pos.x;
+		double sY = listPosition_.back().pos.y;
 
-		color = shotData->GetDelayColor();
+		D3DCOLOR color = shotData->GetDelayColor();
 
 		VERTEX_TLX verts[4];
 		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
@@ -2442,8 +2441,8 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 			double px = vt.position.x * expa;
 			double py = vt.position.y * expa;
-			vt.position.x = (px * c - py * s) + position_.x;
-			vt.position.y = (px * s + py * c) + position_.y;
+			vt.position.x = (px * c_ - py * s_) + sX;
+			vt.position.y = (px * s_ + py * c_) + sY;
 			vt.position.z = position_.z;
 
 			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
@@ -2452,100 +2451,83 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 		renderer->AddSquareVertex(verts);
 	}
-	else {
-		int countPos = listPosition_.size();
+	{
+		int objBlendType = GetBlendType();
+		int shotBlendType = objBlendType;
+		if (objBlendType == DirectGraphics::MODE_BLEND_NONE) {
+			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
+			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
+		}
+		else {
+			renderer = shotData->GetRenderer(objBlendType);
+		}
+		if (renderer == nullptr)return;
 
-		RECT& rcSrcOrg = shotData->GetData(frameWork_)->rcSrc_;
+		//---------------------------------------------------
 
-		double rate = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / (double)max(countPos, 1);
+		size_t countPos = listPosition_.size();
+		size_t countRect = countPos - 1U;
 
-		color = color_;
 		double baseAlpha = shotData->GetAlpha() / 255.0;
 		if (frameFadeDelete_ >= 0)
 			baseAlpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE;
 
-		RECT_D& rcSrcD = GetRectD(rcSrcOrg);
-		rcSrcD.bottom = rcSrcD.top;
-		double posSrc = 0;
-
-		int countRect = countPos - 1;
-
-		double tAlpha = ColorAccess::GetColorA(color);
+		double tAlpha = ColorAccess::GetColorA(color_);
 		double dAlpha = tAlpha / (double)countRect * 2.0 * tipDecrement_;
+		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
+		int baseColorA = ColorAccess::GetColorA(color_);
 
-		VERTEX_TLX oldVerts[4];
+		RECT& rcSrcOrg = shotData->GetData(frameWork_)->rcSrc_;
+		double rcInc = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / countRect;
+		double rectV = rcSrcOrg.top;
 
-		std::list<Position>::iterator itr = listPosition_.begin();
+		double srcX[] = { rcSrcOrg.left, rcSrcOrg.right };
 
+		VERTEX_TLX oldVerts[2];
+		std::list<LaserNode>::iterator itr = listPosition_.begin();
 		for (size_t iPos = 0; iPos < countRect; ++iPos) {
-			std::list<Position>::iterator itrNext = std::next(itr);
+			std::list<LaserNode>::iterator itrNext = std::next(itr);
 
-			double posXS = (*itr).x;
-			double posYS = (*itr).y;
-			double posXE = (*itrNext).x;
-			double posYE = (*itrNext).y;
-			++itr;
-
-			double dx = posXE - posXS;
-			double dy = posYE - posYS;
-			double radius = sqrt(dx * dx + dy * dy);
-
-			double c = dx / radius;		//Who fucking needs atan2? Just swap the X and Y vertex position.
-			double s = dy / radius;
-
-			RECT_D rcDestD;
-			rcSrcD.top = rcSrcOrg.top + posSrc;
-			double bottom = rcSrcD.top + rate;
-			if (rcSrcD.top == bottom) bottom++;
-			rcSrcD.bottom = bottom;
-			posSrc += rate;
-
-			SetRectD(&rcDestD, -widthRender_ / 2, 0, widthRender_ / 2, radius);
-
+			double thisAlpha = tAlpha;
 			if (iPos > countRect / 2)
-				tAlpha -= dAlpha;
+				thisAlpha -= dAlpha;
 			else if (iPos < countRect / 2)
-				tAlpha = iPos * 256 / (countRect / 2) + (255 - tipDecrement_ * 255.);
-			tAlpha = max(0, tAlpha);
+				thisAlpha = iPos * 256 / (countRect / 2) + (255 - tipDecrement_ * 255.);
+			thisAlpha = max(0, thisAlpha);
 
-			D3DCOLOR tColor = color;
-			bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
+			D3DCOLOR thisColor = color_;
 			if (bValidAlpha) {
-				int colorA = ColorAccess::GetColorA(tColor);
-				tColor = ColorAccess::SetColorA(tColor, tAlpha * colorA * baseAlpha);
+				thisColor = ColorAccess::SetColorA(thisColor, thisAlpha * baseColorA * baseAlpha);
 			}
 			else {
-				tColor = ColorAccess::ApplyAlpha(tColor, tAlpha * baseAlpha / 255.0);
+				thisColor = ColorAccess::ApplyAlpha(thisColor, thisAlpha * baseAlpha / 255.0);
 			}
 
+			LaserNode& posCurr = *itr;
+			LaserNode& posNext = *itrNext;
+			Position& vTL = posCurr.vertOff[0];
+			Position& vBL = posCurr.vertOff[1];
+			Position& vTR = posNext.vertOff[0];
+			Position& vBR = posNext.vertOff[1];
+
 			VERTEX_TLX verts[4];
-			double srcX[] = { rcSrcD.left, rcSrcD.right, rcSrcD.left, rcSrcD.right };
-			double srcY[] = { rcSrcD.top, rcSrcD.top, rcSrcD.bottom, rcSrcD.bottom };
-			double destY[] = { rcDestD.left, rcDestD.right, rcDestD.left, rcDestD.right };
-			double destX[] = { rcDestD.top, rcDestD.top, rcDestD.bottom, rcDestD.bottom };
-			for (int iVert = (iPos > 0 ? 2 : 0); iVert < 4; ++iVert) {
+			Position* destPos[] = { &vTL, &vBL, &vTR, &vBR };
+			for (size_t iVert = (iPos > 0U ? 2U : 0U); iVert < 4U; ++iVert) {
 				VERTEX_TLX vt;
-				_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-				_SetVertexPosition(vt, destX[iVert], destY[iVert]);
-				_SetVertexColorARGB(vt, tColor);
-
-				double px = vt.position.x;
-				double py = vt.position.y;
-				vt.position.x = (px * c - py * s) + posXS;
-				vt.position.y = (px * s + py * c) + posYS;
-				vt.position.z = position_.z;
-
-				//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+				_SetVertexUV(vt, srcX[iVert % 2U], rectV + iVert / 2U * rcInc);
+				_SetVertexPosition(vt, destPos[iVert]->x, destPos[iVert]->y, position_.z);
+				_SetVertexColorARGB(vt, thisColor);
 				verts[iVert] = vt;
 			}
 
-			if (iPos > 0) {
-				verts[0] = oldVerts[2];
-				verts[1] = oldVerts[3];
-			}
-			memcpy(&oldVerts, verts, sizeof(VERTEX_TLX) * 4);
+			if (iPos > 0U)
+				memcpy(verts, oldVerts, sizeof(VERTEX_TLX) * 2U);
+			memcpy(oldVerts, &verts[2], sizeof(VERTEX_TLX) * 2U);
 
 			renderer->AddSquareVertex(verts);
+
+			rectV += rcInc;
+			++itr;
 		}
 	}
 }
@@ -2561,13 +2543,13 @@ void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	std::vector<gstd::value> listScriptValue;
 	listScriptValue.resize(4);
 
-	std::list<Position>::iterator itr = listPosition_.begin();
+	std::list<LaserNode>::iterator itr = listPosition_.begin();
 	for (; itr != listPosition_.end(); itr++) {
-		Position pos = (*itr);
+		LaserNode& pos = (*itr);
 
 		if (scriptItem != nullptr) {
-			listPos[0] = pos.x;
-			listPos[1] = pos.y;
+			listPos[0] = pos.pos.x;
+			listPos[1] = pos.pos.y;
 
 			listScriptValue[0] = scriptItem->CreateRealValue(idObject_);
 			listScriptValue[1] = scriptItem->CreateRealArrayValue(listPos);
@@ -2582,8 +2564,8 @@ void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 			if (id != DxScript::ID_INVALID) {
 				//’e‚ÌÀ•W‚ÉƒAƒCƒeƒ€‚ðì¬‚·‚é
 				itemManager->AddItem(obj);
-				obj->SetPositionX(pos.x);
-				obj->SetPositionY(pos.y);
+				obj->SetPositionX(pos.pos.x);
+				obj->SetPositionY(pos.pos.y);
 			}
 
 		}

@@ -455,8 +455,12 @@ protected:
 		double x;
 		double y;
 	};
+	struct LaserNode {
+		Position pos;
+		Position vertOff[2];
+	};
 
-	std::list<Position> listPosition_;
+	std::list<LaserNode> listPosition_;
 	double tipDecrement_;
 
 	virtual void _DeleteInAutoClip();
