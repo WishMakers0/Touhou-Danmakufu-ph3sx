@@ -61,7 +61,7 @@ namespace directx {
 
 		std::wstring GetName();
 		bool CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo);
-		bool CreateRenderTarget(std::wstring name);
+		bool CreateRenderTarget(std::wstring name, size_t width = 0U, size_t height = 0U);
 		bool CreateFromFileInLoadThread(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo, bool bLoadImageInfo = false);
 
 		void SetTexture(IDirect3DTexture9 *pTexture);
@@ -74,6 +74,8 @@ namespace directx {
 		int GetWidth();
 		int GetHeight();
 		bool IsLoad() { return data_ != NULL && data_->bLoad_; }
+
+		static size_t GetFormatBPP(D3DFORMAT format);
 	};
 
 	/**********************************************************
@@ -94,7 +96,7 @@ namespace directx {
 
 		void _ReleaseTextureData(std::wstring name);
 		bool _CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo);
-		bool _CreateRenderTarget(std::wstring name);
+		bool _CreateRenderTarget(std::wstring name, size_t width = 0U, size_t height = 0U);
 	public:
 		TextureManager();
 		virtual ~TextureManager();
@@ -114,7 +116,7 @@ namespace directx {
 
 		gstd::ref_count_ptr<TextureData> GetTextureData(std::wstring name);
 		gstd::ref_count_ptr<Texture> CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo);//テクスチャを読み込みます。TextureDataは保持しますが、Textureは保持しません。
-		gstd::ref_count_ptr<Texture> CreateRenderTarget(std::wstring name);
+		gstd::ref_count_ptr<Texture> CreateRenderTarget(std::wstring name, size_t width = 0U, size_t height = 0U);
 		gstd::ref_count_ptr<Texture> GetTexture(std::wstring name);//作成済みのテクスチャを取得します
 		gstd::ref_count_ptr<Texture> CreateFromFileInLoadThread(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo, bool bLoadImageInfo = false);
 		virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);

@@ -18,11 +18,17 @@ DirectSoundManager::DirectSoundManager() {
 DirectSoundManager::~DirectSoundManager() {
 	Logger::WriteTop("DirectSound: Finalizing.");
 	this->Clear();
+
 	threadManage_->Stop();
 	threadManage_->Join();
 	delete threadManage_;
+
+	for (auto itr = mapDivision_.begin(); itr != mapDivision_.end(); ++itr)
+		delete itr->second;
+
 	if (pDirectSoundBuffer_ != nullptr)pDirectSoundBuffer_->Release();
 	if (pDirectSound_ != nullptr)pDirectSound_->Release();
+
 	panelInfo_ = nullptr;
 	thisBase_ = nullptr;
 	Logger::WriteTop("DirectSound: Finalized.");
@@ -218,15 +224,15 @@ gstd::ref_count_ptr<SoundPlayer> DirectSoundManager::_CreatePlayer(std::wstring 
 	}
 	return res;
 }
-gstd::ref_count_ptr<SoundDivision> DirectSoundManager::CreateSoundDivision(int index) {
+SoundDivision* DirectSoundManager::CreateSoundDivision(int index) {
 	if (mapDivision_.find(index) != mapDivision_.end())
 		return mapDivision_[index];
 
-	ref_count_ptr<SoundDivision> division = new SoundDivision();
+	SoundDivision* division = new SoundDivision();
 	mapDivision_[index] = division;
 	return division;
 }
-gstd::ref_count_ptr<SoundDivision> DirectSoundManager::GetSoundDivision(int index) {
+SoundDivision* DirectSoundManager::GetSoundDivision(int index) {
 	if (mapDivision_.find(index) == mapDivision_.end())return nullptr;
 	return mapDivision_[index];
 }
@@ -552,6 +558,9 @@ SoundPlayer::SoundPlayer() {
 	rateVolume_ = 100.0;
 	rateVolumeFadePerSec_ = 0;
 	bPause_ = false;
+
+	division_ = nullptr;
+	manager_ = nullptr;
 }
 SoundPlayer::~SoundPlayer() {
 	Stop();
@@ -563,14 +572,14 @@ void SoundPlayer::_SetSoundInfo() {
 	timeLoopStart_ = info->GetLoopStartTime();
 	timeLoopEnd_ = info->GetLoopEndTime();
 }
-void SoundPlayer::SetSoundDivision(gstd::ref_count_ptr<SoundDivision> div) {
+void SoundPlayer::SetSoundDivision(SoundDivision* div) {
 	division_ = div;
 }
 void SoundPlayer::SetSoundDivision(int index) {
 	{
 		Lock lock(lock_);
 		DirectSoundManager* manager = DirectSoundManager::GetBase();
-		gstd::ref_count_ptr<SoundDivision> div = manager->GetSoundDivision(index);
+		SoundDivision* div = manager->GetSoundDivision(index);
 		if (div != nullptr)SetSoundDivision(div);
 	}
 }

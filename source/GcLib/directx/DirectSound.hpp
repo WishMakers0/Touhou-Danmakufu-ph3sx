@@ -64,7 +64,7 @@ namespace directx {
 		gstd::CriticalSection lock_;
 		SoundManageThread* threadManage_;
 		std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer> > > mapPlayer_;
-		std::map<int, gstd::ref_count_ptr<SoundDivision> > mapDivision_;
+		std::map<int, SoundDivision*> mapDivision_;
 		std::map<std::wstring, gstd::ref_count_ptr<SoundInfo> > mapInfo_;
 		gstd::ref_count_ptr<SoundInfoPanel> panelInfo_;
 
@@ -81,8 +81,8 @@ namespace directx {
 		gstd::CriticalSection& GetLock() { return lock_; }
 
 		gstd::ref_count_ptr<SoundPlayer> GetPlayer(std::wstring path, bool bCreateAlways = false);
-		gstd::ref_count_ptr<SoundDivision> CreateSoundDivision(int index);
-		gstd::ref_count_ptr<SoundDivision> GetSoundDivision(int index);
+		SoundDivision* CreateSoundDivision(int index);
+		SoundDivision* GetSoundDivision(int index);
 		gstd::ref_count_ptr<SoundInfo> GetSoundInfo(std::wstring path);
 
 		void SetInfoPanel(gstd::ref_count_ptr<SoundInfoPanel> panel) { gstd::Lock lock(lock_); panelInfo_ = panel; }
@@ -190,7 +190,7 @@ namespace directx {
 		gstd::CriticalSection lock_;
 		IDirectSoundBuffer8* pDirectSoundBuffer_;
 		gstd::ref_count_ptr<gstd::FileReader> reader_;
-		gstd::ref_count_ptr<SoundDivision> division_;
+		SoundDivision* division_;
 
 		WAVEFORMATEX formatWave_;
 		bool bLoop_;//ƒ‹[ƒv—L–³
@@ -213,7 +213,7 @@ namespace directx {
 		std::wstring GetPath() { return path_; }
 		gstd::CriticalSection& GetLock() { return lock_; }
 		virtual void Restore() { pDirectSoundBuffer_->Restore(); }
-		void SetSoundDivision(gstd::ref_count_ptr<SoundDivision> div);
+		void SetSoundDivision(SoundDivision* div);
 		void SetSoundDivision(int index);
 
 		virtual bool Play();

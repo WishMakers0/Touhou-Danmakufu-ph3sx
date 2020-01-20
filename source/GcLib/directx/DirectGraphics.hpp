@@ -212,8 +212,10 @@ namespace directx {
 		float pitch_;
 		float roll_;
 
-		double clipNear_;
-		double clipFar_;
+		float projWidth_;
+		float projHeight_;
+		float clipNear_;
+		float clipFar_;
 
 		D3DXMATRIX matView_;
 		D3DXMATRIX matProjection_;
@@ -261,16 +263,24 @@ namespace directx {
 		float GetRoll() { return roll_; }
 		void SetRoll(float roll) { roll_ = roll; }
 
-		double GetNearClip() { return clipNear_; }
-		double GetFarClip() { return clipFar_; }
+		void SetPerspectiveWidth(float w) { projWidth_ = w; }
+		void SetPerspectiveHeight(float h) { projHeight_ = h; }
+		void SetPerspectiveClip(float pNear, float pFar) {
+			if (pNear < 1.0f) pNear = 1.0f;
+			if (pFar < 1.0f) pFar = 1.0f;
+			clipNear_ = pNear;
+			clipFar_ = pFar;
+		}
+		float GetNearClip() { return clipNear_; }
+		float GetFarClip() { return clipFar_; }
 
 		void SetCameraMode(int mode) { modeCamera_ = mode; }
 		int GetCameraMode() { return modeCamera_; }
 
 		D3DXMATRIX GetMatrixLookAtLH();
-		void UpdateDeviceWorldViewMatrix();
-		void SetProjectionMatrix(float width, float height, float posNear, float posFar);
-		void UpdateDeviceProjectionMatrix();
+		void SetWorldViewMatrix();
+		void SetProjectionMatrix();
+		void UpdateDeviceViewProjectionMatrix();
 
 		D3DXVECTOR2 TransformCoordinateTo2D(D3DXVECTOR3 pos);
 

@@ -83,13 +83,13 @@ bool Texture::CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPower
 	return res;
 }
 
-bool Texture::CreateRenderTarget(std::wstring name) {
+bool Texture::CreateRenderTarget(std::wstring name, size_t width, size_t height) {
 	bool res = false;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
 		if (data_ != NULL)Release();
 		TextureManager* manager = TextureManager::GetBase();
-		ref_count_ptr<Texture> texture = manager->CreateRenderTarget(name);
+		ref_count_ptr<Texture> texture = manager->CreateRenderTarget(name, width, height);
 		if (texture != NULL) {
 			data_ = texture->data_;
 		}
@@ -207,6 +207,33 @@ int Texture::GetType() {
 	}
 	return res;
 }
+size_t Texture::GetFormatBPP(D3DFORMAT format) {
+	switch (format) {
+	case D3DFMT_R5G6B5:
+	case D3DFMT_X1R5G5B5:
+	case D3DFMT_A1R5G5B5:
+	case D3DFMT_A8R3G3B2:
+	case D3DFMT_X4R4G4B4:
+		return 2U;
+	case D3DFMT_R8G8B8:
+		return 3U;
+	case D3DFMT_A8R8G8B8:
+	case D3DFMT_X8R8G8B8:
+	case D3DFMT_A2B10G10R10:
+	case D3DFMT_A8B8G8R8:
+	case D3DFMT_X8B8G8R8:
+	case D3DFMT_G16R16:
+	case D3DFMT_A2R10G10B10:
+		return 4U;
+	case D3DFMT_A16B16G16R16:
+		return 8U;
+	case D3DFMT_R3G3B2:
+	case D3DFMT_A8:
+	default:
+		return 1U;
+	}
+}
+
 /**********************************************************
 //TextureManager
 **********************************************************/
@@ -354,34 +381,7 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 		D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
 
 		data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
-		switch (data->infoImage_.Format){
-		case D3DFMT_R5G6B5:
-		case D3DFMT_X1R5G5B5:
-		case D3DFMT_A1R5G5B5:
-		case D3DFMT_A8R3G3B2:
-		case D3DFMT_X4R4G4B4:
-			data->resourceSize_ *= 2U;
-			break;
-		case D3DFMT_R8G8B8:
-			data->resourceSize_ *= 3U;
-			break;
-		case D3DFMT_A8R8G8B8:
-		case D3DFMT_X8R8G8B8:
-		case D3DFMT_A2B10G10R10:
-		case D3DFMT_A8B8G8R8:
-		case D3DFMT_X8B8G8R8:
-		case D3DFMT_G16R16:
-		case D3DFMT_A2R10G10B10:
-			data->resourceSize_ *= 4U;
-			break;
-		case D3DFMT_A16B16G16R16:
-			data->resourceSize_ *= 8U;
-			break;
-		case D3DFMT_R3G3B2:
-		case D3DFMT_A8:
-		default:
-			break;
-		}
+		data->resourceSize_ *= Texture::GetFormatBPP(data->infoImage_.Format);
 
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Texture loaded. [%s]", path.c_str()));
 	}
@@ -393,7 +393,7 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 
 	return true;
 }
-bool TextureManager::_CreateRenderTarget(std::wstring name) {
+bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t height) {
 	if (IsDataExists(name)) {
 		return true;
 	}
@@ -403,16 +403,24 @@ bool TextureManager::_CreateRenderTarget(std::wstring name) {
 		ref_count_ptr<TextureData> data = new TextureData();
 		DirectGraphics* graphics = DirectGraphics::GetBase();
 		IDirect3DDevice9* device = graphics->GetDevice();
-		int screenWidth = graphics->GetScreenWidth();
-		int screenHeight = graphics->GetScreenHeight();
-		int width = 2;
-		int height = 2;
-		while (width <= screenWidth) {
-			width *= 2;
+
+		if (width == 0U) {
+			size_t screenWidth = graphics->GetScreenWidth();
+			width = 1U;
+			while (width <= screenWidth) {
+				width *= 2U;
+			}
 		}
-		while (height <= screenHeight) {
-			height *= 2;
+		if (height == 0U) {
+			size_t screenHeight = graphics->GetScreenHeight();
+			height = 1U;
+			while (height <= screenHeight) {
+				height *= 2U;
+			}
 		}
+		if (width > 4096U) width = 4096U;
+		if (height > 4096U) height = 4096U;
+		//Max size is 67,108,864 bytes (64 megabytes)
 
 		HRESULT hr;
 		hr = device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE,
@@ -478,7 +486,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFile(std::wstring path, b
 	return res;
 }
 
-gstd::ref_count_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring name) {
+gstd::ref_count_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring name, size_t width, size_t height) {
 	gstd::ref_count_ptr<Texture> res;
 	{
 		Lock lock(lock_);
@@ -539,34 +547,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 						}
 
 						data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
-						switch (data->infoImage_.Format) {
-						case D3DFMT_R5G6B5:
-						case D3DFMT_X1R5G5B5:
-						case D3DFMT_A1R5G5B5:
-						case D3DFMT_A8R3G3B2:
-						case D3DFMT_X4R4G4B4:
-							data->resourceSize_ *= 2U;
-							break;
-						case D3DFMT_R8G8B8:
-							data->resourceSize_ *= 3U;
-							break;
-						case D3DFMT_A8R8G8B8:
-						case D3DFMT_X8R8G8B8:
-						case D3DFMT_A2B10G10R10:
-						case D3DFMT_A8B8G8R8:
-						case D3DFMT_X8B8G8R8:
-						case D3DFMT_G16R16:
-						case D3DFMT_A2R10G10B10:
-							data->resourceSize_ *= 4U;
-							break;
-						case D3DFMT_A16B16G16R16:
-							data->resourceSize_ *= 8U;
-							break;
-						case D3DFMT_R3G3B2:
-						case D3DFMT_A8:
-						default:
-							break;
-						}
+						data->resourceSize_ *= Texture::GetFormatBPP(data->infoImage_.Format);
 
 						data->infoImage_ = info;
 					}

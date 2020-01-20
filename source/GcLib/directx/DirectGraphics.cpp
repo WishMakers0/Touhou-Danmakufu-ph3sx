@@ -221,8 +221,9 @@ void DirectGraphics::_InitializeDeviceState() {
 	D3DXMATRIX viewMat;
 	D3DXMATRIX persMat;
 	if (camera_ != nullptr) {
-		camera_->SetProjectionMatrix(config_.GetScreenWidth(), config_.GetScreenHeight(), 10.0f, 2000.0f);
-		camera_->UpdateDeviceWorldViewMatrix();
+		camera_->SetWorldViewMatrix();
+		camera_->SetProjectionMatrix();
+		camera_->UpdateDeviceViewProjectionMatrix();
 	}
 	else {
 		D3DVECTOR viewFrom = D3DXVECTOR3(100, 300, -500);
@@ -282,9 +283,14 @@ void DirectGraphics::BeginScene(bool bClear) {
 		ClearRenderTarget();
 	pDevice_->BeginScene();
 
-	if (camera_->thisViewChanged_) {
-		camera_->UpdateDeviceWorldViewMatrix();
+	if (camera_->thisViewChanged_ || camera_->thisProjectionChanged_) {
+		if (camera_->thisViewChanged_) 
+			camera_->SetWorldViewMatrix();
+		if (camera_->thisProjectionChanged_) 
+			camera_->SetProjectionMatrix();
+		camera_->UpdateDeviceViewProjectionMatrix();
 		camera_->thisViewChanged_ = false;
+		camera_->thisProjectionChanged_ = false;
 	}
 }
 void DirectGraphics::EndScene() {
@@ -963,8 +969,10 @@ void DxCamera::Reset() {
 	pitch_ = 0;
 	roll_ = 0;
 
-	clipNear_ = 10;
-	clipFar_ = 2000;
+	projWidth_ = 384.0f;
+	projHeight_ = 448.0f;
+	clipNear_ = 10.0f;
+	clipFar_ = 2000.0f;
 
 	D3DXMatrixIdentity(&matView_);
 	D3DXMatrixIdentity(&matProjection_);
@@ -1026,7 +1034,7 @@ D3DXMATRIX DxCamera::GetMatrixLookAtLH() {
 
 	return res;
 }
-void DxCamera::UpdateDeviceWorldViewMatrix() {
+void DxCamera::SetWorldViewMatrix() {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (graph == nullptr)return;
 	IDirect3DDevice9* device = graph->GetDevice();
@@ -1052,23 +1060,18 @@ void DxCamera::UpdateDeviceWorldViewMatrix() {
 
 	//UpdateDeviceProjectionMatrix();
 }
-void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar) {
+void DxCamera::SetProjectionMatrix() {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (graph == nullptr)return;
 	IDirect3DDevice9* device = graph->GetDevice();
 
-	clipNear_ = posNear;
-	clipFar_ = posFar;
-	if (clipNear_ < 1)clipNear_ = 1;
-	if (clipFar_ < 1)clipFar_ = 1;
-
 	D3DXMatrixPerspectiveFovLH(&matProjection_, D3DXToRadian(45.0),
-		width / height, clipNear_, clipFar_);
+		projWidth_ / projHeight_, clipNear_, clipFar_);
 	D3DXMatrixInverse(&matProjectionInverse_, nullptr, &matProjection_);
 
 	//UpdateDeviceProjectionMatrix();
 }
-void DxCamera::UpdateDeviceProjectionMatrix() {
+void DxCamera::UpdateDeviceViewProjectionMatrix() {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (graph == nullptr)return;
 	IDirect3DDevice9* device = graph->GetDevice();
