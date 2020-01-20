@@ -1,6 +1,8 @@
 #ifndef __GSTD_SMART_POINTER__
 #define __GSTD_SMART_POINTER__
 
+//TODO: Replace all this as soon as a way to safely do so without breaking a large chunk of the engine is discovered.
+
 #include "GstdConstant.hpp"
 #include "PtrUtil.hpp"
 
@@ -40,9 +42,9 @@ namespace gstd {
 	//スマートポインタ情報
 	template <class T>
 	struct ref_count_ptr_info {
-		long *countRef_; // 参照カウンタへのポインタ
-		long *countWeak_; // 参照カウンタへのポインタ
-		T* pPtr_; // T型のオブジェクトのポインタ
+		long* countRef_;	// 参照カウンタへのポインタ
+		long* countWeak_;	// 参照カウンタへのポインタ
+		T* pPtr_;			// T型のオブジェクトのポインタ
 
 		ref_count_ptr_info() {
 			countRef_ = nullptr;
@@ -65,7 +67,7 @@ namespace gstd {
 	class ref_count_ptr {
 		friend ref_count_weak_ptr<T, SYNC>;
 	public:
-		typedef ref_count_ptr<T, false> unsync;//排他なし版
+		typedef ref_count_ptr<T, false> unsync;		//排他なし版
 
 	private:
 		ref_count_ptr_info<T> info_;
@@ -222,7 +224,8 @@ namespace gstd {
 		bool operator ==(const ref_count_ptr<T, SYNC>& p)const {
 			return info_.pPtr_ == p.info_.pPtr_;
 		}
-		template< class D >
+
+		template<class D>
 		bool operator ==(ref_count_ptr<D, SYNC>& p)const {
 			return info_.pPtr_ == p.GetPointer();
 		}
@@ -234,7 +237,8 @@ namespace gstd {
 		bool operator !=(const ref_count_ptr<T, SYNC>& p)const {
 			return info_.pPtr_ != p.info_.pPtr_;
 		}
-		template< class D >
+
+		template<class D>
 		bool operator !=(ref_count_ptr<D, SYNC>& p)const {
 			return info_.pPtr_ != p.info_.pPtr_;
 		}
@@ -261,14 +265,14 @@ namespace gstd {
 		inline T* GetPointer() { return info_.pPtr_; }
 
 		// 参照カウンタへのポインタを取得
-		inline long* _GetReferenceCountPointer() { return info_.countRef_; }//この関数は外部からしようしないこと
-		inline long* _GetWeakCountPointer() { return info_.countWeak_; }//この関数は外部からしようしないこと
+		inline long* _GetReferenceCountPointer() { return info_.countRef_; }	//この関数は外部からしようしないこと
+		inline long* _GetWeakCountPointer() { return info_.countWeak_; }		//この関数は外部からしようしないこと
 		int GetReferenceCount() { 
-			int res = info_.countRef_ != NULL ? (int)*info_.countRef_ : 0; 
+			int res = info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0; 
 			return res; 
 		}
 
-		template <class T2>
+		template<class T2>
 		static ref_count_ptr<T, SYNC> DownCast(ref_count_ptr<T2, SYNC> &src) {
 			// 引数のスマートポインタが持つポインタが、
 			// 自分の登録しているポインタに
@@ -295,14 +299,13 @@ namespace gstd {
 	template <class T, bool SYNC = true>
 	class ref_count_weak_ptr {
 	public:
-		typedef ref_count_weak_ptr<T, false> unsync;//排他なし版
-
+		typedef ref_count_weak_ptr<T, false> unsync;	//排他なし版
 	private:
 		ref_count_ptr_info<T> info_;
 
 		// 参照カウンタ増加
 		void _AddRef() {
-			if (info_.countRef_ == nullptr)return;
+			if (info_.countRef_ == nullptr) return;
 
 			if (SYNC) {
 				InterlockedIncrement(info_.countWeak_);
@@ -346,7 +349,7 @@ namespace gstd {
 			if (src != nullptr)
 				throw std::exception("ref_count_weak_ptrコンストラクタに非NULLを代入しようとしました");
 
-			info_.pPtr_ = nullptr;
+			info_.pPtr_ = src;
 			info_.countWeak_ = nullptr;
 			info_.countRef_ = nullptr;
 		}
@@ -470,7 +473,7 @@ namespace gstd {
 		bool operator ==(const ref_count_weak_ptr<T, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ == p.info_.pPtr_) : (nullptr == p.info_.pPtr_);
 		}
-		template< class D >
+		template<class D>
 		bool operator ==(ref_count_weak_ptr<D, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ == p.GetPointer()) : (nullptr == p.GetPointer());
 		}
@@ -482,7 +485,7 @@ namespace gstd {
 		bool operator !=(const ref_count_weak_ptr<T, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ != p.info_.pPtr_) : (nullptr != p.info_.pPtr_);
 		}
-		template< class D >
+		template<class D>
 		bool operator !=(ref_count_weak_ptr<D, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ != p.GetPointer()) : (nullptr != p.GetPointer());
 		}
@@ -493,8 +496,8 @@ namespace gstd {
 		}
 
 		// 参照カウンタへのポインタを取得
-		inline long* _GetReferenceCountPointer() { return info_.countRef_; }//この関数は外部からしようしないこと
-		inline long* _GetWeakCountPointer() { return info_.countWeak_; }//この関数は外部からしようしないこと
+		inline long* _GetReferenceCountPointer() { return info_.countRef_; }	//この関数は外部からしようしないこと
+		inline long* _GetWeakCountPointer() { return info_.countWeak_; }		//この関数は外部からしようしないこと
 		int GetReferenceCount() { 
 			int res = info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0; 
 			return res; 
@@ -503,14 +506,14 @@ namespace gstd {
 			return info_.countRef_ != nullptr ? (*info_.countRef_ > 0) : false; 
 		}
 
-		template <class T2>
+		template<class T2>
 		static ref_count_weak_ptr<T, SYNC> DownCast(ref_count_weak_ptr<T2, SYNC> &src) {
 			// 引数のスマートポインタが持つポインタが、
 			// 自分の登録しているポインタに
 			// ダウンキャスト可能な場合はオブジェクトを返す
 			ref_count_weak_ptr<T, SYNC> res;
 			T* castPtr = dynamic_cast<T*>(src.GetPointer());
-			if (castPtr != NULL) {
+			if (castPtr != nullptr) {
 				// ダウンキャスト可能
 				res._Release();//現在の参照を破棄する必要がある
 				res.info_.countRef_ = src._GetReferenceCountPointer();
