@@ -10,6 +10,8 @@ int64_t ScriptManager::idScript_ = 0;
 ScriptManager::ScriptManager() {
 	mainThreadID_ = GetCurrentThreadId();
 
+	bHasCloseScriptWork_ = false;
+
 	FileManager::GetBase()->AddLoadThreadListener(this);
 }
 ScriptManager::~ScriptManager() {
@@ -26,7 +28,7 @@ void ScriptManager::Work(int targetType) {
 	for (; itr != listScriptRun_.end(); ) {
 		ref_count_ptr<ManagedScript> script = (*itr);
 		int type = script->GetScriptType();
-		if (targetType != ManagedScript::TYPE_ALL && targetType != type) {
+		if (script->IsPaused() || (targetType != ManagedScript::TYPE_ALL && targetType != type)) {
 			itr++;
 			continue;
 		}
@@ -224,7 +226,7 @@ int64_t ScriptManager::LoadScript(std::wstring path, ref_count_ptr<ManagedScript
 }
 ref_count_ptr<ManagedScript> ScriptManager::LoadScript(std::wstring path, int type) {
 	ref_count_ptr<ManagedScript> script = Create(type);
-	LoadScript(path, script);
+	this->LoadScript(path, script);
 	return script;
 }
 int64_t ScriptManager::LoadScriptInThread(std::wstring path, ref_count_ptr<ManagedScript> script) {
@@ -272,11 +274,10 @@ void ScriptManager::RequestEventAll(int type, std::vector<gstd::value>& listValu
 	}
 
 	if (listRelativeManager_.size() > 0) {
-		std::list<gstd::ref_count_weak_ptr<ScriptManager> >::iterator itrManager = listRelativeManager_.begin();
+		std::list<std::weak_ptr<ScriptManager>>::iterator itrManager = listRelativeManager_.begin();
 		for (; itrManager != listRelativeManager_.end(); ) {
-			gstd::ref_count_weak_ptr<ScriptManager> manager = (*itrManager);
-			if (manager != NULL) {
-				std::list<ref_count_ptr<ManagedScript> >::iterator itrScript = manager->listScriptRun_.begin();
+			if (auto manager = (*itrManager).lock()) {
+				std::list<ref_count_ptr<ManagedScript>>::iterator itrScript = manager->listScriptRun_.begin();
 				for (; itrScript != manager->listScriptRun_.end(); itrScript++) {
 					ref_count_ptr<ManagedScript> script = (*itrScript);
 					if (script->IsEndScript())continue;
@@ -305,9 +306,13 @@ gstd::value ScriptManager::GetScriptResult(int64_t idScript) {
 
 	return res;
 }
-void ScriptManager::AddRelativeScriptManagerMutual(gstd::ref_count_weak_ptr<ScriptManager> manager1, gstd::ref_count_weak_ptr<ScriptManager> manager2) {
-	manager1->AddRelativeScriptManager(manager2);
-	manager2->AddRelativeScriptManager(manager1);
+void ScriptManager::AddRelativeScriptManagerMutual(std::weak_ptr<ScriptManager> manager1, std::weak_ptr<ScriptManager> manager2) {
+	auto lManager1 = manager1.lock();
+	auto lManager2 = manager2.lock();
+	if (lManager1 != nullptr && lManager2 != nullptr) {
+		lManager1->AddRelativeScriptManager(manager2);
+		lManager2->AddRelativeScriptManager(manager1);
+	}
 }
 
 /**********************************************************
@@ -318,28 +323,31 @@ const function commonFunction[] =
 	//関数：
 
 	//制御共通関数：スクリプト操作
-	{"LoadScript", ManagedScript::Func_LoadScript, 1},
-	{"LoadScriptInThread", ManagedScript::Func_LoadScriptInThread, 1},
-	{"StartScript", ManagedScript::Func_StartScript, 1},
-	{"CloseScript", ManagedScript::Func_CloseScript, 1},
-	{"IsCloseScript", ManagedScript::Func_IsCloseScript, 1},
-	{"GetOwnScriptID", ManagedScript::Func_GetOwnScriptID, 0},
-	{"GetEventType", ManagedScript::Func_GetEventType, 0},
-	{"GetEventArgument", ManagedScript::Func_GetEventArgument, 1},
-	{"SetScriptArgument", ManagedScript::Func_SetScriptArgument, 3},
-	{"GetScriptResult", ManagedScript::Func_GetScriptResult, 1},
-	{"SetAutoDeleteObject", ManagedScript::Func_SetAutoDeleteObject, 1},
-	{"NotifyEvent", ManagedScript::Func_NotifyEvent, 3},
-	{"NotifyEventAll", ManagedScript::Func_NotifyEventAll, 2},
+	{ "LoadScript", ManagedScript::Func_LoadScript, 1 },
+	{ "LoadScriptInThread", ManagedScript::Func_LoadScriptInThread, 1 },
+	{ "StartScript", ManagedScript::Func_StartScript, 1 },
+	{ "CloseScript", ManagedScript::Func_CloseScript, 1 },
+	{ "IsCloseScript", ManagedScript::Func_IsCloseScript, 1 },
+	{ "GetOwnScriptID", ManagedScript::Func_GetOwnScriptID, 0 },
+	{ "GetEventType", ManagedScript::Func_GetEventType, 0 },
+	{ "GetEventArgument", ManagedScript::Func_GetEventArgument, 1 },
+	{ "SetScriptArgument", ManagedScript::Func_SetScriptArgument, 3 },
+	{ "GetScriptResult", ManagedScript::Func_GetScriptResult, 1 },
+	{ "SetAutoDeleteObject", ManagedScript::Func_SetAutoDeleteObject, 1 },
+	{ "NotifyEvent", ManagedScript::Func_NotifyEvent, 3 },
+	{ "NotifyEventAll", ManagedScript::Func_NotifyEventAll, 2 },
+	{ "PauseScript", ManagedScript::Func_PauseScript, 2 },
 
 };
 ManagedScript::ManagedScript() {
-	scriptManager_ = NULL;
+	scriptManager_ = nullptr;
 	_AddFunction(commonFunction, sizeof(commonFunction) / sizeof(function));
 
 	bLoad_ = false;
 	bEndScript_ = false;
 	bAutoDeleteObject_ = false;
+
+	bPaused_ = false;
 }
 void ManagedScript::SetScriptManager(ScriptManager* manager) {
 	scriptManager_ = manager;
@@ -379,7 +387,7 @@ gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& list
 //STG制御共通関数：スクリプト操作
 gstd::value ManagedScript::Func_LoadScript(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	std::wstring path = argv[0].as_string();
 	int type = script->GetScriptType();
@@ -391,7 +399,7 @@ gstd::value ManagedScript::Func_LoadScript(gstd::script_machine* machine, int ar
 }
 gstd::value ManagedScript::Func_LoadScriptInThread(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	std::wstring path = argv[0].as_string();
 	int type = script->GetScriptType();
@@ -402,7 +410,7 @@ gstd::value ManagedScript::Func_LoadScriptInThread(gstd::script_machine* machine
 }
 gstd::value ManagedScript::Func_StartScript(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	scriptManager->StartScript(idScript);
@@ -410,7 +418,7 @@ gstd::value ManagedScript::Func_StartScript(gstd::script_machine* machine, int a
 }
 gstd::value ManagedScript::Func_CloseScript(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	scriptManager->CloseScript(idScript);
@@ -418,7 +426,7 @@ gstd::value ManagedScript::Func_CloseScript(gstd::script_machine* machine, int a
 }
 gstd::value ManagedScript::Func_IsCloseScript(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	bool res = scriptManager->IsCloseScript(idScript);
@@ -445,7 +453,7 @@ gstd::value ManagedScript::Func_GetEventArgument(script_machine* machine, int ar
 }
 gstd::value ManagedScript::Func_SetScriptArgument(script_machine* machine, int argc, const value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	ref_count_ptr<ManagedScript> target = scriptManager->GetScript(idScript);
@@ -458,7 +466,7 @@ gstd::value ManagedScript::Func_SetScriptArgument(script_machine* machine, int a
 }
 gstd::value ManagedScript::Func_GetScriptResult(script_machine* machine, int argc, const value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	gstd::value res = scriptManager->GetScriptResult(idScript);
@@ -474,7 +482,7 @@ gstd::value ManagedScript::Func_SetAutoDeleteObject(script_machine* machine, int
 gstd::value ManagedScript::Func_NotifyEvent(script_machine* machine, int argc, const value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
 	script->CheckRunInMainThread();
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int64_t idScript = (int64_t)argv[0].as_real();
 	ref_count_ptr<ManagedScript> target = scriptManager->GetScript(idScript);
@@ -492,12 +500,28 @@ gstd::value ManagedScript::Func_NotifyEventAll(script_machine* machine, int argc
 	ManagedScript* script = (ManagedScript*)machine->data;
 	script->CheckRunInMainThread();
 
-	ScriptManager* scriptManager = script->scriptManager_;
+	auto scriptManager = script->scriptManager_;
 
 	int type = (int)argv[0].as_real();
 	std::vector<gstd::value> listArg;
 	listArg.push_back(argv[1]);
 	scriptManager->RequestEventAll(type, listArg);
+
+	return value();
+}
+gstd::value ManagedScript::Func_PauseScript(script_machine* machine, int argc, const value* argv) {
+	ManagedScript* script = (ManagedScript*)machine->data;
+	script->CheckRunInMainThread();
+
+	auto scriptManager = script->scriptManager_;
+
+	int64_t idScript = (int64_t)argv[0].as_real();
+	bool state = argv[1].as_boolean();
+	if (idScript == script->GetScriptID())
+		throw gstd::wexception("A script is not allowed to pause itself.");
+
+	ref_count_ptr<ManagedScript> target = scriptManager->GetScript(idScript);
+	target->bPaused_ = state;
 
 	return value();
 }

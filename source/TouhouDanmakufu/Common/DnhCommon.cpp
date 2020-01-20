@@ -218,10 +218,10 @@ std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::CreateScriptIn
 		ArchiveFile archive(path);
 		if (!archive.Open())return res;
 
-		std::multimap<std::wstring, ArchiveFileEntry*> mapEntry = archive.GetEntryMap();
+		std::multimap<std::wstring, ArchiveFileEntry::ptr> mapEntry = archive.GetEntryMap();
 		for (auto itr = mapEntry.begin(); itr != mapEntry.end(); itr++) {
 			//–¾‚ç‚©‚ÉŠÖŒW‚È‚³‚»‚¤‚ÈŠg’£Žq‚ÍœŠO
-			ArchiveFileEntry* entry = itr->second;
+			ArchiveFileEntry::ptr entry = itr->second;
 			std::wstring dir = PathProperty::GetFileDirectory(path);
 			std::wstring tPath = dir + entry->directory + entry->name;
 

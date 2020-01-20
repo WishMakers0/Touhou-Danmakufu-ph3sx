@@ -32,7 +32,7 @@ ref_count_ptr<ManagedScript> StgPackageScriptManager::Create(int type) {
 	}
 
 	if (res != NULL) {
-		res->SetObjectManager(objectManager_);
+		res->SetObjectManager(objectManager_.GetPointer());
 		res->SetScriptManager(this);
 	}
 
@@ -328,7 +328,7 @@ gstd::value StgPackageScript::Func_PauseStageScene(gstd::script_machine* machine
 
 	bool bPause = argv[0].as_boolean();
 
-	StgStageScriptManager* stageScriptManager = stageController->GetScriptManagerP();
+	auto stageScriptManager = stageController->GetScriptManager();
 	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
 	if (bPause && !infoStage->IsPause())
 		stageScriptManager->RequestEventAll(StgStageScript::EV_PAUSE_ENTER);

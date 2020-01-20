@@ -21,7 +21,8 @@ public:
 	virtual void Render();
 	virtual ref_count_ptr<ManagedScript> Create(int type);
 
-	ref_count_ptr<DxScriptObjectManager> GetObjectManager() { return objectManager_; }
+	DxScriptObjectManager* GetObjectManager() { return objectManager_.GetPointer(); }
+	ref_count_ptr<DxScriptObjectManager> GetObjectManagerRef() { return objectManager_; }
 };
 
 /**********************************************************

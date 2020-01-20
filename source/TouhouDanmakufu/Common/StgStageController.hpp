@@ -26,11 +26,12 @@ private:
 	ref_count_ptr<StgPauseScene> pauseManager_;
 	ref_count_ptr<KeyReplayManager> keyReplayManager_;
 	ref_count_ptr<StgStageScriptObjectManager> objectManagerMain_;
-	ref_count_ptr<StgStageScriptManager> scriptManager_;
-	ref_count_ptr<StgEnemyManager> enemyManager_;
-	ref_count_ptr<StgShotManager> shotManager_;
-	ref_count_ptr<StgItemManager> itemManager_;
-	ref_count_ptr<StgIntersectionManager> intersectionManager_;
+	//ref_count_ptr<StgStageScriptObjectManager> _objectManagerMain_;	//Why do I have to do this
+	std::shared_ptr<StgStageScriptManager> scriptManager_;
+	StgEnemyManager* enemyManager_;
+	StgShotManager* shotManager_;
+	StgItemManager* itemManager_;
+	StgIntersectionManager* intersectionManager_;
 
 	void _SetupReplayTargetCommonDataArea(int64_t idScript);
 
@@ -43,13 +44,14 @@ public:
 	void Render();
 	void RenderToTransitionTexture();
 
-	ref_count_ptr<StgStageScriptObjectManager> GetMainObjectManager() { return objectManagerMain_; }
-	StgStageScriptManager* GetScriptManagerP() { return scriptManager_.GetPointer(); }
-	ref_count_ptr<StgStageScriptManager> GetScriptManagerR() { return scriptManager_; }
-	StgEnemyManager* GetEnemyManager() { return enemyManager_.GetPointer(); }
-	StgShotManager* GetShotManager() { return shotManager_.GetPointer(); }
-	StgItemManager* GetItemManager() { return itemManager_.GetPointer(); }
-	StgIntersectionManager* GetIntersectionManager() { return intersectionManager_.GetPointer(); }
+	StgStageScriptObjectManager* GetMainObjectManager() { return objectManagerMain_.GetPointer(); }
+	ref_count_ptr<StgStageScriptObjectManager> GetMainObjectManagerRef() { return objectManagerMain_; }
+	StgStageScriptManager* GetScriptManager() { return scriptManager_.get(); }
+	std::shared_ptr<StgStageScriptManager> GetScriptManagerRef() { return scriptManager_; }
+	StgEnemyManager* GetEnemyManager() { return enemyManager_; }
+	StgShotManager* GetShotManager() { return shotManager_; }
+	StgItemManager* GetItemManager() { return itemManager_; }
+	StgIntersectionManager* GetIntersectionManager() { return intersectionManager_; }
 	ref_count_ptr<StgPauseScene> GetPauseManager() { return pauseManager_; }
 
 	ref_count_ptr<DxScriptObjectBase>::unsync GetMainRenderObject(int idObject);

@@ -91,6 +91,9 @@ public:
 	virtual double GetDirectionAngle() = 0;
 	int GetShotDataID() { return idShotData_; }
 	void SetShotDataID(int id) { idShotData_ = id; }
+
+	virtual double GetSpeedX() { return c_; }
+	virtual double GetSpeedY() { return s_; }
 };
 
 class StgMovePattern_Angle : public StgMovePattern {
@@ -116,12 +119,13 @@ public:
 	void SetMaxSpeed(double max) { maxSpeed_ = max; }
 	void SetAngularVelocity(double av) { angularVelocity_ = av; }
 	void SetRelativeObjectID(int id) { idRalativeID_ = id; }
+
+	virtual double GetSpeedX();
+	virtual double GetSpeedY();
 };
 
 class StgMovePattern_XY : public StgMovePattern {
 protected:
-	double speedX_;
-	double speedY_;
 	double accelerationX_;
 	double accelerationY_;
 	double maxSpeedX_;
@@ -134,10 +138,10 @@ public:
 	virtual double GetSpeed();
 	virtual double GetDirectionAngle();
 
-	double GetSpeedX() { return speedX_; }
-	double GetSpeedY() { return speedY_; }
-	void SetSpeedX(double value) { speedX_ = value; }
-	void SetSpeedY(double value) { speedY_ = value; }
+	virtual double GetSpeedX() { return c_; }
+	virtual double GetSpeedY() { return s_; }
+	void SetSpeedX(double value) { c_ = value; }
+	void SetSpeedY(double value) { s_ = value; }
 	void SetAccelerationX(double value) { accelerationX_ = value; }
 	void SetAccelerationY(double value) { accelerationY_ = value; }
 	void SetMaxSpeedX(double value) { maxSpeedX_ = value; }
@@ -170,4 +174,7 @@ public:
 	void SetAtSpeed(double tx, double ty, double speed);
 	void SetAtFrame(double tx, double ty, double frame);
 	void SetAtWait(double tx, double ty, double weight, double maxSpeed);
+
+	virtual double GetSpeedX() { return c_; }
+	virtual double GetSpeedY() { return s_; }
 };

@@ -42,6 +42,8 @@ public:
 		STATE_HIT,
 		STATE_DOWN,
 		STATE_END,
+
+		REBIRTH_DEFAULT = -99999,
 	};
 protected:
 	StgStageController* stageController_;
@@ -70,6 +72,9 @@ protected:
 
 	bool enableStateEnd_;
 	bool enableShootdownEvent_;
+
+	double rebirthX_;
+	double rebirthY_;
 
 	void _InitializeRebirth();
 	void _Move();
@@ -124,6 +129,8 @@ public:
 	void SetInvincibilityFrame(int frame) { frameInvincibility_ = frame; }
 	int GetAutoItemCollectY() { return yAutoItemCollect_; }
 	void SetAutoItemCollectY(int y) { yAutoItemCollect_ = y; }
+
+	void SetRebirthPosition(double x, double y) { rebirthX_ = x; rebirthY_ = y; }
 
 	bool IsPermitShot();
 	void SetForbidShot(bool bForbid) { bForbidShot_ = bForbid; }

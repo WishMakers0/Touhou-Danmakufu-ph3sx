@@ -14,7 +14,7 @@ class StgStageScript;
 class StgStageScriptManager : public StgControlScriptManager {
 protected:
 	StgStageController* stageController_;
-	ref_count_ptr<StgStageScriptObjectManager> objManager_;
+	gstd::ref_count_ptr<StgStageScriptObjectManager> objManager_;
 
 	int64_t idPlayerScript_;
 	int64_t idItemScript_;
@@ -30,7 +30,7 @@ public:
 	virtual void SetError(std::wstring error);
 	virtual bool IsError();
 
-	gstd::ref_count_ptr<StgStageScriptObjectManager> GetObjectManager() { return objManager_; }
+	StgStageScriptObjectManager* GetObjectManager() { return objManager_.GetPointer(); }
 	virtual ref_count_ptr<ManagedScript> Create(int type);
 
 	int64_t GetPlayerScriptID() { return idPlayerScript_; }
@@ -82,19 +82,6 @@ public:
 		TYPE_CHILD,
 		TYPE_IMMEDIATE,
 		TYPE_FADE,
-
-
-		OBJ_PLAYER = 100,
-		OBJ_SPELL_MANAGE,
-		OBJ_SPELL,
-		OBJ_ENEMY,
-		OBJ_ENEMY_BOSS,
-		OBJ_ENEMY_BOSS_SCENE,
-		OBJ_SHOT,
-		OBJ_LOOSE_LASER,//射出型レーザー
-		OBJ_STRAIGHT_LASER,//設置型レーザー
-		OBJ_CURVE_LASER,//曲がるレーザー
-		OBJ_ITEM,
 
 		INFO_LIFE,
 		INFO_DAMAGE_RATE_SHOT,
@@ -166,7 +153,7 @@ public:
 	StgStageScript(StgStageController* stageController);
 	virtual ~StgStageScript();
 
-	ref_count_ptr<StgStageScriptObjectManager> GetStgObjectManager();
+	StgStageScriptObjectManager* GetStgObjectManager();
 
 	//STG共通関数：共通データ
 	static gstd::value Func_SaveCommonDataAreaToReplayFile(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -305,6 +292,10 @@ public:
 	static gstd::value Func_ObjMove_GetY(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjMove_GetSpeed(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjMove_GetAngle(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_ObjMove_SetSpeedX(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_ObjMove_GetSpeedX(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_ObjMove_SetSpeedY(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_ObjMove_GetSpeedY(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 	//STG共通関数：敵オブジェクト操作
 	static gstd::value Func_ObjEnemy_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);

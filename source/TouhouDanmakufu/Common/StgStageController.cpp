@@ -7,8 +7,18 @@
 StgStageController::StgStageController(StgSystemController* systemController) {
 	systemController_ = systemController;
 	infoSystem_ = systemController_->GetSystemInformation();
+
+	scriptManager_ = nullptr;
+	enemyManager_ = nullptr;
+	shotManager_ = nullptr;
+	itemManager_ = nullptr;
+	intersectionManager_ = nullptr;
 }
 StgStageController::~StgStageController() {
+	delete enemyManager_;
+	delete shotManager_;
+	delete itemManager_;
+	delete intersectionManager_;
 	intersectionManager_ = NULL;
 	itemManager_ = NULL;
 	shotManager_ = NULL;
@@ -28,7 +38,10 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
 	camera3D->Reset();
-	camera3D->SetProjectionMatrix(384, 448, 10, 2000);
+	camera3D->SetPerspectiveWidth(384);
+	camera3D->SetPerspectiveHeight(448);
+	camera3D->SetPerspectiveClip(10, 2000);
+	camera3D->thisProjectionChanged_ = true;
 
 	//2Dカメラ
 	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
@@ -132,7 +145,8 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	}
 
 	objectManagerMain_ = new StgStageScriptObjectManager(this);
-	scriptManager_ = new StgStageScriptManager(this);
+	//_objectManagerMain_ = objectManagerMain_;
+	scriptManager_ = std::make_shared<StgStageScriptManager>(this);
 	enemyManager_ = new StgEnemyManager(this);
 	shotManager_ = new StgShotManager(this);
 	itemManager_ = new StgItemManager(this);
@@ -142,12 +156,12 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	//パッケージスクリプトの場合は、ステージスクリプトと関連付ける
 	StgPackageController* packageController = systemController_->GetPackageController();
 	if (packageController != NULL) {
-		ref_count_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
-		ref_count_ptr<ScriptManager> stageScriptManager = scriptManager_;
+		std::shared_ptr<ScriptManager> packageScriptManager = std::dynamic_pointer_cast<ScriptManager>(packageController->GetScriptManagerRef());
+		std::shared_ptr<ScriptManager> stageScriptManager = std::dynamic_pointer_cast<ScriptManager>(scriptManager_);
 		ScriptManager::AddRelativeScriptManagerMutual(packageScriptManager, stageScriptManager);
 	}
 
-	gstd::ref_count_ptr<StgStageScriptObjectManager> objectManager = scriptManager_->GetObjectManager();
+	StgStageScriptObjectManager* objectManager = scriptManager_->GetObjectManager();
 
 	//メインスクリプト情報
 	ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
@@ -162,6 +176,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	if (pathSystemScript.size() > 0) {
 		pathSystemScript = EPathProperty::ExtendRelativeToFull(dirInfo, pathSystemScript);
 		ELogger::WriteTop(StringUtility::Format(L"System script: [%s]", pathSystemScript.c_str()));
+
 		auto script = scriptManager_->LoadScript(pathSystemScript, StgStageScript::TYPE_SYSTEM);
 		scriptManager_->StartScript(script);
 	}
@@ -292,7 +307,7 @@ void StgStageController::_SetupReplayTargetCommonDataArea(int64_t idScript) {
 	const gstd::value& res = script->RequestEvent(StgStageScript::EV_REQUEST_REPLAY_TARGET_COMMON_AREA);
 	if (!res.has_data())return;
 	type_data::type_kind kindRes = res.get_type()->get_kind();
-	if (kindRes != type_data::tk_array)return;
+	if (kindRes != type_data::type_kind::tk_array)return;
 
 	ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
 	std::set<std::string> listArea;
@@ -425,7 +440,6 @@ void StgStageController::RenderToTransitionTexture() {
 	TextureManager* textureManager = ETextureManager::GetInstance();
 	ref_count_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = GetMainObjectManager();
 	graphics->SetRenderTarget(texture);
 	graphics->BeginScene(true);
 

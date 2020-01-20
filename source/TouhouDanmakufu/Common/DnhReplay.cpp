@@ -195,15 +195,15 @@ std::set<std::string> ReplayInformation::StageData::GetCommonDataAreaList() {
 	}
 	return res;
 }
-ref_count_ptr<ScriptCommonData> ReplayInformation::StageData::GetCommonData(std::string area) {
-	ref_count_ptr<ScriptCommonData> res = new ScriptCommonData();
+ScriptCommonData::ptr ReplayInformation::StageData::GetCommonData(std::string area) {
+	ScriptCommonData::ptr res = new ScriptCommonData();
 	if (mapCommonData_.find(area) != mapCommonData_.end()) {
 		ref_count_ptr<RecordBuffer> record = mapCommonData_[area];
 		res->ReadRecord(*record);
 	}
 	return res;
 }
-void ReplayInformation::StageData::SetCommonData(std::string area, ref_count_ptr<ScriptCommonData> commonData) {
+void ReplayInformation::StageData::SetCommonData(std::string area, ScriptCommonData::ptr commonData) {
 	ref_count_ptr<RecordBuffer> record = new RecordBuffer();
 	if (commonData != nullptr)
 		commonData->WriteRecord(*record);

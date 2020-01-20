@@ -31,9 +31,8 @@ private:
 	int64_t totalScore_;
 	double fpsAvarage_;
 	SYSTEMTIME date_;
-	ref_count_ptr<ScriptCommonData> userData_;
+	ScriptCommonData::ptr userData_;
 	std::map<int, ref_count_ptr<StageData> > mapStageData_;
-
 public:
 	ReplayInformation();
 	virtual ~ReplayInformation();
@@ -126,8 +125,8 @@ public:
 	ref_count_ptr<gstd::RecordBuffer> GetReplayKeyRecord() { return recordKey_; }
 	void SetReplayKeyRecord(ref_count_ptr<gstd::RecordBuffer> rec) { recordKey_ = rec; }
 	std::set<std::string> GetCommonDataAreaList();
-	ref_count_ptr<ScriptCommonData> GetCommonData(std::string area);
-	void SetCommonData(std::string area, ref_count_ptr<ScriptCommonData> commonData);
+	ScriptCommonData::ptr GetCommonData(std::string area);
+	void SetCommonData(std::string area, ScriptCommonData::ptr commonData);
 
 	std::wstring GetPlayerScriptID() { return playerScriptID_; }
 	void SetPlayerScriptID(std::wstring id) { playerScriptID_ = id; }

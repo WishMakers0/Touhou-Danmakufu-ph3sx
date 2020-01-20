@@ -5,7 +5,6 @@
 #include "../../GcLib/directx/HLSL.hpp"
 
 #include <locale>
-#include <codecvt>
 
 /**********************************************************
 //StgShotManager
@@ -189,7 +188,7 @@ void StgShotManager::Render(int targetPriority) {
 				listPlayerShotData_->GetRendererList(blendMode[iBlend] - 1);
 
 			for (size_t iRender = 0U; iRender < listPlayer->size(); iRender++)
-				(listPlayer->at(iRender))->Render(this);
+				(*listPlayer)[iRender]->Render(this);
 		}
 		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
 			graphics->SetBlendMode(blendMode[iBlend]);
@@ -198,7 +197,7 @@ void StgShotManager::Render(int targetPriority) {
 				listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
 
 			for (size_t iRender = 0U; iRender < listEnemy->size(); iRender++)
-				(listEnemy->at(iRender))->Render(this);
+				(*listEnemy)[iRender]->Render(this);
 		}
 	}
 
@@ -280,9 +279,7 @@ RECT StgShotManager::GetShotAutoDeleteClipRect() {
 }
 
 void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOnwer, int cx, int cy, double radius) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
-
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
 	double rd = radius * radius;
 
@@ -317,9 +314,7 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOnwer, i
 
 std::vector<int> StgShotManager::GetShotIdInCircle(int typeOnwer, int cx, int cy, int radius) {
 	std::vector<int> res;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
-
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
 	double rd = radius * radius;
 
@@ -358,11 +353,11 @@ int StgShotManager::GetShotCount(int typeOnwer) {
 }
 
 void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())continue;
@@ -790,7 +785,8 @@ StgShotRenderer* StgShotData::GetRenderer() {
 	return GetRenderer(typeRender_);
 }
 StgShotRenderer* StgShotData::GetRenderer(int blendType) {
-	if (blendType < DirectGraphics::MODE_BLEND_ALPHA || blendType > DirectGraphics::MODE_BLEND_ALPHA_INV) return nullptr;
+	if (blendType < DirectGraphics::MODE_BLEND_ALPHA || blendType > DirectGraphics::MODE_BLEND_ALPHA_INV)
+		return listShotData_->GetRenderer(indexTexture_, 0);
 	return listShotData_->GetRenderer(indexTexture_, blendType - 1);
 }
 bool StgShotData::IsAlphaBlendValidType(int blendType) {
@@ -940,10 +936,10 @@ void StgShotObject::_DeleteInLife() {
 	if (life_ <= 0) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_IMMEDIATE);
 
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		
 		if (typeOwner_ == StgShotObject::OWNER_PLAYER) {
-			StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+			auto scriptManager = stageController_->GetScriptManager();
 			ref_count_ptr<ManagedScript> scriptPlayer = scriptManager->GetPlayerScript();
 
 			double posX = GetPositionX();
@@ -970,7 +966,7 @@ void StgShotObject::_DeleteInAutoClip() {
 	StgShotManager* shotManager = stageController_->GetShotManager();
 	RECT rect = shotManager->GetShotAutoDeleteClipRect();
 	if (posX_ < rect.left || posX_ > rect.right || posY_ < rect.top || posY_ > rect.bottom) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
@@ -978,7 +974,7 @@ void StgShotObject::_DeleteInFadeDelete() {
 	if (IsDeleted())return;
 	if (frameFadeDelete_ == 0) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_FADE);
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
@@ -988,7 +984,7 @@ void StgShotObject::_DeleteInAutoDeleteFrame() {
 
 	if (frameAutoDelete_ <= 0) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_IMMEDIATE);
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 		return;
 	}
@@ -997,7 +993,7 @@ void StgShotObject::_DeleteInAutoDeleteFrame() {
 void StgShotObject::_SendDeleteEvent(int bit) {
 	if (typeOwner_ != OWNER_ENEMY)return;
 
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	ref_count_ptr<ManagedScript> scriptShot = stageScriptManager->GetShotScript();
 	if (scriptShot == nullptr)return;
 
@@ -1038,7 +1034,7 @@ void StgShotObject::_AddReservedShotWork() {
 	ref_count_ptr<ReserveShotList::ListElement>::unsync listData = listReserveShot_->GetNextFrameData();
 	if (listData == nullptr)return;
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	std::list<ReserveShotListData>* list = listData->GetDataList();
 	std::list<ReserveShotListData>::iterator itr = list->begin();
 	for (; itr != list->end(); itr++) {
@@ -1054,7 +1050,7 @@ void StgShotObject::_AddReservedShotWork() {
 }
 
 void StgShotObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, StgShotObject::ReserveShotListData* data) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 
 	double ownAngle = GetDirectionAngle();
 	double ox = GetPositionX();
@@ -1126,7 +1122,7 @@ void StgShotObject::SetColor(int r, int g, int b) {
 }
 
 void StgShotObject::AddShot(int frame, int idShot, int radius, int angle) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->ActivateObject(idShot, false);
 
 	if (listReserveShot_ == nullptr)
@@ -1141,7 +1137,7 @@ void StgShotObject::ConvertToItem(bool flgPlayerCollision) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_TO_ITEM);
 	}
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(idObject_);
 }
 void StgShotObject::DeleteImmediate() {
@@ -1149,7 +1145,7 @@ void StgShotObject::DeleteImmediate() {
 
 	_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_IMMEDIATE);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(idObject_);
 }
 
@@ -1181,7 +1177,7 @@ void StgShotObject::ReserveShotList::AddData(int frame, int idShot, int radius, 
 	list->Add(data);
 }
 void StgShotObject::ReserveShotList::Clear(StgStageController* stageController) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController->GetMainObjectManager();
+	auto objectManager = stageController->GetMainObjectManager();
 	if (objectManager == nullptr)return;
 
 	auto itrMap = mapData_.begin();
@@ -1204,7 +1200,7 @@ void StgShotObject::ReserveShotList::Clear(StgStageController* stageController) 
 //StgNormalShotObject
 **********************************************************/
 StgNormalShotObject::StgNormalShotObject(StgStageController* stageController) : StgShotObject(stageController) {
-	typeObject_ = StgStageScript::OBJ_SHOT;
+	typeObject_ = TypeObject::OBJ_SHOT;
 	angularVelocity_ = 0;
 }
 StgNormalShotObject::~StgNormalShotObject() {
@@ -1511,7 +1507,7 @@ void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 }
 void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetItemScript();
 
 	//assert(scriptItem != nullptr);
@@ -1533,7 +1529,7 @@ void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 
 	if (itemManager->IsDefaultBonusItemEnable() && !flgPlayerCollision) {
 		ref_count_ptr<StgItemObject>::unsync obj = new StgItemObject_Bonus(stageController_);
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		int id = objectManager->AddObject(obj);
 		if (id != DxScript::ID_INVALID) {
 			//弾の座標にアイテムを作成する
@@ -1661,7 +1657,7 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 //StgLooseLaserObject(射出型レーザー)
 **********************************************************/
 StgLooseLaserObject::StgLooseLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
-	typeObject_ = StgStageScript::OBJ_LOOSE_LASER;
+	typeObject_ = TypeObject::OBJ_LOOSE_LASER;
 }
 void StgLooseLaserObject::Work() {
 	//1フレーム目は移動しない
@@ -1714,7 +1710,7 @@ void StgLooseLaserObject::_DeleteInAutoClip() {
 	RECT rect = shotManager->GetShotAutoDeleteClipRect();
 	if ((posX_ < rect.left && posXE_ < rect.left) || (posX_ > rect.right && posXE_ > rect.right) ||
 		(posY_ < rect.top && posYE_ < rect.top) || (posY_ > rect.bottom && posYE_ > rect.bottom)) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
@@ -1883,7 +1879,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 }
 void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetItemScript();
 
 	//assert(scriptItem != nullptr);
@@ -1938,7 +1934,7 @@ void StgLooseLaserObject::RegistIntersectionTarget() {
 //StgStraightLaserObject(設置型レーザー)
 **********************************************************/
 StgStraightLaserObject::StgStraightLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
-	typeObject_ = StgStageScript::OBJ_STRAIGHT_LASER;
+	typeObject_ = TypeObject::OBJ_STRAIGHT_LASER;
 	angLaser_ = 0;
 	frameFadeDelete_ = -1;
 	bUseSouce_ = true;
@@ -1990,7 +1986,7 @@ void StgStraightLaserObject::_DeleteInAutoClip() {
 
 	if ((posX_ < rect.left && posXE < rect.left) || (posX_ > rect.right && posXE > rect.right) ||
 		(posY_ < rect.top && posYE < rect.top) || (posY_ > rect.bottom && posYE > rect.bottom)) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
@@ -2042,7 +2038,7 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 	return res;
 }
 void StgStraightLaserObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, StgShotObject::ReserveShotListData* data) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 
 	double ownAngle = GetDirectionAngle();
 	double ox = GetPositionX();
@@ -2192,7 +2188,7 @@ void StgStraightLaserObject::RenderOnShotManager() {
 }
 void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetItemScript();
 
 	//assert(scriptItem != nullptr);
@@ -2241,7 +2237,7 @@ void StgStraightLaserObject::RegistIntersectionTarget() {
 //StgCurveLaserObject(曲がる型レーザー)
 **********************************************************/
 StgCurveLaserObject::StgCurveLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
-	typeObject_ = StgStageScript::OBJ_CURVE_LASER;
+	typeObject_ = TypeObject::OBJ_CURVE_LASER;
 	tipDecrement_ = 0.0;
 
 	invalidLengthStart_ = 0.0f;
@@ -2320,7 +2316,7 @@ void StgCurveLaserObject::_DeleteInAutoClip() {
 	}
 
 	if (bDelete) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
@@ -2533,7 +2529,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 }
 void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetItemScript();
 
 	//assert(scriptItem != nullptr);

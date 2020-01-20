@@ -294,13 +294,12 @@ protected:
 	double angDirection_;
 
 	POINT posTo_;
-
 public:
 	StgMovePattern_Item(StgMoveObject* target);
 	virtual void Move();
 	int GetType() { return TYPE_OTHER; }
-	virtual double GetSpeed() { return 0; }
-	virtual double GetDirectionAngle() { return 0; }
+	virtual double GetSpeed() { return speed_; }
+	virtual double GetDirectionAngle() { return angDirection_; }
 	void SetToPosition(POINT pos) { posTo_ = pos; }
 
 	int GetItemMoveType() { return typeMove_; }

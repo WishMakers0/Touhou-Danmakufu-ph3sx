@@ -56,7 +56,7 @@ ref_count_ptr<StgEnemyBossSceneObject>::unsync StgEnemyManager::GetBossSceneObje
 **********************************************************/
 StgEnemyObject::StgEnemyObject(StgStageController* stageController) : StgMoveObject(stageController) {
 	stageController_ = stageController;
-	typeObject_ = StgStageScript::OBJ_ENEMY;
+	typeObject_ = TypeObject::OBJ_ENEMY;
 
 	SetRenderPriority(0.40);
 
@@ -117,7 +117,7 @@ ref_count_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject() {
 //StgEnemyBossObject
 **********************************************************/
 StgEnemyBossObject::StgEnemyBossObject(StgStageController* stageController) : StgEnemyObject(stageController) {
-	typeObject_ = StgStageScript::OBJ_ENEMY_BOSS;
+	typeObject_ = TypeObject::OBJ_ENEMY_BOSS;
 }
 
 /**********************************************************
@@ -125,7 +125,7 @@ StgEnemyBossObject::StgEnemyBossObject(StgStageController* stageController) : St
 **********************************************************/
 StgEnemyBossSceneObject::StgEnemyBossSceneObject(StgStageController* stageController) {
 	stageController_ = stageController;
-	typeObject_ = StgStageScript::OBJ_ENEMY_BOSS_SCENE;
+	typeObject_ = TypeObject::OBJ_ENEMY_BOSS_SCENE;
 
 	bVisible_ = false;
 	bLoad_ = false;
@@ -135,7 +135,7 @@ StgEnemyBossSceneObject::StgEnemyBossSceneObject(StgStageController* stageContro
 bool StgEnemyBossSceneObject::_NextStep() {
 	if (dataStep_ >= listData_.size())return false;
 
-	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+	auto scriptManager = stageController_->GetScriptManager();
 
 	//現ステップ終了通知
 	if (activeData_ != NULL) {
@@ -155,7 +155,7 @@ bool StgEnemyBossSceneObject::_NextStep() {
 	ref_count_ptr<StgEnemyBossSceneData>::unsync oldActiveData = activeData_;
 
 	//敵登録
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
 	activeData_ = listData_[dataStep_][dataIndex_];
 	std::vector<ref_count_ptr<StgEnemyBossObject>::unsync >& listEnemy = activeData_->GetEnemyObjectList();
 	std::vector<double>& listLife = activeData_->GetLifeList();
@@ -197,7 +197,7 @@ void StgEnemyBossSceneObject::Work() {
 			if (!bNext) {
 				//終了
 				StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
-				ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+				StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
 				objectManager->DeleteObject(idObject_);
 				enemyManager->SetBossSceneObject(NULL);
 				return;
@@ -233,7 +233,7 @@ void StgEnemyBossSceneObject::Work() {
 
 			if (bZeroTimer) {
 				//タイムアウト通知
-				StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+				auto scriptManager = stageController_->GetScriptManager();
 				scriptManager->RequestEventAll(StgStageScript::EV_TIMEOUT);
 			}
 		}
@@ -258,7 +258,7 @@ void StgEnemyBossSceneObject::Work() {
 				bGrain &= (activeData_->IsDurable() || activeData_->GetSpellTimer() > 0);
 
 				if (bGrain) {
-					StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+					auto scriptManager = stageController_->GetScriptManager();
 					int64_t score = activeData_->GetCurrentSpellScore();
 					scriptManager->RequestEventAll(StgStageScript::EV_GAIN_SPELL);
 				}
@@ -273,8 +273,8 @@ void StgEnemyBossSceneObject::Activate() {
 	if (!bLoad_)
 		LoadAllScriptInThread();
 
-	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto scriptManager = stageController_->GetScriptManager();
+	StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
 	for (int iStep = 0; iStep < listData_.size(); iStep++) {
 		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
 			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
@@ -368,7 +368,7 @@ void StgEnemyBossSceneObject::AddData(int step, ref_count_ptr<StgEnemyBossSceneD
 	listData_[step].push_back(data);
 }
 void StgEnemyBossSceneObject::LoadAllScriptInThread() {
-	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+	auto scriptManager = stageController_->GetScriptManager();
 	for (int iStep = 0; iStep < listData_.size(); iStep++) {
 		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
 			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];

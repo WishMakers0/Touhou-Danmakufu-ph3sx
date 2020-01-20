@@ -8,8 +8,10 @@
 **********************************************************/
 StgUserExtendScene::StgUserExtendScene(StgSystemController* controller) {
 	systemController_ = controller;
+	scriptManager_ = nullptr;
 }
-StgUserExtendScene::~StgUserExtendScene() {}
+StgUserExtendScene::~StgUserExtendScene() {
+}
 void StgUserExtendScene::_InitializeTransitionTexture() {
 	//画面キャプチャ
 	StgStageController* stageController = systemController_->GetStageController();
@@ -33,18 +35,18 @@ void StgUserExtendScene::_CallScriptFinalize() {
 }
 void StgUserExtendScene::_AddRelativeManager() {
 	if (scriptManager_ == NULL)return;
-	ref_count_ptr<ScriptManager> scriptManager = scriptManager_;
+	auto scriptManager = scriptManager_;
 
 	StgStageController* stageController = systemController_->GetStageController();
 	if (stageController != NULL) {
-		ref_count_ptr<ScriptManager> stageScriptManager = stageController->GetScriptManagerR();
+		auto stageScriptManager = stageController->GetScriptManagerRef();
 		if (stageScriptManager != NULL)
 			ScriptManager::AddRelativeScriptManagerMutual(scriptManager, stageScriptManager);
 	}
 
 	StgPackageController* packageController = systemController_->GetPackageController();
 	if (packageController != NULL) {
-		ref_count_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
+		auto packageScriptManager = packageController->GetScriptManagerRef();
 		if (packageScriptManager != NULL)
 			ScriptManager::AddRelativeScriptManagerMutual(scriptManager, packageScriptManager);
 	}
@@ -95,7 +97,7 @@ ref_count_ptr<ManagedScript> StgUserExtendSceneScriptManager::Create(int type) {
 	}
 
 	if (res != NULL) {
-		res->SetObjectManager(objectManager_);
+		res->SetObjectManager(objectManager_.GetPointer());
 		res->SetScriptManager(this);
 	}
 
@@ -136,7 +138,7 @@ bool StgUserExtendSceneScriptManager::IsRealValue(gstd::value val) {
 StgUserExtendSceneScript::StgUserExtendSceneScript(StgSystemController* systemController) : StgControlScript(systemController) {
 	StgStageController* stageController = systemController_->GetStageController();
 
-	StgStageScriptManager* scriptManager = stageController->GetScriptManagerP();
+	auto scriptManager = stageController->GetScriptManager();
 
 	mainThreadID_ = scriptManager->GetMainThreadID();
 }
@@ -181,12 +183,12 @@ void StgPauseScene::Work() {
 void StgPauseScene::Start() {
 	//停止イベント呼び出し
 	StgStageController* stageController = systemController_->GetStageController();
-	StgStageScriptManager* stageScriptManager = stageController->GetScriptManagerP();
+	auto stageScriptManager = stageController->GetScriptManager();
 	stageScriptManager->RequestEventAll(StgStageScript::EV_PAUSE_ENTER);
 
 	//停止処理初期化
 	scriptManager_ = NULL;
-	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
+	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
 	_AddRelativeManager();
 	ref_count_ptr<StgSystemInformation> sysInfo = systemController_->GetSystemInformation();
 
@@ -209,7 +211,7 @@ void StgPauseScene::Finish() {
 	scriptManager_ = NULL;
 
 	//解除イベント呼び出し
-	StgStageScriptManager* stageScriptManager = stageController->GetScriptManagerP();
+	auto stageScriptManager = stageController->GetScriptManager();
 	stageScriptManager->RequestEventAll(StgStageScript::EV_PAUSE_LEAVE);
 }
 
@@ -266,7 +268,7 @@ void StgEndScene::Work() {
 
 void StgEndScene::Start() {
 	scriptManager_ = NULL;
-	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
+	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
 	_AddRelativeManager();
 
 	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
@@ -331,7 +333,7 @@ void StgReplaySaveScene::Work() {
 
 void StgReplaySaveScene::Start() {
 	scriptManager_ = NULL;
-	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
+	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
 	_AddRelativeManager();
 
 	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();

@@ -8,27 +8,27 @@
 //StgUserExtendScene
 **********************************************************/
 class StgUserExtendSceneScriptManager;
-class StgUserExtendScene
-{
-	protected:
-		StgSystemController* systemController_;
-		ref_count_ptr<StgUserExtendSceneScriptManager> scriptManager_;
+class StgUserExtendScene {
+protected:
+	StgSystemController* systemController_;
+	std::shared_ptr<StgUserExtendSceneScriptManager> scriptManager_;
 
-		void _InitializeTransitionTexture();
-		void _InitializeScript(std::wstring path, int type);
-		void _CallScriptMainLoop();
-		void _CallScriptFinalize();
-		void _AddRelativeManager();
-	public:
-		StgUserExtendScene(StgSystemController* controller);
-		virtual ~StgUserExtendScene();
-		ref_count_ptr<StgUserExtendSceneScriptManager> GetScriptManager(){return scriptManager_;}
+	void _InitializeTransitionTexture();
+	void _InitializeScript(std::wstring path, int type);
+	void _CallScriptMainLoop();
+	void _CallScriptFinalize();
+	void _AddRelativeManager();
+public:
+	StgUserExtendScene(StgSystemController* controller);
+	virtual ~StgUserExtendScene();
+	StgUserExtendSceneScriptManager* GetScriptManager() { return scriptManager_.get(); }
+	std::shared_ptr<StgUserExtendSceneScriptManager> GetScriptManagerRef() { return scriptManager_; }
 
-		virtual void Work();
-		virtual void Render();
+	virtual void Work();
+	virtual void Render();
 
-		virtual void Start();
-		virtual void Finish();
+	virtual void Start();
+	virtual void Finish();
 
 };
 
@@ -36,79 +36,73 @@ class StgUserExtendScene
 //StgUserExtendSceneScriptManager
 **********************************************************/
 class StgUserExtendSceneScript;
-class StgUserExtendSceneScriptManager : public StgControlScriptManager
-{
-	protected:
-		StgSystemController* systemController_;
-		ref_count_ptr<DxScriptObjectManager> objectManager_;
+class StgUserExtendSceneScriptManager : public StgControlScriptManager {
+protected:
+	StgSystemController* systemController_;
+	ref_count_ptr<DxScriptObjectManager> objectManager_;
 
-	public:
-		StgUserExtendSceneScriptManager(StgSystemController* controller);
-		virtual ~StgUserExtendSceneScriptManager();
-		virtual void Work();
-		virtual void Render();
-		virtual ref_count_ptr<ManagedScript> Create(int type);
+public:
+	StgUserExtendSceneScriptManager(StgSystemController* controller);
+	virtual ~StgUserExtendSceneScriptManager();
+	virtual void Work();
+	virtual void Render();
+	virtual ref_count_ptr<ManagedScript> Create(int type);
 
-		void CallScriptFinalizeAll();
-		gstd::value GetResultValue();
-		bool IsRealValue(gstd::value val);
+	void CallScriptFinalizeAll();
+	gstd::value GetResultValue();
+	bool IsRealValue(gstd::value val);
 };
 
 /**********************************************************
 //StgUserExtendSceneScript
 **********************************************************/
-class StgUserExtendSceneScript : public StgControlScript
-{
-	public:
-		enum
-		{
-			TYPE_PAUSE_SCENE,
-			TYPE_END_SCENE,
-			TYPE_REPLAY_SCENE,
-		};
+class StgUserExtendSceneScript : public StgControlScript {
+public:
+	enum {
+		TYPE_PAUSE_SCENE,
+		TYPE_END_SCENE,
+		TYPE_REPLAY_SCENE,
+	};
 
-	protected:
+protected:
 
 
-	public:
-		StgUserExtendSceneScript(StgSystemController* controller);
-		virtual ~StgUserExtendSceneScript();
+public:
+	StgUserExtendSceneScript(StgSystemController* controller);
+	virtual ~StgUserExtendSceneScript();
 };
 
 /**********************************************************
 //StgPauseScene
 **********************************************************/
 class StgPauseSceneScript;
-class StgPauseScene : public StgUserExtendScene
-{
-	public:
+class StgPauseScene : public StgUserExtendScene {
+public:
 
-	private:
+private:
 
-	public:
-		StgPauseScene(StgSystemController* controller);
-		virtual ~StgPauseScene();
+public:
+	StgPauseScene(StgSystemController* controller);
+	virtual ~StgPauseScene();
 
-		virtual void Work();
+	virtual void Work();
 
-		virtual void Start();
-		virtual void Finish();
+	virtual void Start();
+	virtual void Finish();
 };
 
-class StgPauseSceneScript : public StgUserExtendSceneScript
-{
-	public:
-		enum
-		{
+class StgPauseSceneScript : public StgUserExtendSceneScript {
+public:
+	enum {
 
-		};
+	};
 
-	protected:
+protected:
 
 
-	public:
-		StgPauseSceneScript(StgSystemController* controller);
-		virtual ~StgPauseSceneScript();
+public:
+	StgPauseSceneScript(StgSystemController* controller);
+	virtual ~StgPauseSceneScript();
 };
 
 
@@ -116,76 +110,70 @@ class StgPauseSceneScript : public StgUserExtendSceneScript
 //StgEndScene
 **********************************************************/
 class StgEndScript;
-class StgEndScene : public StgUserExtendScene
-{
-	public:
+class StgEndScene : public StgUserExtendScene {
+public:
 
-	private:
+private:
 
-	public:
-		StgEndScene(StgSystemController* controller);
-		virtual ~StgEndScene();
+public:
+	StgEndScene(StgSystemController* controller);
+	virtual ~StgEndScene();
 
-		void Work();
+	void Work();
 
-		void Start();
-		void Finish();
+	void Start();
+	void Finish();
 };
 
 /**********************************************************
 //StgEndSceneScript
 **********************************************************/
-class StgEndSceneScript : public StgUserExtendSceneScript
-{
-	public:
-		enum
-		{
+class StgEndSceneScript : public StgUserExtendSceneScript {
+public:
+	enum {
 
-		};
+	};
 
-	protected:
+protected:
 
-	public:
-		StgEndSceneScript(StgSystemController* controller);
-		virtual ~StgEndSceneScript();
+public:
+	StgEndSceneScript(StgSystemController* controller);
+	virtual ~StgEndSceneScript();
 };
 
 /**********************************************************
 //StgReplaySaveScene
 **********************************************************/
 class StgReplaySaveScript;
-class StgReplaySaveScene : public StgUserExtendScene
-{
-	public:
+class StgReplaySaveScene : public StgUserExtendScene {
+public:
 
-	private:
+private:
 
-	public:
-		StgReplaySaveScene(StgSystemController* controller);
-		virtual ~StgReplaySaveScene();
+public:
+	StgReplaySaveScene(StgSystemController* controller);
+	virtual ~StgReplaySaveScene();
 
-		void Work();
+	void Work();
 
-		void Start();
-		void Finish();
+	void Start();
+	void Finish();
 };
 
 /**********************************************************
 //StgReplaySaveScript
 **********************************************************/
-class StgReplaySaveScript : public StgUserExtendSceneScript
-{
-	public:
-		enum
-		{
+class StgReplaySaveScript : public StgUserExtendSceneScript {
+public:
+	enum {
 
-		};
+	};
 
-	protected:
+protected:
 
-	public:
-		StgReplaySaveScript(StgSystemController* controller);
-		virtual ~StgReplaySaveScript();
+public:
+	StgReplaySaveScript(StgSystemController* controller);
+	virtual ~StgReplaySaveScript();
 
 };
 

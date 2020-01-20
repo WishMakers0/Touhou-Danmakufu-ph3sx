@@ -6,12 +6,13 @@
 **********************************************************/
 StgPackageController::StgPackageController(StgSystemController* systemController) {
 	systemController_ = systemController;
-
+	scriptManager_ = nullptr;
 }
-StgPackageController::~StgPackageController() {}
+StgPackageController::~StgPackageController() {
+}
 void StgPackageController::Initialize() {
 	infoPackage_ = new StgPackageInformation();
-	scriptManager_ = new StgPackageScriptManager(systemController_);
+	scriptManager_ = std::make_shared<StgPackageScriptManager>(systemController_);
 
 	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	ref_count_ptr<ScriptInformation> infoScript = infoSystem->GetMainScriptInformation();

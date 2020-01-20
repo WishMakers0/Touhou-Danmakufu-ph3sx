@@ -8,7 +8,7 @@ using namespace directx;
 
 const int STANDARD_FPS = 60;
 
-const std::wstring DNH_VERSION = L" v0.01a";
+const std::wstring DNH_VERSION = L"v0.01a";
 
 #if NDEBUG
 typedef bool PriListBool;

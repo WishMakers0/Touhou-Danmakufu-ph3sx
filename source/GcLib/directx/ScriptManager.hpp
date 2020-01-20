@@ -24,7 +24,7 @@ namespace directx {
 		std::map<int64_t, gstd::ref_count_ptr<ManagedScript> > mapScriptLoad_;
 		std::list<gstd::ref_count_ptr<ManagedScript> > listScriptRun_;
 		std::map<int64_t, gstd::value> mapClosedScriptResult_;
-		std::list<gstd::ref_count_weak_ptr<ScriptManager> > listRelativeManager_;
+		std::list<std::weak_ptr<ScriptManager>> listRelativeManager_;
 
 		int mainThreadID_;
 
@@ -63,8 +63,9 @@ namespace directx {
 		virtual gstd::ref_count_ptr<ManagedScript> Create(int type) = 0;
 		virtual void RequestEventAll(int type, std::vector<gstd::value>& listValue = std::vector<gstd::value>());
 		gstd::value GetScriptResult(int64_t idScript);
-		void AddRelativeScriptManager(gstd::ref_count_weak_ptr<ScriptManager> manager) { listRelativeManager_.push_back(manager); }
-		static void AddRelativeScriptManagerMutual(gstd::ref_count_weak_ptr<ScriptManager> manager1, gstd::ref_count_weak_ptr<ScriptManager> manager2);
+		void AddRelativeScriptManager(std::weak_ptr<ScriptManager> manager) { listRelativeManager_.push_back(manager); }
+		static void AddRelativeScriptManagerMutual(std::weak_ptr<ScriptManager> manager1, 
+			std::weak_ptr<ScriptManager> manager2);
 	};
 
 
@@ -91,6 +92,7 @@ namespace directx {
 		volatile bool bLoad_;
 		bool bEndScript_;
 		bool bAutoDeleteObject_;
+		bool bPaused_;
 
 		int typeEvent_;
 		std::vector<gstd::value> listValueEvent_;
@@ -106,6 +108,7 @@ namespace directx {
 		void SetEndScript() { bEndScript_ = true; }
 		bool IsAutoDeleteObject() { return bAutoDeleteObject_; }
 		void SetAutoDeleteObject(bool bEneble) { bAutoDeleteObject_ = bEneble; }
+		bool IsPaused() { return bPaused_; }
 
 		gstd::value RequestEvent(int type, std::vector<gstd::value>& listValue = std::vector<gstd::value>());
 
@@ -128,6 +131,7 @@ namespace directx {
 		static gstd::value Func_SetAutoDeleteObject(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_NotifyEvent(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_NotifyEventAll(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_PauseScript(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	};
 
 

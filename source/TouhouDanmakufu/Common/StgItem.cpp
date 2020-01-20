@@ -193,23 +193,21 @@ void StgItemManager::Render(int targetPriority) {
 	device->SetFVF(VERTEX_TLX::fvf);
 
 	int countBlendType = StgItemDataList::RENDER_TYPE_COUNT;
-	int blendMode[] = { DirectGraphics::MODE_BLEND_ADD_ARGB, DirectGraphics::MODE_BLEND_ADD_RGB, DirectGraphics::MODE_BLEND_ALPHA };
+	int blendMode[] = { 
+		DirectGraphics::MODE_BLEND_ADD_ARGB, 
+		DirectGraphics::MODE_BLEND_ADD_RGB, 
+		DirectGraphics::MODE_BLEND_ALPHA 
+	};
 
 	{
 		device->SetVertexDeclaration(nullptr);
 
-		SpriteList2D* listSprite[] = { listSpriteDigit_, listSpriteItem_ };
-		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
-			graphics->SetBlendMode(blendMode[iBlend]);
-			if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ADD_ARGB) {
-				listSpriteDigit_->Render();
-				listSpriteDigit_->ClearVertexCount();
-			}
-			else if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ALPHA) {
-				listSpriteItem_->Render();
-				listSpriteItem_->ClearVertexCount();
-			}
-		}
+		graphics->SetBlendMode(DirectGraphics::MODE_BLEND_ADD_ARGB);
+		listSpriteDigit_->Render();
+		listSpriteDigit_->ClearVertexCount();
+		graphics->SetBlendMode(DirectGraphics::MODE_BLEND_ALPHA);
+		listSpriteItem_->Render();
+		listSpriteItem_->ClearVertexCount();
 
 		device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
 
@@ -221,7 +219,7 @@ void StgItemManager::Render(int targetPriority) {
 
 			int iRender = 0;
 			for (iRender = 0; iRender < listRenderer->size(); iRender++)
-				(listRenderer->at(iRender))->Render(this);
+				(*listRenderer)[iRender]->Render(this);
 		}
 
 		device->SetVertexDeclaration(nullptr);
@@ -246,7 +244,7 @@ void StgItemManager::_SetVertexBuffer(int size) {
 }
 
 void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
@@ -580,8 +578,9 @@ StgItemRenderer* StgItemData::GetRenderer() {
 	return GetRenderer(typeRender_);
 }
 StgItemRenderer* StgItemData::GetRenderer(int type) {
-	if (typeRender_ < DirectGraphics::MODE_BLEND_ALPHA || typeRender_ > DirectGraphics::MODE_BLEND_ADD_ARGB) return nullptr;
-	return listItemData_->GetRenderer(indexTexture_, typeRender_ - 1);
+	if (type < DirectGraphics::MODE_BLEND_ALPHA || type > DirectGraphics::MODE_BLEND_ADD_ARGB)
+		return listItemData_->GetRenderer(indexTexture_, 0);
+	return listItemData_->GetRenderer(indexTexture_, type - 1);
 }
 
 /**********************************************************
@@ -663,7 +662,7 @@ void StgItemRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
 **********************************************************/
 StgItemObject::StgItemObject(StgStageController* stageController) : StgMoveObject(stageController) {
 	stageController_ = stageController;
-	typeObject_ = StgStageScript::OBJ_ITEM;
+	typeObject_ = TypeObject::OBJ_ITEM;
 
 	pattern_ = new StgMovePattern_Item(this);
 	color_ = D3DCOLOR_ARGB(255, 255, 255, 255);
@@ -817,7 +816,7 @@ void StgItemObject::_DeleteInAutoClip() {
 	stageController_->GetMainObjectManager()->DeleteObject(GetObjectID());
 }
 void StgItemObject::_CreateScoreItem() {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	StgItemManager* itemManager = stageController_->GetItemManager();
 	ref_count_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController_);
 	obj->SetX(posX_);
@@ -839,7 +838,7 @@ void StgItemObject::_NotifyEventToPlayerScript(std::vector<float>& listValue) {
 }
 void StgItemObject::_NotifyEventToItemScript(std::vector<float>& listValue) {
 	//アイテムスクリプトへ通知
-	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
+	auto stageScriptManager = stageController_->GetScriptManager();
 	int64_t idItemScript = stageScriptManager->GetItemScriptID();
 	if (idItemScript != StgControlScriptManager::ID_INVALID) {
 		ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetScript(idItemScript);
@@ -892,7 +891,7 @@ void StgItemObject_1UP::Intersect(StgIntersectionTarget::ptr ownTarget, StgInter
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -909,7 +908,7 @@ void StgItemObject_Bomb::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -931,7 +930,7 @@ void StgItemObject_Power::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -952,7 +951,7 @@ void StgItemObject_Point::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -973,7 +972,7 @@ void StgItemObject_Bonus::Work() {
 		_CreateScoreItem();
 		stageController_->GetStageInformation()->AddScore(score_);
 
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(GetObjectID());
 	}
 }
@@ -981,7 +980,7 @@ void StgItemObject_Bonus::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	_CreateScoreItem();
 	stageController_->GetStageInformation()->AddScore(score_);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -1158,7 +1157,7 @@ void StgItemObject_User::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 	listValue.push_back(idObject_);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -1200,7 +1199,7 @@ void StgMovePattern_Item::Move() {
 	}
 	else if (typeMove_ == MOVE_DOWN) {
 		speed_ += 3.0f / 60.0f;
-		if (speed_ > 2.5f)speed_ = 2.5f;
+		if (speed_ > 2.5f) speed_ = 2.5f;
 		angDirection_ = Math::DegreeToRadian(90);
 	}
 	else if (typeMove_ == MOVE_SCORE) {
@@ -1209,8 +1208,10 @@ void StgMovePattern_Item::Move() {
 	}
 
 	if (typeMove_ != MOVE_NONE) {
-		double sx = speed_ * cos(angDirection_);
-		double sy = speed_ * sin(angDirection_);
+		c_ = cos(angDirection_);
+		s_ = sin(angDirection_);
+		double sx = speed_ * c_;
+		double sy = speed_ * s_;
 		px = target_->GetPositionX() + sx;
 		py = target_->GetPositionY() + sy;
 		target_->SetPositionX(px);

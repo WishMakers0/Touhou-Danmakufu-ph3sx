@@ -174,12 +174,18 @@ void StgMovePattern_Angle::SetDirectionAngle(double angle) {
 	s_ = sin(angle);
 	angDirection_ = angle;
 }
+double StgMovePattern_Angle::GetSpeedX() {
+	return (speed_ * c_);
+}
+double StgMovePattern_Angle::GetSpeedY() {
+	return (speed_ * s_);
+}
 
 //StgMovePattern_XY
 StgMovePattern_XY::StgMovePattern_XY(StgMoveObject* target) : StgMovePattern(target) {
 	typeMove_ = TYPE_XY;
-	speedX_ = 0;
-	speedY_ = 0;
+	c_ = 0;
+	s_ = 0;
 	accelerationX_ = 0;
 	accelerationY_ = 0;
 	maxSpeedX_ = INT_MAX;
@@ -190,22 +196,22 @@ void StgMovePattern_XY::Move() {
 		_Activate();
 
 	if (accelerationX_ != 0) {
-		speedX_ += accelerationX_;
+		c_ += accelerationX_;
 		if (accelerationX_ > 0)
-			speedX_ = min(speedX_, maxSpeedX_);
+			c_ = min(c_, maxSpeedX_);
 		if (accelerationX_ < 0)
-			speedX_ = max(speedX_, maxSpeedX_);
+			c_ = max(c_, maxSpeedX_);
 	}
 	if (accelerationY_ != 0) {
-		speedY_ += accelerationY_;
+		s_ += accelerationY_;
 		if (accelerationY_ > 0)
-			speedY_ = min(speedY_, maxSpeedY_);
+			s_ = min(s_, maxSpeedY_);
 		if (accelerationY_ < 0)
-			speedY_ = max(speedY_, maxSpeedY_);
+			s_ = max(s_, maxSpeedY_);
 	}
 
-	double px = target_->GetPositionX() + speedX_;
-	double py = target_->GetPositionY() + speedY_;
+	double px = target_->GetPositionX() + c_;
+	double py = target_->GetPositionY() + s_;
 
 	target_->SetPositionX(px);
 	target_->SetPositionY(py);
@@ -213,11 +219,11 @@ void StgMovePattern_XY::Move() {
 	frameWork_++;
 }
 double StgMovePattern_XY::GetSpeed() {
-	double res = sqrt(speedX_ * speedX_ + speedY_ * speedY_);
+	double res = sqrt(c_ * c_ + s_ * s_);
 	return res;
 }
 double StgMovePattern_XY::GetDirectionAngle() {
-	double res = atan2(speedY_, speedX_);
+	double res = atan2(s_, c_);
 	return res;
 }
 
@@ -229,6 +235,8 @@ StgMovePattern_Line::StgMovePattern_Line(StgMoveObject* target) : StgMovePattern
 	weight_ = 0;
 	maxSpeed_ = 0;
 	frameStop_ = 0;
+	c_ = 0;
+	s_ = 0;
 }
 void StgMovePattern_Line::Move() {
 	if (typeLine_ == TYPE_SPEED || typeLine_ == TYPE_FRAME) {

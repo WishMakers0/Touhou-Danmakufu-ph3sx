@@ -7,7 +7,7 @@
 **********************************************************/
 StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveObject(stageController) {
 	stageController_ = stageController;
-	typeObject_ = StgStageScript::OBJ_PLAYER;
+	typeObject_ = TypeObject::OBJ_PLAYER;
 
 	infoPlayer_ = new StgPlayerInformation();
 	RECT rcStgFrame = stageController_->GetStageInformation()->GetStgFrameRect();
@@ -38,6 +38,9 @@ StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveO
 	enableStateEnd_ = true;
 	enableShootdownEvent_ = true;
 
+	rebirthX_ = REBIRTH_DEFAULT;
+	rebirthY_ = REBIRTH_DEFAULT;
+
 	hitObjectID_ = DxScript::ID_INVALID;
 
 	_InitializeRebirth();
@@ -48,12 +51,18 @@ void StgPlayerObject::_InitializeRebirth() {
 	int stgWidth = rcStgFrame.right - rcStgFrame.left;
 	int stgHeight = rcStgFrame.bottom - rcStgFrame.top;
 
-	SetX(stgWidth / 2);
-	SetY(rcStgFrame.bottom - 48);
+	if (rebirthX_ == REBIRTH_DEFAULT)
+		SetX(stgWidth / 2.0);
+	else
+		SetX(rebirthX_);
+	if (rebirthY_ == REBIRTH_DEFAULT)
+		SetY(rcStgFrame.bottom - 48);
+	else
+		SetY(rebirthY_);
 }
 void StgPlayerObject::Work() {
 	EDirectInput* input = EDirectInput::GetInstance();
-	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+	auto scriptManager = stageController_->GetScriptManager();
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 
 	//“–‚½‚è”»’èƒNƒŠƒA
@@ -98,7 +107,7 @@ void StgPlayerObject::Work() {
 				listScriptValue.push_back(script_->CreateValueArrayValue(listValPos));
 				script_->RequestEvent(StgStagePlayerScript::EV_GRAZE, listScriptValue);
 
-				ref_count_ptr<StgStageScriptManager> stageScriptManager = stageController_->GetScriptManagerR();
+				auto stageScriptManager = stageController_->GetScriptManager();
 				ref_count_ptr<ManagedScript> itemScript = stageScriptManager->GetItemScript();
 				if (itemScript != NULL) {
 					itemScript->RequestEvent(StgStagePlayerScript::EV_GRAZE, listScriptValue);
@@ -130,9 +139,10 @@ void StgPlayerObject::Work() {
 				}
 				if (!bEnemyLastSpell)
 					infoPlayer_->life_--;
+
 				if (enableShootdownEvent_)
 					scriptManager->RequestEventAll(StgStagePlayerScript::EV_PLAYER_SHOOTDOWN);
-
+				
 				if (infoPlayer_->life_ >= 0 || !enableStateEnd_) {
 					bVisible_ = false;
 					state_ = STATE_DOWN;
@@ -140,6 +150,14 @@ void StgPlayerObject::Work() {
 				}
 				else {
 					state_ = STATE_END;
+				}
+
+				//Also prevents STATE_END and STATE_DOWN
+				if (!enableShootdownEvent_) {
+					frameState_ = 0;
+					bVisible_ = true;
+					_InitializeRebirth();
+					state_ = STATE_NORMAL;
 				}
 			}
 		}
@@ -195,7 +213,6 @@ void StgPlayerObject::_Move() {
 	if (!bKeyUp && bKeyDown)sy += speed;
 
 	constexpr double diagFactor = 1.0 / gstd::GM_SQRT2;
-
 	if (sx != 0 && sy != 0) {
 		sx *= diagFactor;
 		sy *= diagFactor;
@@ -229,13 +246,13 @@ void StgPlayerObject::CallSpell() {
 	if (!_IsValidSpell())return;
 	if (!IsPermitSpell())return;
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	auto objectManager = stageController_->GetMainObjectManager();
 	objSpell_ = new StgPlayerSpellManageObject();
 	int idSpell = objectManager->AddObject(objSpell_);
 
 	gstd::value vUse = script_->RequestEvent(StgStagePlayerScript::EV_REQUEST_SPELL);
 	if (!script_->IsBooleanValue(vUse))
-		throw gstd::wexception(L"@Event(EV_REQUEST_SPELL) may only return a boolean value.");
+		throw gstd::wexception(L"@Event(EV_REQUEST_SPELL) must return a boolean value.");
 	bool bUse = vUse.as_boolean();
 	if (!bUse) {
 		objSpell_ = NULL;
@@ -255,7 +272,7 @@ void StgPlayerObject::CallSpell() {
 		objBossScene->AddPlayerSpellCount();
 	}
 
-	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
+	auto scriptManager = stageController_->GetScriptManager();
 	scriptManager->RequestEventAll(StgStageScript::EV_PLAYER_SPELL);
 }
 
@@ -283,7 +300,7 @@ void StgPlayerObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInterse
 				hitObjectID_ = objShot->GetObjectID();
 
 				if (objShot->GetLife() != StgShotObject::LIFE_SPELL_REGIST &&
-					objShot->GetObjectType() == StgStageScript::OBJ_SHOT)
+					objShot->GetObjectType() == TypeObject::OBJ_SHOT)
 					objShot->ConvertToItem(true);
 			}
 		}
@@ -345,7 +362,7 @@ StgPlayerSpellObject::StgPlayerSpellObject(StgStageController* stageController) 
 void StgPlayerSpellObject::Work() {
 	if (IsDeleted())return;
 	if (life_ <= 0) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		auto objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }

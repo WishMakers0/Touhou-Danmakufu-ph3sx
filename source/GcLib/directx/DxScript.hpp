@@ -14,12 +14,41 @@ namespace directx {
 	/**********************************************************
 	//DxScriptObjectBase
 	**********************************************************/
+	enum class TypeObject {
+		OBJ_INVALID = -1,
+		OBJ_PRIMITIVE_2D,
+		OBJ_SPRITE_2D,
+		OBJ_SPRITE_LIST_2D,
+		OBJ_PRIMITIVE_3D,
+		OBJ_SPRITE_3D,
+		OBJ_TRAJECTORY_3D,
+		OBJ_SHADER,
+
+		OBJ_MESH,
+		OBJ_TEXT,
+		OBJ_SOUND,
+
+		OBJ_FILE_TEXT,
+		OBJ_FILE_BINARY,
+
+		OBJ_PLAYER = 100,
+		OBJ_SPELL_MANAGE,
+		OBJ_SPELL,
+		OBJ_ENEMY,
+		OBJ_ENEMY_BOSS,
+		OBJ_ENEMY_BOSS_SCENE,
+		OBJ_SHOT,
+		OBJ_LOOSE_LASER,
+		OBJ_STRAIGHT_LASER,
+		OBJ_CURVE_LASER,
+		OBJ_ITEM,
+	};
 	class DxScriptObjectBase {
 		friend DxScript;
 		friend DxScriptObjectManager;
 	protected:
 		int idObject_;
-		int typeObject_;
+		TypeObject typeObject_;
 		int64_t idScript_;
 		DxScriptObjectManager* manager_;
 		double priRender_;
@@ -39,7 +68,7 @@ namespace directx {
 		virtual void SetRenderState() = 0;
 
 		int GetObjectID() { return idObject_; }
-		int GetObjectType() { return typeObject_; }
+		TypeObject GetObjectType() { return typeObject_; }
 		int64_t GetScriptID() { return idScript_; }
 		bool IsDeleted() { return bDeleted_; }
 		bool IsActive() { return bActive_; }
@@ -423,7 +452,8 @@ namespace directx {
 		friend DxScript;
 	protected:
 		gstd::ref_count_ptr<gstd::File> file_;
-
+		gstd::ref_count_ptr<gstd::FileReader> reader_;
+		bool isArchived_;
 	public:
 		DxFileObject();
 		~DxFileObject();
@@ -433,9 +463,12 @@ namespace directx {
 		virtual void SetRenderState() {}
 
 		virtual bool OpenR(std::wstring path);
+		virtual bool OpenR(gstd::ref_count_ptr<gstd::FileReader> reader);
 		virtual bool OpenW(std::wstring path);
 		virtual bool Store() = 0;
 		virtual void Close();
+
+		virtual bool IsArchived() { return isArchived_; };
 	};
 
 	/**********************************************************
@@ -449,13 +482,20 @@ namespace directx {
 		DxTextFileObject();
 		virtual ~DxTextFileObject();
 		virtual bool OpenR(std::wstring path);
+		virtual bool OpenR(gstd::ref_count_ptr<gstd::FileReader> reader);
 		virtual bool OpenW(std::wstring path);
 		virtual bool Store();
 		int GetLineCount() { return listLine_.size(); }
 		std::string GetLine(int line);
 
-		void AddLine(std::string line) { listLine_.push_back(line); }
-		void ClearLine() { listLine_.clear(); }
+		void AddLine(std::string line) { 
+			if (isArchived_) return;
+			listLine_.push_back(line); 
+		}
+		void ClearLine() { 
+			if (isArchived_) return;
+			listLine_.clear(); 
+		}
 	};
 
 	/**********************************************************
@@ -471,6 +511,7 @@ namespace directx {
 		DxBinaryFileObject();
 		virtual ~DxBinaryFileObject();
 		virtual bool OpenR(std::wstring path);
+		virtual bool OpenR(gstd::ref_count_ptr<gstd::FileReader> reader);
 		virtual bool OpenW(std::wstring path);
 		virtual bool Store();
 
@@ -561,35 +602,19 @@ namespace directx {
 	public:
 		enum {
 			ID_INVALID = -1,
-			OBJ_INVALID = -1,
-			OBJ_PRIMITIVE_2D = 1,
-			OBJ_SPRITE_2D,
-			OBJ_SPRITE_LIST_2D,
-			OBJ_PRIMITIVE_3D,
-			OBJ_SPRITE_3D,
-			OBJ_TRAJECTORY_3D,
-			OBJ_SHADER,
-
-			OBJ_MESH,
-			OBJ_TEXT,
-			OBJ_SOUND,
-
-			OBJ_FILE_TEXT,
-			OBJ_FILE_BINARY,
 
 			CODE_ACP = CP_ACP,
 			CODE_UTF8 = CP_UTF8,
 			CODE_UTF16LE,
 			CODE_UTF16BE,
 		};
-
 	protected:
-		gstd::ref_count_ptr<DxScriptObjectManager> objManager_;
+		DxScriptObjectManager* objManager_;
 
 		//ÉäÉ\Å[ÉX
-		std::map<std::wstring, gstd::ref_count_ptr<Texture> > mapTexture_;
-		std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer> > mapSoundPlayer_;
-		std::map<std::wstring, gstd::ref_count_ptr<DxMesh> > mapMesh_;
+		std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
+		std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer>> mapSoundPlayer_;
+		std::map<std::wstring, gstd::ref_count_ptr<DxMesh>> mapMesh_;
 
 		void _ClearResource();
 		gstd::ref_count_ptr<Texture> _GetTexture(std::wstring name);
@@ -598,8 +623,8 @@ namespace directx {
 		DxScript();
 		virtual ~DxScript();
 
-		void SetObjectManager(gstd::ref_count_ptr<DxScriptObjectManager> manager) { objManager_ = manager; }
-		gstd::ref_count_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
+		void SetObjectManager(DxScriptObjectManager* manager) { objManager_ = manager; }
+		DxScriptObjectManager* GetObjectManager() { return objManager_; }
 		void SetMaxObject(int max) { objManager_->SetMaxObject(max); }
 		void SetRenderBucketCapacity(int capacity) { objManager_->SetRenderBucketCapacity(capacity); }
 		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
@@ -656,6 +681,7 @@ namespace directx {
 		static gstd::value Func_SetFogEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_SetFogParam(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_CreateRenderTarget(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_CreateRenderTargetEx(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_SetRenderTarget(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ResetRenderTarget(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ClearRenderTargetA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -879,6 +905,8 @@ namespace directx {
 		static gstd::value Func_ObjSound_SetLoopEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_SetLoopTime(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_SetLoopSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_Seek(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_SeekSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_SetRestartEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_SetSoundDivision(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_IsPlaying(gstd::script_machine* machine, int argc, const gstd::value* argv);

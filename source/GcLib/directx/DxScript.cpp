@@ -19,7 +19,7 @@ DxScriptObjectBase::DxScriptObjectBase() {
 	manager_ = NULL;
 	idObject_ = DxScript::ID_INVALID;
 	idScript_ = ScriptClientBase::ID_SCRIPT_FREE;
-	typeObject_ = DxScript::OBJ_INVALID;
+	typeObject_ = TypeObject::OBJ_INVALID;
 }
 DxScriptObjectBase::~DxScriptObjectBase() {
 	if (manager_ != NULL && idObject_ != DxScript::ID_INVALID)
@@ -50,7 +50,7 @@ DxScriptRenderObject::DxScriptRenderObject() {
 //DxScriptShaderObject
 **********************************************************/
 DxScriptShaderObject::DxScriptShaderObject() {
-	typeObject_ = DxScript::OBJ_SHADER;
+	typeObject_ = TypeObject::OBJ_SHADER;
 }
 
 /**********************************************************
@@ -89,7 +89,7 @@ void DxScriptPrimitiveObject::SetShader(gstd::ref_count_ptr<Shader> shader) {
 //DxScriptPrimitiveObject2D
 **********************************************************/
 DxScriptPrimitiveObject2D::DxScriptPrimitiveObject2D() {
-	typeObject_ = DxScript::OBJ_PRIMITIVE_2D;
+	typeObject_ = TypeObject::OBJ_PRIMITIVE_2D;
 
 	objRender_ = new RenderObjectTLX();
 	bZWrite_ = false;
@@ -209,7 +209,7 @@ D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(int index) {
 //DxScriptSpriteObject2D
 **********************************************************/
 DxScriptSpriteObject2D::DxScriptSpriteObject2D() {
-	typeObject_ = DxScript::OBJ_SPRITE_2D;
+	typeObject_ = TypeObject::OBJ_SPRITE_2D;
 	objRender_ = new Sprite2D();
 }
 void DxScriptSpriteObject2D::Copy(DxScriptSpriteObject2D* src) {
@@ -233,7 +233,7 @@ void DxScriptSpriteObject2D::Copy(DxScriptSpriteObject2D* src) {
 //DxScriptSpriteListObject2D
 **********************************************************/
 DxScriptSpriteListObject2D::DxScriptSpriteListObject2D() {
-	typeObject_ = DxScript::OBJ_SPRITE_LIST_2D;
+	typeObject_ = TypeObject::OBJ_SPRITE_LIST_2D;
 	objRender_ = new SpriteList2D();
 }
 void DxScriptSpriteListObject2D::SetColor(int r, int g, int b) {
@@ -274,7 +274,7 @@ void DxScriptSpriteListObject2D::CloseVertex() {
 //DxScriptPrimitiveObject3D
 **********************************************************/
 DxScriptPrimitiveObject3D::DxScriptPrimitiveObject3D() {
-	typeObject_ = DxScript::OBJ_PRIMITIVE_3D;
+	typeObject_ = TypeObject::OBJ_PRIMITIVE_3D;
 	objRender_ = new RenderObjectLX();
 	bZWrite_ = false;
 	bZTest_ = true;
@@ -410,14 +410,14 @@ D3DXVECTOR3 DxScriptPrimitiveObject3D::GetVertexPosition(int index) {
 //DxScriptSpriteObject3D
 **********************************************************/
 DxScriptSpriteObject3D::DxScriptSpriteObject3D() {
-	typeObject_ = DxScript::OBJ_SPRITE_3D;
+	typeObject_ = TypeObject::OBJ_SPRITE_3D;
 	objRender_ = new Sprite3D();
 }
 /**********************************************************
 //DxScriptTrajectoryObject3D
 **********************************************************/
 DxScriptTrajectoryObject3D::DxScriptTrajectoryObject3D() {
-	typeObject_ = DxScript::OBJ_TRAJECTORY_3D;
+	typeObject_ = TypeObject::OBJ_TRAJECTORY_3D;
 	objRender_ = new TrajectoryObject3D();
 	color_ = 0xffffffff;
 }
@@ -473,7 +473,7 @@ void DxScriptTrajectoryObject3D::SetColor(int r, int g, int b) {
 //DxScriptMeshObject
 **********************************************************/
 DxScriptMeshObject::DxScriptMeshObject() {
-	typeObject_ = DxScript::OBJ_MESH;
+	typeObject_ = TypeObject::OBJ_MESH;
 	bZWrite_ = true;
 	bZTest_ = true;
 	bFogEnable_ = true;
@@ -544,7 +544,7 @@ void DxScriptMeshObject::SetShader(gstd::ref_count_ptr<Shader> shader) {
 //DxScriptTextObject
 **********************************************************/
 DxScriptTextObject::DxScriptTextObject() {
-	typeObject_ = DxScript::OBJ_TEXT;
+	typeObject_ = TypeObject::OBJ_TEXT;
 	bChange_ = true;
 	bAutoCenter_ = true;
 	center_ = D3DXVECTOR2(0, 0);
@@ -640,7 +640,7 @@ void DxScriptTextObject::SetShader(gstd::ref_count_ptr<Shader> shader) {
 //DxSoundObject
 **********************************************************/
 DxSoundObject::DxSoundObject() {
-	typeObject_ = DxScript::OBJ_SOUND;
+	typeObject_ = TypeObject::OBJ_SOUND;
 }
 DxSoundObject::~DxSoundObject() {
 	if (player_ == NULL)return;
@@ -661,13 +661,20 @@ void DxSoundObject::Play() {
 /**********************************************************
 //DxFileObject
 **********************************************************/
-DxFileObject::DxFileObject() {}
+DxFileObject::DxFileObject() {
+	isArchived_ = false;
+}
 DxFileObject::~DxFileObject() {}
 bool DxFileObject::OpenR(std::wstring path) {
 	file_ = new File(path);
 	bool res = file_->Open();
 	if (!res)file_ = NULL;
 	return res;
+}
+bool DxFileObject::OpenR(gstd::ref_count_ptr<gstd::FileReader> reader) {
+	file_ = nullptr;
+	reader_ = reader;
+	return true;
 }
 bool DxFileObject::OpenW(std::wstring path) {
 	path = PathProperty::Canonicalize(path);
@@ -695,7 +702,7 @@ void DxFileObject::Close() {
 //DxTextFileObject
 **********************************************************/
 DxTextFileObject::DxTextFileObject() {
-	typeObject_ = DxScript::OBJ_FILE_TEXT;
+	typeObject_ = TypeObject::OBJ_FILE_TEXT;
 }
 DxTextFileObject::~DxTextFileObject() {}
 bool DxTextFileObject::OpenR(std::wstring path) {
@@ -760,11 +767,73 @@ bool DxTextFileObject::OpenR(std::wstring path) {
 
 	return true;
 }
+bool DxTextFileObject::OpenR(gstd::ref_count_ptr<gstd::FileReader> reader) {
+	reader_ = reader;
+
+	int size = reader->GetFileSize();
+	if (size == 0)return true;
+
+	std::string text;
+	text.resize(size + 1);
+	reader->Read(&text[0], size);
+	text[size] = '\0';
+
+	class TextScanner {
+	private:
+		std::string* text_;
+		int pos_;
+	public:
+		TextScanner(std::string* text) { text_ = text; pos_ = 0; }
+		int GetPosition() { return pos_; }
+		char GetCurrentCharactor() { return (*text_)[pos_]; }
+		void Advance() {
+			++pos_;
+			if (pos_ >= text_->size())throw gstd::wexception();
+		}
+	};
+	TextScanner scan(&text);
+
+	try {
+		int pointer = 0;
+		int posStart = 0;
+		while (true) {
+			if (scan.GetPosition() >= size)break;
+			if (IsDBCSLeadByte(scan.GetCurrentCharactor())) {
+				while (IsDBCSLeadByte(scan.GetCurrentCharactor()))scan.Advance();
+			}
+			else {
+				char ch = scan.GetCurrentCharactor();
+				if (ch == '\r' || ch == '\n') {
+					int posEnd = scan.GetPosition();
+					if (ch == '\r')scan.Advance();
+					scan.Advance();
+
+					std::string str = text.substr(posStart, posEnd - posStart);
+					listLine_.push_back(str);
+					posStart = scan.GetPosition();
+				}
+				else {
+					scan.Advance();
+				}
+			}
+
+		};
+		std::string str = text.substr(posStart, size - posStart);
+		listLine_.push_back(str);
+	}
+	catch (...) {
+		return false;
+	}
+
+	return true;
+}
 bool DxTextFileObject::OpenW(std::wstring path) {
+	if (isArchived_) return false;
 	bool res = DxFileObject::OpenW(path);
 	return res;
 }
 bool DxTextFileObject::Store() {
+	if (isArchived_) return false;
 	if (file_ == NULL)return false;
 	for (int iLine = 0; iLine < listLine_.size(); ++iLine) {
 		std::string str = listLine_[iLine];
@@ -789,7 +858,7 @@ std::string DxTextFileObject::GetLine(int line) {
 //DxBinaryFileObject
 **********************************************************/
 DxBinaryFileObject::DxBinaryFileObject() {
-	typeObject_ = DxScript::OBJ_FILE_BINARY;
+	typeObject_ = TypeObject::OBJ_FILE_BINARY;
 	byteOrder_ = ByteOrder::ENDIAN_LITTLE;
 	codePage_ = CP_ACP;
 }
@@ -806,11 +875,27 @@ bool DxBinaryFileObject::OpenR(std::wstring path) {
 
 	return true;
 }
+bool DxBinaryFileObject::OpenR(gstd::ref_count_ptr<gstd::FileReader> reader) {
+	reader_ = reader;
+
+	int size = reader->GetFileSize();
+	buffer_ = dynamic_cast<ManagedFileReader*>(reader.GetPointer())->GetBuffer();
+
+	return true;
+}
 bool DxBinaryFileObject::OpenW(std::wstring path) {
-	return false;
+	if (isArchived_) return false;
+	bool res = DxFileObject::OpenW(path);
+	return res;
 }
 bool DxBinaryFileObject::Store() {
-	return false;
+	if (isArchived_) return false;
+	if (file_ == NULL) return false;
+
+	file_->SetFilePointerBegin();
+	file_->Write(buffer_->GetPointer(), buffer_->GetSize());
+
+	return true;
 }
 bool DxBinaryFileObject::IsReadableSize(int size) {
 	int pos = buffer_->GetOffset();
@@ -831,7 +916,9 @@ DxScriptObjectManager::DxScriptObjectManager() {
 	fogStart_ = 0;
 	fogEnd_ = 0;
 }
-DxScriptObjectManager::~DxScriptObjectManager() {}
+DxScriptObjectManager::~DxScriptObjectManager() {
+
+}
 void DxScriptObjectManager::SetMaxObject(int max) {
 	if (obj_.size() == max)return;
 
@@ -1053,7 +1140,7 @@ void DxScriptObjectManager::ResetShader(double min, double max) {
 	SetShader(NULL, min, max);
 }
 
-void DxScriptObjectManager::ReserveSound(ref_count_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style) {
+void DxScriptObjectManager::ReserveSound(gstd::ref_count_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style) {
 	ref_count_ptr<SoundInfo> info = new SoundInfo();
 	info->player_ = player;
 	info->style_ = style;
@@ -1120,6 +1207,7 @@ function const dxFunction[] =
 	{ "SetFogEnable", DxScript::Func_SetFogEnable, 1 },
 	{ "SetFogParam", DxScript::Func_SetFogParam, 5 },
 	{ "CreateRenderTarget", DxScript::Func_CreateRenderTarget, 1 },
+	{ "CreateRenderTargetEx", DxScript::Func_CreateRenderTargetEx, 3 },
 	//{ "SetRenderTarget", DxScript::Func_SetRenderTarget, 2 },
 	//{ "ResetRenderTarget", DxScript::Func_ResetRenderTarget, 0 },
 	{ "ClearRenderTargetA1", DxScript::Func_ClearRenderTargetA1, 1 },
@@ -1338,7 +1426,9 @@ function const dxFunction[] =
 	{ "ObjSound_SetLoopEnable", DxScript::Func_ObjSound_SetLoopEnable, 2 },
 	{ "ObjSound_SetLoopTime", DxScript::Func_ObjSound_SetLoopTime, 3 },
 	{ "ObjSound_SetLoopSampleCount", DxScript::Func_ObjSound_SetLoopSampleCount, 3 },
-	{ "ObjSound_SetRestartEnable", DxScript::Func_ObjSound_SetRestartEnable, 2 },
+	{ "ObjSound_Seek", DxScript::Func_ObjSound_SetLoopTime, 2 },
+	{ "ObjSound_SeekSampleCount", DxScript::Func_ObjSound_Seek, 2 },
+	{ "ObjSound_SetRestartEnable", DxScript::Func_ObjSound_SeekSampleCount, 2 },
 	{ "ObjSound_SetSoundDivision", DxScript::Func_ObjSound_SetSoundDivision, 2 },
 	{ "ObjSound_IsPlaying", DxScript::Func_ObjSound_IsPlaying, 1 },
 	{ "ObjSound_GetVolumeRate", DxScript::Func_ObjSound_GetVolumeRate, 1 },
@@ -1379,40 +1469,40 @@ function const dxFunction[] =
 	{ "ObjFileB_WriteDouble", DxScript::Func_ObjFileB_WriteDouble, 2 },
 
 	//íËêî
-	{ "ID_INVALID",constant<DxScript::ID_INVALID>::func,0 },
-	{ "OBJ_PRIMITIVE_2D",constant<DxScript::OBJ_PRIMITIVE_2D>::func,0 },
-	{ "OBJ_SPRITE_2D",constant<DxScript::OBJ_SPRITE_2D>::func,0 },
-	{ "OBJ_SPRITE_LIST_2D",constant<DxScript::OBJ_SPRITE_LIST_2D>::func,0 },
-	{ "OBJ_PRIMITIVE_3D",constant<DxScript::OBJ_PRIMITIVE_3D>::func,0 },
-	{ "OBJ_SPRITE_3D",constant<DxScript::OBJ_SPRITE_3D>::func,0 },
-	{ "OBJ_TRAJECTORY_3D",constant<DxScript::OBJ_TRAJECTORY_3D>::func,0 },
-	{ "OBJ_SHADER",constant<DxScript::OBJ_SHADER>::func,0 },
-	{ "OBJ_MESH",constant<DxScript::OBJ_MESH>::func,0 },
-	{ "OBJ_TEXT",constant<DxScript::OBJ_TEXT>::func,0 },
-	{ "OBJ_SOUND",constant<DxScript::OBJ_SOUND>::func,0 },
-	{ "OBJ_FILE_TEXT",constant<DxScript::OBJ_FILE_TEXT>::func,0 },
-	{ "OBJ_FILE_BINARY",constant<DxScript::OBJ_FILE_BINARY>::func,0 },
+	{ "ID_INVALID", constant<DxScript::ID_INVALID>::func, 0 },
+	{ "OBJ_PRIMITIVE_2D", constant<(int)TypeObject::OBJ_PRIMITIVE_2D>::func, 0 },
+	{ "OBJ_SPRITE_2D", constant<(int)TypeObject::OBJ_SPRITE_2D>::func, 0 },
+	{ "OBJ_SPRITE_LIST_2D", constant<(int)TypeObject::OBJ_SPRITE_LIST_2D>::func, 0 },
+	{ "OBJ_PRIMITIVE_3D", constant<(int)TypeObject::OBJ_PRIMITIVE_3D>::func, 0 },
+	{ "OBJ_SPRITE_3D", constant<(int)TypeObject::OBJ_SPRITE_3D>::func, 0 },
+	{ "OBJ_TRAJECTORY_3D", constant<(int)TypeObject::OBJ_TRAJECTORY_3D>::func, 0 },
+	{ "OBJ_SHADER", constant<(int)TypeObject::OBJ_SHADER>::func, 0 },
+	{ "OBJ_MESH", constant<(int)TypeObject::OBJ_MESH>::func, 0 },
+	{ "OBJ_TEXT", constant<(int)TypeObject::OBJ_TEXT>::func, 0 },
+	{ "OBJ_SOUND", constant<(int)TypeObject::OBJ_SOUND>::func, 0 },
+	{ "OBJ_FILE_TEXT", constant<(int)TypeObject::OBJ_FILE_TEXT>::func, 0 },
+	{ "OBJ_FILE_BINARY", constant<(int)TypeObject::OBJ_FILE_BINARY>::func, 0 },
 
-	{ "BLEND_NONE",constant<DirectGraphics::MODE_BLEND_NONE>::func,0 },
-	{ "BLEND_ALPHA",constant<DirectGraphics::MODE_BLEND_ALPHA>::func,0 },
-	{ "BLEND_ADD_RGB",constant<DirectGraphics::MODE_BLEND_ADD_RGB>::func,0 },
-	{ "BLEND_ADD_ARGB",constant<DirectGraphics::MODE_BLEND_ADD_ARGB>::func,0 },
-	{ "BLEND_MULTIPLY",constant<DirectGraphics::MODE_BLEND_MULTIPLY>::func,0 },
-	{ "BLEND_SUBTRACT",constant<DirectGraphics::MODE_BLEND_SUBTRACT>::func,0 },
-	{ "BLEND_SHADOW",constant<DirectGraphics::MODE_BLEND_SHADOW>::func,0 },
-	{ "BLEND_INV_DESTRGB",constant<DirectGraphics::MODE_BLEND_INV_DESTRGB>::func,0 },
-	{ "BLEND_ALPHA_INV",constant<DirectGraphics::MODE_BLEND_ALPHA_INV>::func,0 },
+	{ "BLEND_NONE", constant<DirectGraphics::MODE_BLEND_NONE>::func, 0 },
+	{ "BLEND_ALPHA", constant<DirectGraphics::MODE_BLEND_ALPHA>::func, 0 },
+	{ "BLEND_ADD_RGB", constant<DirectGraphics::MODE_BLEND_ADD_RGB>::func, 0 },
+	{ "BLEND_ADD_ARGB", constant<DirectGraphics::MODE_BLEND_ADD_ARGB>::func, 0 },
+	{ "BLEND_MULTIPLY", constant<DirectGraphics::MODE_BLEND_MULTIPLY>::func, 0 },
+	{ "BLEND_SUBTRACT", constant<DirectGraphics::MODE_BLEND_SUBTRACT>::func, 0 },
+	{ "BLEND_SHADOW", constant<DirectGraphics::MODE_BLEND_SHADOW>::func, 0 },
+	{ "BLEND_INV_DESTRGB", constant<DirectGraphics::MODE_BLEND_INV_DESTRGB>::func, 0 },
+	{ "BLEND_ALPHA_INV", constant<DirectGraphics::MODE_BLEND_ALPHA_INV>::func, 0 },
 
-	{ "CULL_NONE",constant<D3DCULL_NONE>::func,0 },
-	{ "CULL_CW",constant<D3DCULL_CW>::func,0 },
-	{ "CULL_CCW",constant<D3DCULL_CCW>::func,0 },
+	{ "CULL_NONE", constant<D3DCULL_NONE>::func, 0 },
+	{ "CULL_CW", constant<D3DCULL_CW>::func, 0 },
+	{ "CULL_CCW", constant<D3DCULL_CCW>::func, 0 },
 
-	{ "IFF_BMP",constant<D3DXIFF_BMP>::func,0 },
-	{ "IFF_JPG",constant<D3DXIFF_JPG>::func,0 },
-	{ "IFF_TGA",constant<D3DXIFF_TGA>::func,0 },
-	{ "IFF_PNG",constant<D3DXIFF_PNG>::func,0 },
-	{ "IFF_DDS",constant<D3DXIFF_DDS>::func,0 },
-	{ "IFF_PPM",constant<D3DXIFF_PPM>::func,0 },
+	{ "IFF_BMP", constant<D3DXIFF_BMP>::func, 0 },
+	{ "IFF_JPG", constant<D3DXIFF_JPG>::func, 0 },
+	{ "IFF_TGA", constant<D3DXIFF_TGA>::func, 0 },
+	{ "IFF_PNG", constant<D3DXIFF_PNG>::func, 0 },
+	{ "IFF_DDS", constant<D3DXIFF_DDS>::func, 0 },
+	{ "IFF_PPM", constant<D3DXIFF_PPM>::func, 0 },
 	//	{"IFF_DIB",constant<D3DXIFF_DIB>::func,0},
 	//	{"IFF_HDR",constant<D3DXIFF_HDR>::func,0},
 	//	{"IFF_PFM",constant<D3DXIFF_PFM>::func,0},
@@ -1425,166 +1515,166 @@ function const dxFunction[] =
 	{ "CAMERA_NORMAL", constant<DxCamera::MODE_NORMAL>::func, 0 },
 	{ "CAMERA_LOOKAT", constant<DxCamera::MODE_LOOKAT>::func, 0 },
 
-	{ "PRIMITIVE_POINT_LIST",constant<D3DPT_POINTLIST>::func,0 },
-	{ "PRIMITIVE_LINELIST",constant<D3DPT_LINELIST>::func,0 },
-	{ "PRIMITIVE_LINESTRIP",constant<D3DPT_LINESTRIP>::func,0 },
-	{ "PRIMITIVE_TRIANGLELIST",constant<D3DPT_TRIANGLELIST>::func,0 },
-	{ "PRIMITIVE_TRIANGLESTRIP",constant<D3DPT_TRIANGLESTRIP>::func,0 },
-	{ "PRIMITIVE_TRIANGLEFAN",constant<D3DPT_TRIANGLEFAN>::func,0 },
+	{ "PRIMITIVE_POINT_LIST", constant<D3DPT_POINTLIST>::func, 0 },
+	{ "PRIMITIVE_LINELIST", constant<D3DPT_LINELIST>::func, 0 },
+	{ "PRIMITIVE_LINESTRIP", constant<D3DPT_LINESTRIP>::func, 0 },
+	{ "PRIMITIVE_TRIANGLELIST", constant<D3DPT_TRIANGLELIST>::func, 0 },
+	{ "PRIMITIVE_TRIANGLESTRIP", constant<D3DPT_TRIANGLESTRIP>::func, 0 },
+	{ "PRIMITIVE_TRIANGLEFAN", constant<D3DPT_TRIANGLEFAN>::func, 0 },
 
-	{ "BORDER_NONE",constant<DxFont::BORDER_NONE>::func,0 },
-	{ "BORDER_FULL",constant<DxFont::BORDER_FULL>::func,0 },
-	{ "BORDER_SHADOW",constant<DxFont::BORDER_SHADOW>::func,0 },
+	{ "BORDER_NONE", constant<DxFont::BORDER_NONE>::func, 0 },
+	{ "BORDER_FULL", constant<DxFont::BORDER_FULL>::func, 0 },
+	{ "BORDER_SHADOW", constant<DxFont::BORDER_SHADOW>::func, 0 },
 
-	{ "SOUND_BGM",constant<SoundDivision::DIVISION_BGM>::func,0 },
-	{ "SOUND_SE",constant<SoundDivision::DIVISION_SE>::func,0 },
-	{ "SOUND_VOICE",constant<SoundDivision::DIVISION_VOICE>::func,0 },
+	{ "SOUND_BGM", constant<SoundDivision::DIVISION_BGM>::func, 0 },
+	{ "SOUND_SE", constant<SoundDivision::DIVISION_SE>::func, 0 },
+	{ "SOUND_VOICE", constant<SoundDivision::DIVISION_VOICE>::func, 0 },
 
-	{ "ALIGNMENT_LEFT",constant<DxText::ALIGNMENT_LEFT>::func,0 },
-	{ "ALIGNMENT_RIGHT",constant<DxText::ALIGNMENT_RIGHT>::func,0 },
-	{ "ALIGNMENT_CENTER",constant<DxText::ALIGNMENT_CENTER>::func,0 },
+	{ "ALIGNMENT_LEFT", constant<DxText::ALIGNMENT_LEFT>::func, 0 },
+	{ "ALIGNMENT_RIGHT", constant<DxText::ALIGNMENT_RIGHT>::func, 0 },
+	{ "ALIGNMENT_CENTER", constant<DxText::ALIGNMENT_CENTER>::func, 0 },
 
-	{ "CODE_ACP",constant<DxScript::CODE_ACP>::func,0 },
-	{ "CODE_UTF8",constant<DxScript::CODE_UTF8>::func,0 },
-	{ "CODE_UTF16LE",constant<DxScript::CODE_UTF16LE>::func,0 },
-	{ "CODE_UTF16BE",constant<DxScript::CODE_UTF16BE>::func,0 },
+	{ "CODE_ACP", constant<DxScript::CODE_ACP>::func, 0 },
+	{ "CODE_UTF8", constant<DxScript::CODE_UTF8>::func, 0 },
+	{ "CODE_UTF16LE", constant<DxScript::CODE_UTF16LE>::func, 0 },
+	{ "CODE_UTF16BE", constant<DxScript::CODE_UTF16BE>::func, 0 },
 
-	{ "ENDIAN_LITTLE",constant<ByteOrder::ENDIAN_LITTLE>::func,0 },
-	{ "ENDIAN_BIG",constant<ByteOrder::ENDIAN_BIG>::func,0 },
+	{ "ENDIAN_LITTLE", constant<ByteOrder::ENDIAN_LITTLE>::func, 0 },
+	{ "ENDIAN_BIG", constant<ByteOrder::ENDIAN_BIG>::func, 0 },
 
 	//DirectInput
-	{ "KEY_FREE",constant<KEY_FREE>::func,0 },
-	{ "KEY_PUSH",constant<KEY_PUSH>::func,0 },
-	{ "KEY_PULL",constant<KEY_PULL>::func,0 },
-	{ "KEY_HOLD",constant<KEY_HOLD>::func,0 },
+	{ "KEY_FREE", constant<KEY_FREE>::func, 0 },
+	{ "KEY_PUSH", constant<KEY_PUSH>::func, 0 },
+	{ "KEY_PULL", constant<KEY_PULL>::func, 0 },
+	{ "KEY_HOLD", constant<KEY_HOLD>::func, 0 },
 
-	{ "MOUSE_LEFT",constant<DI_MOUSE_LEFT>::func,0 },
-	{ "MOUSE_RIGHT",constant<DI_MOUSE_RIGHT>::func,0 },
-	{ "MOUSE_MIDDLE",constant<DI_MOUSE_MIDDLE>::func,0 },
+	{ "MOUSE_LEFT", constant<DI_MOUSE_LEFT>::func, 0 },
+	{ "MOUSE_RIGHT", constant<DI_MOUSE_RIGHT>::func, 0 },
+	{ "MOUSE_MIDDLE", constant<DI_MOUSE_MIDDLE>::func, 0 },
 
-	{ "KEY_ESCAPE",constant<DIK_ESCAPE>::func,0 },
-	{ "KEY_1",constant<DIK_1>::func,0 },
-	{ "KEY_2",constant<DIK_2>::func,0 },
-	{ "KEY_3",constant<DIK_3>::func,0 },
-	{ "KEY_4",constant<DIK_4>::func,0 },
-	{ "KEY_5",constant<DIK_5>::func,0 },
-	{ "KEY_6",constant<DIK_6>::func,0 },
-	{ "KEY_7",constant<DIK_7>::func,0 },
-	{ "KEY_8",constant<DIK_8>::func,0 },
-	{ "KEY_9",constant<DIK_9>::func,0 },
-	{ "KEY_0",constant<DIK_0>::func,0 },
-	{ "KEY_MINUS",constant<DIK_MINUS>::func,0 },
-	{ "KEY_EQUALS",constant<DIK_EQUALS>::func,0 },
-	{ "KEY_BACK",constant<DIK_BACK>::func,0 },
-	{ "KEY_TAB",constant<DIK_TAB>::func,0 },
-	{ "KEY_Q",constant<DIK_Q>::func,0 },
-	{ "KEY_W",constant<DIK_W>::func,0 },
-	{ "KEY_E",constant<DIK_E>::func,0 },
-	{ "KEY_R",constant<DIK_R>::func,0 },
-	{ "KEY_T",constant<DIK_T>::func,0 },
-	{ "KEY_Y",constant<DIK_Y>::func,0 },
-	{ "KEY_U",constant<DIK_U>::func,0 },
-	{ "KEY_I",constant<DIK_I>::func,0 },
-	{ "KEY_O",constant<DIK_O>::func,0 },
-	{ "KEY_P",constant<DIK_P>::func,0 },
-	{ "KEY_LBRACKET",constant<DIK_LBRACKET>::func,0 },
-	{ "KEY_RBRACKET",constant<DIK_RBRACKET>::func,0 },
-	{ "KEY_RETURN",constant<DIK_RETURN>::func,0 },
-	{ "KEY_LCONTROL",constant<DIK_LCONTROL>::func,0 },
-	{ "KEY_A",constant<DIK_A>::func,0 },
-	{ "KEY_S",constant<DIK_S>::func,0 },
-	{ "KEY_D",constant<DIK_D>::func,0 },
-	{ "KEY_F",constant<DIK_F>::func,0 },
-	{ "KEY_G",constant<DIK_G>::func,0 },
-	{ "KEY_H",constant<DIK_H>::func,0 },
-	{ "KEY_J",constant<DIK_J>::func,0 },
-	{ "KEY_K",constant<DIK_K>::func,0 },
-	{ "KEY_L",constant<DIK_L>::func,0 },
-	{ "KEY_SEMICOLON",constant<DIK_SEMICOLON>::func,0 },
-	{ "KEY_APOSTROPHE",constant<DIK_APOSTROPHE>::func,0 },
-	{ "KEY_GRAVE",constant<DIK_GRAVE>::func,0 },
-	{ "KEY_LSHIFT",constant<DIK_LSHIFT>::func,0 },
-	{ "KEY_BACKSLASH",constant<DIK_BACKSLASH>::func,0 },
-	{ "KEY_Z",constant<DIK_Z>::func,0 },
-	{ "KEY_X",constant<DIK_X>::func,0 },
-	{ "KEY_C",constant<DIK_C>::func,0 },
-	{ "KEY_V",constant<DIK_V>::func,0 },
-	{ "KEY_B",constant<DIK_B>::func,0 },
-	{ "KEY_N",constant<DIK_N>::func,0 },
-	{ "KEY_M",constant<DIK_M>::func,0 },
-	{ "KEY_COMMA",constant<DIK_COMMA>::func,0 },
-	{ "KEY_PERIOD",constant<DIK_PERIOD>::func,0 },
-	{ "KEY_SLASH",constant<DIK_SLASH>::func,0 },
-	{ "KEY_RSHIFT",constant<DIK_RSHIFT>::func,0 },
-	{ "KEY_MULTIPLY",constant<DIK_MULTIPLY>::func,0 },
-	{ "KEY_LMENU",constant<DIK_LMENU>::func,0 },
-	{ "KEY_SPACE",constant<DIK_SPACE>::func,0 },
-	{ "KEY_CAPITAL",constant<DIK_CAPITAL>::func,0 },
-	{ "KEY_F1",constant<DIK_F1>::func,0 },
-	{ "KEY_F2",constant<DIK_F2>::func,0 },
-	{ "KEY_F3",constant<DIK_F3>::func,0 },
-	{ "KEY_F4",constant<DIK_F4>::func,0 },
-	{ "KEY_F5",constant<DIK_F5>::func,0 },
-	{ "KEY_F6",constant<DIK_F6>::func,0 },
-	{ "KEY_F7",constant<DIK_F7>::func,0 },
-	{ "KEY_F8",constant<DIK_F8>::func,0 },
-	{ "KEY_F9",constant<DIK_F9>::func,0 },
-	{ "KEY_F10",constant<DIK_F10>::func,0 },
-	{ "KEY_NUMLOCK",constant<DIK_NUMLOCK>::func,0 },
-	{ "KEY_SCROLL",constant<DIK_SCROLL>::func,0 },
-	{ "KEY_NUMPAD7",constant<DIK_NUMPAD7>::func,0 },
-	{ "KEY_NUMPAD8",constant<DIK_NUMPAD8>::func,0 },
-	{ "KEY_NUMPAD9",constant<DIK_NUMPAD9>::func,0 },
-	{ "KEY_SUBTRACT",constant<DIK_SUBTRACT>::func,0 },
-	{ "KEY_NUMPAD4",constant<DIK_NUMPAD4>::func,0 },
-	{ "KEY_NUMPAD5",constant<DIK_NUMPAD5>::func,0 },
-	{ "KEY_NUMPAD6",constant<DIK_NUMPAD6>::func,0 },
-	{ "KEY_ADD",constant<DIK_ADD>::func,0 },
-	{ "KEY_NUMPAD1",constant<DIK_NUMPAD1>::func,0 },
-	{ "KEY_NUMPAD2",constant<DIK_NUMPAD2>::func,0 },
-	{ "KEY_NUMPAD3",constant<DIK_NUMPAD3>::func,0 },
-	{ "KEY_NUMPAD0",constant<DIK_NUMPAD0>::func,0 },
-	{ "KEY_DECIMAL",constant<DIK_DECIMAL>::func,0 },
-	{ "KEY_F11",constant<DIK_F11>::func,0 },
-	{ "KEY_F12",constant<DIK_F12>::func,0 },
-	{ "KEY_F13",constant<DIK_F13>::func,0 },
-	{ "KEY_F14",constant<DIK_F14>::func,0 },
-	{ "KEY_F15",constant<DIK_F15>::func,0 },
-	{ "KEY_KANA",constant<DIK_KANA>::func,0 },
-	{ "KEY_CONVERT",constant<DIK_CONVERT>::func,0 },
-	{ "KEY_NOCONVERT",constant<DIK_NOCONVERT>::func,0 },
-	{ "KEY_YEN",constant<DIK_YEN>::func,0 },
-	{ "KEY_NUMPADEQUALS",constant<DIK_NUMPADEQUALS>::func,0 },
-	{ "KEY_CIRCUMFLEX",constant<DIK_CIRCUMFLEX>::func,0 },
-	{ "KEY_AT",constant<DIK_AT>::func,0 },
-	{ "KEY_COLON",constant<DIK_COLON>::func,0 },
-	{ "KEY_UNDERLINE",constant<DIK_UNDERLINE>::func,0 },
-	{ "KEY_KANJI",constant<DIK_KANJI>::func,0 },
-	{ "KEY_STOP",constant<DIK_STOP>::func,0 },
-	{ "KEY_AX",constant<DIK_AX>::func,0 },
-	{ "KEY_UNLABELED",constant<DIK_UNLABELED>::func,0 },
-	{ "KEY_NUMPADENTER",constant<DIK_NUMPADENTER>::func,0 },
-	{ "KEY_RCONTROL",constant<DIK_RCONTROL>::func,0 },
-	{ "KEY_NUMPADCOMMA",constant<DIK_NUMPADCOMMA>::func,0 },
-	{ "KEY_DIVIDE",constant<DIK_DIVIDE>::func,0 },
-	{ "KEY_SYSRQ",constant<DIK_SYSRQ>::func,0 },
-	{ "KEY_RMENU",constant<DIK_RMENU>::func,0 },
-	{ "KEY_PAUSE",constant<DIK_PAUSE>::func,0 },
-	{ "KEY_HOME",constant<DIK_HOME>::func,0 },
-	{ "KEY_UP",constant<DIK_UP>::func,0 },
-	{ "KEY_PRIOR",constant<DIK_PRIOR>::func,0 },
-	{ "KEY_LEFT",constant<DIK_LEFT>::func,0 },
-	{ "KEY_RIGHT",constant<DIK_RIGHT>::func,0 },
-	{ "KEY_END",constant<DIK_END>::func,0 },
-	{ "KEY_DOWN",constant<DIK_DOWN>::func,0 },
-	{ "KEY_NEXT",constant<DIK_NEXT>::func,0 },
-	{ "KEY_INSERT",constant<DIK_INSERT>::func,0 },
-	{ "KEY_DELETE",constant<DIK_DELETE>::func,0 },
-	{ "KEY_LWIN",constant<DIK_LWIN>::func,0 },
-	{ "KEY_RWIN",constant<DIK_RWIN>::func,0 },
-	{ "KEY_APPS",constant<DIK_APPS>::func,0 },
-	{ "KEY_POWER",constant<DIK_POWER>::func,0 },
-	{ "KEY_SLEEP",constant<DIK_SLEEP>::func,0 },
+	{ "KEY_ESCAPE", constant<DIK_ESCAPE>::func, 0 },
+	{ "KEY_1", constant<DIK_1>::func, 0 },
+	{ "KEY_2", constant<DIK_2>::func, 0 },
+	{ "KEY_3", constant<DIK_3>::func, 0 },
+	{ "KEY_4", constant<DIK_4>::func, 0 },
+	{ "KEY_5", constant<DIK_5>::func, 0 },
+	{ "KEY_6", constant<DIK_6>::func, 0 },
+	{ "KEY_7", constant<DIK_7>::func, 0 },
+	{ "KEY_8", constant<DIK_8>::func, 0 },
+	{ "KEY_9", constant<DIK_9>::func, 0 },
+	{ "KEY_0", constant<DIK_0>::func, 0 },
+	{ "KEY_MINUS", constant<DIK_MINUS>::func, 0 },
+	{ "KEY_EQUALS", constant<DIK_EQUALS>::func, 0 },
+	{ "KEY_BACK", constant<DIK_BACK>::func, 0 },
+	{ "KEY_TAB", constant<DIK_TAB>::func, 0 },
+	{ "KEY_Q", constant<DIK_Q>::func, 0 },
+	{ "KEY_W", constant<DIK_W>::func, 0 },
+	{ "KEY_E", constant<DIK_E>::func, 0 },
+	{ "KEY_R", constant<DIK_R>::func, 0 },
+	{ "KEY_T", constant<DIK_T>::func, 0 },
+	{ "KEY_Y", constant<DIK_Y>::func, 0 },
+	{ "KEY_U", constant<DIK_U>::func, 0 },
+	{ "KEY_I", constant<DIK_I>::func, 0 },
+	{ "KEY_O", constant<DIK_O>::func, 0 },
+	{ "KEY_P", constant<DIK_P>::func, 0 },
+	{ "KEY_LBRACKET", constant<DIK_LBRACKET>::func, 0 },
+	{ "KEY_RBRACKET", constant<DIK_RBRACKET>::func, 0 },
+	{ "KEY_RETURN", constant<DIK_RETURN>::func, 0 },
+	{ "KEY_LCONTROL", constant<DIK_LCONTROL>::func, 0 },
+	{ "KEY_A", constant<DIK_A>::func, 0 },
+	{ "KEY_S", constant<DIK_S>::func, 0 },
+	{ "KEY_D", constant<DIK_D>::func, 0 },
+	{ "KEY_F", constant<DIK_F>::func, 0 },
+	{ "KEY_G", constant<DIK_G>::func, 0 },
+	{ "KEY_H", constant<DIK_H>::func, 0 },
+	{ "KEY_J", constant<DIK_J>::func, 0 },
+	{ "KEY_K", constant<DIK_K>::func, 0 },
+	{ "KEY_L", constant<DIK_L>::func, 0 },
+	{ "KEY_SEMICOLON", constant<DIK_SEMICOLON>::func, 0 },
+	{ "KEY_APOSTROPHE", constant<DIK_APOSTROPHE>::func, 0 },
+	{ "KEY_GRAVE", constant<DIK_GRAVE>::func, 0 },
+	{ "KEY_LSHIFT", constant<DIK_LSHIFT>::func, 0 },
+	{ "KEY_BACKSLASH", constant<DIK_BACKSLASH>::func, 0 },
+	{ "KEY_Z", constant<DIK_Z>::func, 0 },
+	{ "KEY_X", constant<DIK_X>::func, 0 },
+	{ "KEY_C", constant<DIK_C>::func, 0 },
+	{ "KEY_V", constant<DIK_V>::func, 0 },
+	{ "KEY_B", constant<DIK_B>::func, 0 },
+	{ "KEY_N", constant<DIK_N>::func, 0 },
+	{ "KEY_M", constant<DIK_M>::func, 0 },
+	{ "KEY_COMMA", constant<DIK_COMMA>::func, 0 },
+	{ "KEY_PERIOD", constant<DIK_PERIOD>::func, 0 },
+	{ "KEY_SLASH", constant<DIK_SLASH>::func, 0 },
+	{ "KEY_RSHIFT", constant<DIK_RSHIFT>::func, 0 },
+	{ "KEY_MULTIPLY", constant<DIK_MULTIPLY>::func, 0 },
+	{ "KEY_LMENU", constant<DIK_LMENU>::func, 0 },
+	{ "KEY_SPACE", constant<DIK_SPACE>::func, 0 },
+	{ "KEY_CAPITAL", constant<DIK_CAPITAL>::func, 0 },
+	{ "KEY_F1", constant<DIK_F1>::func, 0 },
+	{ "KEY_F2", constant<DIK_F2>::func, 0 },
+	{ "KEY_F3", constant<DIK_F3>::func, 0 },
+	{ "KEY_F4", constant<DIK_F4>::func, 0 },
+	{ "KEY_F5", constant<DIK_F5>::func, 0 },
+	{ "KEY_F6", constant<DIK_F6>::func, 0 },
+	{ "KEY_F7", constant<DIK_F7>::func, 0 },
+	{ "KEY_F8", constant<DIK_F8>::func, 0 },
+	{ "KEY_F9", constant<DIK_F9>::func, 0 },
+	{ "KEY_F10", constant<DIK_F10>::func, 0 },
+	{ "KEY_NUMLOCK", constant<DIK_NUMLOCK>::func, 0 },
+	{ "KEY_SCROLL", constant<DIK_SCROLL>::func, 0 },
+	{ "KEY_NUMPAD7", constant<DIK_NUMPAD7>::func, 0 },
+	{ "KEY_NUMPAD8", constant<DIK_NUMPAD8>::func, 0 },
+	{ "KEY_NUMPAD9", constant<DIK_NUMPAD9>::func, 0 },
+	{ "KEY_SUBTRACT", constant<DIK_SUBTRACT>::func, 0 },
+	{ "KEY_NUMPAD4", constant<DIK_NUMPAD4>::func, 0 },
+	{ "KEY_NUMPAD5", constant<DIK_NUMPAD5>::func, 0 },
+	{ "KEY_NUMPAD6", constant<DIK_NUMPAD6>::func, 0 },
+	{ "KEY_ADD", constant<DIK_ADD>::func, 0 },
+	{ "KEY_NUMPAD1", constant<DIK_NUMPAD1>::func, 0 },
+	{ "KEY_NUMPAD2", constant<DIK_NUMPAD2>::func, 0 },
+	{ "KEY_NUMPAD3", constant<DIK_NUMPAD3>::func, 0 },
+	{ "KEY_NUMPAD0", constant<DIK_NUMPAD0>::func, 0 },
+	{ "KEY_DECIMAL", constant<DIK_DECIMAL>::func, 0 },
+	{ "KEY_F11", constant<DIK_F11>::func, 0 },
+	{ "KEY_F12", constant<DIK_F12>::func, 0 },
+	{ "KEY_F13", constant<DIK_F13>::func, 0 },
+	{ "KEY_F14", constant<DIK_F14>::func, 0 },
+	{ "KEY_F15", constant<DIK_F15>::func, 0 },
+	{ "KEY_KANA", constant<DIK_KANA>::func, 0 },
+	{ "KEY_CONVERT", constant<DIK_CONVERT>::func, 0 },
+	{ "KEY_NOCONVERT", constant<DIK_NOCONVERT>::func, 0 },
+	{ "KEY_YEN", constant<DIK_YEN>::func, 0 },
+	{ "KEY_NUMPADEQUALS", constant<DIK_NUMPADEQUALS>::func, 0 },
+	{ "KEY_CIRCUMFLEX", constant<DIK_CIRCUMFLEX>::func, 0 },
+	{ "KEY_AT", constant<DIK_AT>::func, 0 },
+	{ "KEY_COLON", constant<DIK_COLON>::func, 0 },
+	{ "KEY_UNDERLINE", constant<DIK_UNDERLINE>::func, 0 },
+	{ "KEY_KANJI", constant<DIK_KANJI>::func, 0 },
+	{ "KEY_STOP", constant<DIK_STOP>::func, 0 },
+	{ "KEY_AX", constant<DIK_AX>::func, 0 },
+	{ "KEY_UNLABELED", constant<DIK_UNLABELED>::func, 0 },
+	{ "KEY_NUMPADENTER", constant<DIK_NUMPADENTER>::func, 0 },
+	{ "KEY_RCONTROL", constant<DIK_RCONTROL>::func, 0 },
+	{ "KEY_NUMPADCOMMA", constant<DIK_NUMPADCOMMA>::func, 0 },
+	{ "KEY_DIVIDE", constant<DIK_DIVIDE>::func, 0 },
+	{ "KEY_SYSRQ", constant<DIK_SYSRQ>::func, 0 },
+	{ "KEY_RMENU", constant<DIK_RMENU>::func, 0 },
+	{ "KEY_PAUSE", constant<DIK_PAUSE>::func, 0 },
+	{ "KEY_HOME", constant<DIK_HOME>::func, 0 },
+	{ "KEY_UP", constant<DIK_UP>::func, 0 },
+	{ "KEY_PRIOR", constant<DIK_PRIOR>::func, 0 },
+	{ "KEY_LEFT", constant<DIK_LEFT>::func, 0 },
+	{ "KEY_RIGHT", constant<DIK_RIGHT>::func, 0 },
+	{ "KEY_END", constant<DIK_END>::func, 0 },
+	{ "KEY_DOWN", constant<DIK_DOWN>::func, 0 },
+	{ "KEY_NEXT", constant<DIK_NEXT>::func, 0 },
+	{ "KEY_INSERT", constant<DIK_INSERT>::func, 0 },
+	{ "KEY_DELETE", constant<DIK_DELETE>::func, 0 },
+	{ "KEY_LWIN", constant<DIK_LWIN>::func, 0 },
+	{ "KEY_RWIN", constant<DIK_RWIN>::func, 0 },
+	{ "KEY_APPS", constant<DIK_APPS>::func, 0 },
+	{ "KEY_POWER", constant<DIK_POWER>::func, 0 },
+	{ "KEY_SLEEP", constant<DIK_SLEEP>::func, 0 },
 };
 
 
@@ -1599,7 +1689,7 @@ void DxScript::_ClearResource() {
 	mapTexture_.clear();
 	mapMesh_.clear();
 
-	std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer> >::iterator itrSound;
+	std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer>>::iterator itrSound;
 	for (itrSound = mapSoundPlayer_.begin(); itrSound != mapSoundPlayer_.end(); ++itrSound) {
 		SoundPlayer* player = (itrSound->second).GetPointer();
 		player->Delete();
@@ -1832,7 +1922,7 @@ value DxScript::Func_LoadSound(script_machine* machine, int argc, const value* a
 	if (script->mapSoundPlayer_.find(path) != script->mapSoundPlayer_.end())
 		return value(machine->get_engine()->get_boolean_type(), true);
 
-	ref_count_ptr<SoundPlayer> player = manager->GetPlayer(path, true);
+	gstd::ref_count_ptr<SoundPlayer> player = manager->GetPlayer(path, true);
 	if (player != NULL) {
 		script->mapSoundPlayer_[path] = player;
 	}
@@ -1846,7 +1936,7 @@ value DxScript::Func_RemoveSound(script_machine* machine, int argc, const value*
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->Delete();
 	script->mapSoundPlayer_.erase(path);
 
@@ -1863,7 +1953,7 @@ value DxScript::Func_PlayBGM(script_machine* machine, int argc, const value* arg
 	double loopStart = argv[1].as_real();
 	double loopEnd = argv[2].as_real();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->SetSoundDivision(SoundDivision::DIVISION_BGM);
 
 	SoundPlayer::PlayStyle style;
@@ -1883,7 +1973,7 @@ gstd::value DxScript::Func_PlaySE(gstd::script_machine* machine, int argc, const
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->SetSoundDivision(SoundDivision::DIVISION_SE);
 
 	SoundPlayer::PlayStyle style;
@@ -1901,7 +1991,7 @@ value DxScript::Func_StopSound(script_machine* machine, int argc, const value* a
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->Stop();
 	script->GetObjectManager()->DeleteReservedSound(player);
 
@@ -2103,6 +2193,27 @@ gstd::value DxScript::Func_CreateRenderTarget(gstd::script_machine* machine, int
 	if (script->mapTexture_.find(name) == script->mapTexture_.end()) {
 		ref_count_ptr<Texture> texture = new Texture();
 		bool res = texture->CreateRenderTarget(name);
+		if (res) {
+			Lock lock(script->criticalSection_);
+			script->mapTexture_[name] = texture;
+		}
+	}
+	return value(machine->get_engine()->get_boolean_type(), res);
+}
+gstd::value DxScript::Func_CreateRenderTargetEx(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	bool res = true;
+
+	std::wstring name = argv[0].as_string();
+	double width = argv[1].as_real();
+	double height = argv[2].as_real();
+
+	if (width < 0) width = 0;
+	if (height < 0) height = 0;
+
+	if (script->mapTexture_.find(name) == script->mapTexture_.end()) {
+		ref_count_ptr<Texture> texture = new Texture();
+		bool res = texture->CreateRenderTarget(name, (size_t)width, (size_t)height);
 		if (res) {
 			Lock lock(script->criticalSection_);
 			script->mapTexture_[name] = texture;
@@ -2356,7 +2467,7 @@ gstd::value DxScript::Func_SetShader(gstd::script_machine* machine, int argc, co
 
 	double min = (double)argv[1].as_real();
 	double max = (double)argv[2].as_real();
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	auto objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, min, max);
 
 	return value();
@@ -2376,7 +2487,7 @@ gstd::value DxScript::Func_SetShaderI(gstd::script_machine* machine, int argc, c
 	double priMin = (double)min / (double)(size - 1);
 	double priMax = (double)max / (double)(size - 1);
 
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	auto objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, priMin, priMax);
 
 	return value();
@@ -2387,7 +2498,7 @@ gstd::value DxScript::Func_ResetShader(gstd::script_machine* machine, int argc, 
 
 	double min = (double)argv[0].as_real();
 	double max = (double)argv[1].as_real();
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	auto objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, min, max);
 
 	return value();
@@ -2402,7 +2513,7 @@ gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc,
 
 	double priMin = (double)min / (double)(size - 1);
 	double priMax = (double)max / (double)(size - 1);
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	auto objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, priMin, priMax);
 
 	return value();
@@ -2590,7 +2701,11 @@ value DxScript::Func_SetCameraPerspectiveClip(script_machine* machine, int argc,
 	int width = graphics->GetScreenWidth();
 	int height = graphics->GetScreenHeight();
 
-	graphics->GetCamera()->SetProjectionMatrix(width, height, clipNear, clipFar);
+	auto camera = graphics->GetCamera();
+	//camera->SetProjectionMatrix(width, height, clipNear, clipFar);
+	camera->SetPerspectiveClip(clipNear, clipFar);
+	camera->thisProjectionChanged_ = true;
+
 	return value();
 }
 
@@ -2691,7 +2806,7 @@ gstd::value DxScript::Func_GetObject2dPosition(gstd::script_machine* machine, in
 	int id = (int)argv[0].as_real();
 
 	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
-	if (obj == NULL)script->RaiseError(L"Invalid object; object might not have been initialized.");
+	if (obj == NULL)script->RaiseError("Invalid object; object might not have been initialized.");
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<DxCamera> camera = graphics->GetCamera();
@@ -2865,12 +2980,12 @@ gstd::value DxScript::Func_Obj_IsValueExists(gstd::script_machine* machine, int 
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
 value DxScript::Func_Obj_GetType(script_machine* machine, int argc, const value* argv) {
-	double res = DxScript::OBJ_INVALID;
+	double res = (int)TypeObject::OBJ_INVALID;
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxScriptObjectBase* obj = dynamic_cast<DxScriptObjectBase*>(script->GetObjectPointer(id));
 	if (obj != NULL)
-		res = obj->GetObjectType();
+		res = (int)obj->GetObjectType();
 	return value(machine->get_engine()->get_real_type(), res);
 }
 
@@ -3251,7 +3366,7 @@ gstd::value DxScript::Func_ObjShader_Create(gstd::script_machine* machine, int a
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -3334,7 +3449,7 @@ gstd::value DxScript::Func_ObjShader_SetMatrix(gstd::script_machine* machine, in
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	const gstd::value& sMatrix = argv[2];
 	type_data::type_kind kind = sMatrix.get_type()->get_kind();
-	if (kind != type_data::tk_array)return value();
+	if (kind != type_data::type_kind::tk_array)return value();
 	int arrayLength = sMatrix.length_as_array();
 	if (arrayLength != 16)return value();
 
@@ -3365,14 +3480,14 @@ gstd::value DxScript::Func_ObjShader_SetMatrixArray(gstd::script_machine* machin
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	gstd::value array = argv[2];
 	type_data::type_kind kind = array.get_type()->get_kind();
-	if (kind != type_data::tk_array)return value();
+	if (kind != type_data::type_kind::tk_array)return value();
 
 	int dataLength = array.length_as_array();
 	std::vector<D3DXMATRIX> listMatrix;
 	for (int iArray = 0; iArray < dataLength; ++iArray) {
 		const value& sMatrix = array.index_as_array(iArray);
 		type_data::type_kind kind = sMatrix.get_type()->get_kind();
-		if (kind != type_data::tk_array)return value();
+		if (kind != type_data::type_kind::tk_array)return value();
 		int arrayLength = sMatrix.length_as_array();
 		if (arrayLength != 16)return value();
 
@@ -3444,7 +3559,7 @@ gstd::value DxScript::Func_ObjShader_SetFloatArray(gstd::script_machine* machine
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	const gstd::value& array = argv[2];
 	type_data::type_kind kind = array.get_type()->get_kind();
-	if (kind != type_data::tk_array)return value();
+	if (kind != type_data::type_kind::tk_array)return value();
 
 	int dataLength = array.length_as_array();
 	std::vector<float> listFloat;
@@ -3488,31 +3603,31 @@ gstd::value DxScript::Func_ObjShader_SetTexture(gstd::script_machine* machine, i
 value DxScript::Func_ObjPrimitive_Create(script_machine* machine, int argc, const value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
-	int type = (int)argv[0].as_real();
+	TypeObject type = (TypeObject)((int)argv[0].as_real());
 	ref_count_ptr<DxScriptPrimitiveObject>::unsync obj;
-	if (type == OBJ_PRIMITIVE_2D) {
+	if (type == TypeObject::OBJ_PRIMITIVE_2D) {
 		obj = new DxScriptPrimitiveObject2D();
 	}
-	else if (type == OBJ_SPRITE_2D) {
+	else if (type == TypeObject::OBJ_SPRITE_2D) {
 		obj = new DxScriptSpriteObject2D();
 	}
-	else if (type == OBJ_SPRITE_LIST_2D) {
+	else if (type == TypeObject::OBJ_SPRITE_LIST_2D) {
 		obj = new DxScriptSpriteListObject2D();
 	}
-	else if (type == OBJ_PRIMITIVE_3D) {
+	else if (type == TypeObject::OBJ_PRIMITIVE_3D) {
 		obj = new DxScriptPrimitiveObject3D();
 	}
-	else if (type == OBJ_SPRITE_3D) {
+	else if (type == TypeObject::OBJ_SPRITE_3D) {
 		obj = new DxScriptSpriteObject3D();
 	}
-	else if (type == OBJ_TRAJECTORY_3D) {
+	else if (type == TypeObject::OBJ_TRAJECTORY_3D) {
 		obj = new DxScriptTrajectoryObject3D();
 	}
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -4218,7 +4333,7 @@ gstd::value DxScript::Func_ObjSound_Play(gstd::script_machine* machine, int argc
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	//obj->Play();
@@ -4230,7 +4345,7 @@ gstd::value DxScript::Func_ObjSound_Stop(gstd::script_machine* machine, int argc
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	player->Stop();
@@ -4243,7 +4358,7 @@ gstd::value DxScript::Func_ObjSound_SetVolumeRate(gstd::script_machine* machine,
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	double rate = argv[1].as_real();
@@ -4256,7 +4371,7 @@ gstd::value DxScript::Func_ObjSound_SetPanRate(gstd::script_machine* machine, in
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	double rate = argv[1].as_real();
@@ -4269,7 +4384,7 @@ gstd::value DxScript::Func_ObjSound_SetFade(gstd::script_machine* machine, int a
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	double fade = argv[1].as_real();
@@ -4282,7 +4397,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopEnable(gstd::script_machine* machine,
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	bool bLoop = (bool)argv[1].as_boolean();
@@ -4296,7 +4411,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopTime(gstd::script_machine* machine, i
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	double startTime = argv[1].as_real();
@@ -4312,7 +4427,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopSampleCount(gstd::script_machine* mac
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	double startSample = argv[1].as_real();
@@ -4327,12 +4442,41 @@ gstd::value DxScript::Func_ObjSound_SetLoopSampleCount(gstd::script_machine* mac
 
 	return value();
 }
+gstd::value DxScript::Func_ObjSound_Seek(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)return value();
+
+	double seekTime = argv[1].as_real();
+	player->Seek(seekTime);
+
+	return value();
+}
+gstd::value DxScript::Func_ObjSound_SeekSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)return value();
+
+	double seekSample = argv[1].as_real();
+
+	WAVEFORMATEX fmt = obj->GetPlayer()->GetWaveFormat();
+	double seekTime = seekSample / (double)fmt.nSamplesPerSec;
+	player->Seek(seekTime);
+
+	return value();
+}
 gstd::value DxScript::Func_ObjSound_SetRestartEnable(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	bool bRestart = (bool)argv[1].as_boolean();
@@ -4346,7 +4490,7 @@ gstd::value DxScript::Func_ObjSound_SetSoundDivision(gstd::script_machine* machi
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)return value();
 
 	int div = (int)argv[1].as_real();
@@ -4359,7 +4503,7 @@ gstd::value DxScript::Func_ObjSound_IsPlaying(gstd::script_machine* machine, int
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
@@ -4372,7 +4516,7 @@ gstd::value DxScript::Func_ObjSound_GetVolumeRate(gstd::script_machine* machine,
 	int id = (int)argv[0].as_real();
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value(machine->get_engine()->get_real_type(), (double)0);
 
@@ -4385,19 +4529,19 @@ gstd::value DxScript::Func_ObjSound_GetVolumeRate(gstd::script_machine* machine,
 gstd::value DxScript::Func_ObjFile_Create(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	//	script->CheckRunInMainThread();
-	int type = (int)argv[0].as_real();
+	TypeObject type = (TypeObject)((int)argv[0].as_real());
 	ref_count_ptr<DxFileObject>::unsync obj;
-	if (type == OBJ_FILE_TEXT) {
+	if (type == TypeObject::OBJ_FILE_TEXT) {
 		obj = new DxTextFileObject();
 	}
-	else if (type == OBJ_FILE_BINARY) {
+	else if (type == TypeObject::OBJ_FILE_BINARY) {
 		obj = new DxBinaryFileObject();
 	}
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -4406,34 +4550,57 @@ gstd::value DxScript::Func_ObjFile_Open(gstd::script_machine* machine, int argc,
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxFileObject* obj = dynamic_cast<DxFileObject*>(script->GetObjectPointer(id));
-	if (obj == NULL)return value(machine->get_engine()->get_boolean_type(), false);
+	if (obj == NULL) return value(machine->get_engine()->get_boolean_type(), false);
 
 	std::wstring path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
-	bool res = obj->OpenR(path);
 
-	return value(machine->get_engine()->get_boolean_type(), res);
+	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	if (reader == nullptr) goto resFail;
+	if (!reader->Open()) goto resFail;
+
+	if (dynamic_cast<ManagedFileReader*>(reader.GetPointer()) != nullptr) {
+		obj->isArchived_ = true;
+		bool res = obj->OpenR(reader);
+		return value(machine->get_engine()->get_boolean_type(), res);
+	}
+	else {
+		bool res = obj->OpenR(path);
+		return value(machine->get_engine()->get_boolean_type(), res);
+	}
+resFail:
+	return value(machine->get_engine()->get_boolean_type(), false);
 }
 gstd::value DxScript::Func_ObjFile_OpenNW(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxFileObject* obj = dynamic_cast<DxFileObject*>(script->GetObjectPointer(id));
-	if (obj == NULL)return value(machine->get_engine()->get_boolean_type(), false);
+	if (obj == NULL) return value(machine->get_engine()->get_boolean_type(), false);
 
 	std::wstring path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
-	bool res = obj->OpenW(path);
 
+	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	if (reader == nullptr) goto resFail;
+	if (!reader->Open()) goto resFail;
+
+	if (dynamic_cast<ManagedFileReader*>(reader.GetPointer()) == nullptr) goto resFail;
+	
+	bool res = obj->OpenW(path);
 	return value(machine->get_engine()->get_boolean_type(), res);
+resFail:
+	return value(machine->get_engine()->get_boolean_type(), false);
 }
 gstd::value DxScript::Func_ObjFile_Store(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxFileObject* obj = dynamic_cast<DxFileObject*>(script->GetObjectPointer(id));
-	if (obj == NULL)	return value(machine->get_engine()->get_boolean_type(), false);
+	if (obj == NULL) return value(machine->get_engine()->get_boolean_type(), false);
+
+	if (obj->isArchived_) return value(machine->get_engine()->get_boolean_type(), false);
 
 	bool res = obj->Store();
-	return value(machine->get_engine()->get_real_type(), (double)res);
+	return value(machine->get_engine()->get_boolean_type(), res);
 }
 gstd::value DxScript::Func_ObjFile_GetSize(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
@@ -4487,6 +4654,8 @@ gstd::value DxScript::Func_ObjFileT_AddLine(gstd::script_machine* machine, int a
 	DxTextFileObject* obj = dynamic_cast<DxTextFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
 
+	if (obj->isArchived_) return value();
+
 	std::string str = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	obj->AddLine(str);
 	return value();
@@ -4496,6 +4665,8 @@ gstd::value DxScript::Func_ObjFileT_ClearLine(gstd::script_machine* machine, int
 	int id = (int)argv[0].as_real();
 	DxTextFileObject* obj = dynamic_cast<DxTextFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
+
+	if (obj->isArchived_) return value();
 
 	obj->ClearLine();
 	return value();
@@ -4709,6 +4880,7 @@ gstd::value DxScript::Func_ObjFileB_WriteBoolean(gstd::script_machine* machine, 
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	bool data = argv[1].as_boolean();
@@ -4721,6 +4893,7 @@ gstd::value DxScript::Func_ObjFileB_WriteByte(gstd::script_machine* machine, int
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	byte data = (byte)argv[1].as_real();
@@ -4733,6 +4906,7 @@ gstd::value DxScript::Func_ObjFileB_WriteShort(gstd::script_machine* machine, in
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	int16_t data = (int16_t)argv[1].as_real();
@@ -4745,6 +4919,7 @@ gstd::value DxScript::Func_ObjFileB_WriteInteger(gstd::script_machine* machine, 
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	int32_t data = (int32_t)argv[1].as_real();
@@ -4757,6 +4932,7 @@ gstd::value DxScript::Func_ObjFileB_WriteLong(gstd::script_machine* machine, int
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	int64_t data = (int64_t)argv[1].as_real();
@@ -4769,6 +4945,7 @@ gstd::value DxScript::Func_ObjFileB_WriteFloat(gstd::script_machine* machine, in
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	float data = (float)argv[1].as_real();
@@ -4781,6 +4958,7 @@ gstd::value DxScript::Func_ObjFileB_WriteDouble(gstd::script_machine* machine, i
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
+	if (obj->IsArchived()) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	double data = argv[1].as_real();
