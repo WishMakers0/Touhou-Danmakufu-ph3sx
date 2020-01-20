@@ -119,8 +119,8 @@ namespace gstd {
 		bool IsEventExists(std::string name);
 		void RaiseError(std::wstring error) { _RaiseError(machine_->get_error_line(), error); }
 		void RaiseError(std::string error) { 
-			std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-			_RaiseError(machine_->get_error_line(), converter.from_bytes(error)); 
+			_RaiseError(machine_->get_error_line(), 
+				StringUtility::ConvertMultiToWide(error));
 		}
 		void Terminate(std::wstring error) { machine_->terminate(error); }
 		int64_t GetScriptID() { return idScript_; }
@@ -209,7 +209,7 @@ namespace gstd {
 
 		//共通関数：パス関連
 		static value Func_GetModuleDirectory(script_machine* machine, int argc, const value* argv);
-		static value Func_GetMainScriptDirectory(script_machine* machine, int argc, const value* argv);
+		static value Func_GetParentScriptDirectory(script_machine* machine, int argc, const value* argv);
 		static value Func_GetCurrentScriptDirectory(script_machine* machine, int argc, const value* argv);
 		static value Func_GetFileDirectory(script_machine* machine, int argc, const value* argv);
 		static value Func_GetFilePathList(script_machine* machine, int argc, const value* argv);
@@ -223,7 +223,6 @@ namespace gstd {
 		static value Func_RaiseError(script_machine* machine, int argc, const value* argv);
 
 		//共通関数：共通データ
-		static value Func_SetDefaultCommonDataArea(script_machine* machine, int argc, const value* argv);
 		static value Func_SetCommonData(script_machine* machine, int argc, const value* argv);
 		static value Func_GetCommonData(script_machine* machine, int argc, const value* argv);
 		static value Func_ClearCommonData(script_machine* machine, int argc, const value* argv);
@@ -232,7 +231,7 @@ namespace gstd {
 		static value Func_GetAreaCommonData(script_machine* machine, int argc, const value* argv);
 		static value Func_ClearAreaCommonData(script_machine* machine, int argc, const value* argv);
 		static value Func_DeleteAreaCommonData(script_machine* machine, int argc, const value* argv);
-		static value Func_DeleteAreaCommonDataAll(script_machine* machine, int argc, const value* argv);
+		static value Func_DeleteWholeAreaCommonData(script_machine* machine, int argc, const value* argv);
 		static value Func_CreateCommonDataArea(script_machine* machine, int argc, const value* argv);
 		static value Func_CopyCommonDataArea(script_machine* machine, int argc, const value* argv);
 		static value Func_IsCommonDataAreaExists(script_machine* machine, int argc, const value* argv);
@@ -266,40 +265,17 @@ namespace gstd {
 	/**********************************************************
 	//ScriptCommonDataManager
 	**********************************************************/
-	class ScriptCommonData;
-	class ScriptCommonDataManager {
-	protected:
-		gstd::CriticalSection lock_;
-		std::string nameAreaDefault_;
-		std::map<std::string, gstd::ref_count_ptr<ScriptCommonData> > mapData_;
-	public:
-		ScriptCommonDataManager();
-		virtual ~ScriptCommonDataManager();
-
-		void Clear();
-		void Erase(std::string name);
-
-		std::string GetDefaultAreaName() { return nameAreaDefault_; }
-		void SetDefaultAreaName(std::string name) { nameAreaDefault_ = name; }
-		bool IsExists(std::string name);
-		void CreateArea(std::string name);
-		void CopyArea(std::string nameDest, std::string nameSrc);
-		gstd::ref_count_ptr<ScriptCommonData> GetData(std::string name);
-		void SetData(std::string name, gstd::ref_count_ptr<ScriptCommonData> commonData);
-		std::vector<std::string> GetKeyList();
-
-		gstd::CriticalSection& GetLock() { return lock_; }
-	};
-
 	/**********************************************************
 	//ScriptCommonData
 	**********************************************************/
 	class ScriptCommonData {
+	public:
+		using ptr = gstd::ref_count_ptr<ScriptCommonData>;
 	protected:
 		std::map<std::string, gstd::value> mapValue_;
 
-		gstd::value _ReadRecord(gstd::ByteBuffer &buffer);
-		void _WriteRecord(gstd::ByteBuffer &buffer, gstd::value& comValue);
+		gstd::value _ReadRecord(gstd::ByteBuffer& buffer);
+		void _WriteRecord(gstd::ByteBuffer& buffer, gstd::value& comValue);
 	public:
 		ScriptCommonData();
 		virtual ~ScriptCommonData();
@@ -308,11 +284,41 @@ namespace gstd {
 		gstd::value GetValue(std::string name);
 		void SetValue(std::string name, gstd::value v);
 		void DeleteValue(std::string name);
-		void Copy(gstd::ref_count_ptr<ScriptCommonData> dataSrc);
+		void Copy(ScriptCommonData::ptr dataSrc);
 		std::vector<std::string> GetKeyList();
 
 		void ReadRecord(gstd::RecordBuffer& record);
 		void WriteRecord(gstd::RecordBuffer& record);
+	};
+	class ScriptCommonDataManager {
+	public:
+		using AreaCommonData_T = std::map<std::string, ScriptCommonData::ptr>;
+	protected:
+		gstd::CriticalSection lock_;
+		AreaCommonData_T mapData_;
+		AreaCommonData_T::const_iterator defaultAreaIterator_;
+	public:
+		static const std::string nameAreaDefault_;
+
+		ScriptCommonDataManager();
+		virtual ~ScriptCommonDataManager();
+
+		void Clear();
+		void Erase(std::string name);
+
+		std::string GetDefaultAreaName() { return nameAreaDefault_; }
+		AreaCommonData_T::const_iterator GetDefaultAreaIterator() { return defaultAreaIterator_; }
+
+		//void SetDefaultAreaName(std::string name) { nameAreaDefault_ = name; }
+		bool IsExists(std::string name);
+		void CreateArea(std::string name);
+		void CopyArea(std::string nameDest, std::string nameSrc);
+		ScriptCommonData::ptr GetData(std::string name);
+		ScriptCommonData::ptr GetData(AreaCommonData_T::const_iterator name);
+		void SetData(std::string name, ScriptCommonData::ptr commonData);
+		std::vector<std::string> GetKeyList();
+
+		gstd::CriticalSection& GetLock() { return lock_; }
 	};
 
 	/**********************************************************

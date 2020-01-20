@@ -183,7 +183,7 @@ namespace gstd {
 
 	class type_data {
 	public:
-		enum type_kind : uint8_t {
+		enum class type_kind : uint8_t {
 			tk_real, tk_char, tk_boolean, tk_array
 		};
 
@@ -212,28 +212,23 @@ namespace gstd {
 	public:
 		value() : data(nullptr) {}
 		value(type_data* t, double v) {
-			data = new body();
-			data->ref_count = 1;
+			data = std::make_shared<body>();
 			data->type = t;
 			data->real_value = v;
 		}
 		value(type_data* t, wchar_t v) {
-			data = new body();
-			data->ref_count = 1;
+			data = std::make_shared<body>();
 			data->type = t;
 			data->char_value = v;
 		}
 		value(type_data* t, bool v) {
-			data = new body();
-			data->ref_count = 1;
+			data = std::make_shared<body>();
 			data->type = t;
 			data->boolean_value = v;
 		}
 		value(type_data* t, std::wstring v);
 		value(value const& source) {
 			data = source.data;
-			if (data != nullptr)
-				++(data->ref_count);
 		}
 
 		~value() {
@@ -241,10 +236,6 @@ namespace gstd {
 		}
 
 		value& operator = (value const& source) {
-			if (source.data != nullptr) {
-				++(source.data->ref_count);
-			}
-			release();
 			data = source.data;
 			return *this;
 		}
@@ -279,14 +270,11 @@ namespace gstd {
 
 		void unique() const {
 			if (data == nullptr) {
-				data = new body();
-				data->ref_count = 1;
+				data = std::make_shared<body>();
 				data->type = nullptr;
 			}
-			else if (data->ref_count > 1) {
-				--(data->ref_count);
-				data = new body(*data);
-				data->ref_count = 1;
+			else if (!data.unique()) {
+				data = std::make_shared<body>(*data);
 			}
 		}
 
@@ -294,17 +282,11 @@ namespace gstd {
 
 	private:
 		inline void release() {
-			if (data != nullptr) {
-				--(data->ref_count);
-				if (data->ref_count == 0) {
-					delete data;
-				}
-			}
+			data.reset();
 		}
 		struct body {
-			int ref_count;
 			type_data* type;
-			lightweight_vector < value > array_value;
+			lightweight_vector<value> array_value;
 
 			union {
 				double real_value;
@@ -313,7 +295,7 @@ namespace gstd {
 			};
 		};
 
-		mutable body* data;
+		mutable std::shared_ptr<body> data;
 	};
 
 	class script_engine;
@@ -421,7 +403,7 @@ namespace gstd {
 		script_type_manager* type_manager;
 
 		//íÜä‘ÉRÅ[Éh
-		enum command_kind : uint8_t {
+		enum class command_kind : uint8_t {
 			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, pc_call, pc_call_and_push_result, pc_case_begin,
 			pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
 			pc_compare_le, pc_compare_ne, pc_dup, pc_dup2,
@@ -465,7 +447,7 @@ namespace gstd {
 			code(int the_line, command_kind the_command, value& the_data) : line(the_line), command(the_command), data(the_data) {}
 		};
 
-		enum block_kind : uint8_t {
+		enum class block_kind : uint8_t {
 			bk_normal, bk_loop, bk_sub, bk_function, bk_microthread
 		};
 
