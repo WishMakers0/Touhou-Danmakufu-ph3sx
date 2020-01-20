@@ -77,9 +77,6 @@
     <ClCompile Include="source\GcLib\directx\ElfreinaMesh.cpp">
       <Filter>source\GcLib\directx</Filter>
     </ClCompile>
-    <ClCompile Include="source\GcLib\directx\EventScript.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
     <ClCompile Include="source\GcLib\directx\MetasequoiaMesh.cpp">
       <Filter>source\GcLib\directx</Filter>
     </ClCompile>
@@ -251,9 +248,6 @@
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\directx\ElfreinaMesh.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\EventScript.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\directx\HLSL.hpp">
