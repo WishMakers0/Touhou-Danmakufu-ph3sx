@@ -108,7 +108,7 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 
 	//Write the files and record their information.
 	for (auto itr = listEntry_.begin(); itr != listEntry_.end(); itr++) {
-		ArchiveFileEntry* entry = *itr;
+		ArchiveFileEntry::ptr entry = *itr;
 
 		std::ifstream file;
 		file.open(entry->name, std::ios::binary);
@@ -164,7 +164,7 @@ bool FileArchiver::CreateArchiveFile(std::wstring path) {
 		size_t totalSize = 0U;
 
 		for (auto itr = listEntry_.begin(); itr != listEntry_.end(); itr++) {
-			ArchiveFileEntry* entry = *itr;
+			ArchiveFileEntry::ptr entry = *itr;
 
 			std::wstring name = entry->name;
 			entry->name = PathProperty::GetFileName(name);
@@ -330,7 +330,7 @@ bool ArchiveFile::Open() {
 		file_.clear(std::ios::eofbit);
 
 		for (size_t iEntry = 0U; iEntry < header.entryCount; iEntry++) {
-			ArchiveFileEntry* entry = new ArchiveFileEntry();
+			ArchiveFileEntry::ptr entry = std::make_shared<ArchiveFileEntry>();
 
 			uint32_t sizeEntry = 0U; 
 			bufInfo.read((char*)&sizeEntry, sizeof(uint32_t));
@@ -340,7 +340,7 @@ bool ArchiveFile::Open() {
 
 			//std::string key = entry->GetDirectory() + entry->GetName();
 			//mapEntry_[key] = entry;
-			mapEntry_.insert(std::pair<std::wstring, ArchiveFileEntry*>(entry->name, entry));
+			mapEntry_.insert(std::pair<std::wstring, ArchiveFileEntry::ptr>(entry->name, entry));
 		}
 
 		res = true;
@@ -353,28 +353,23 @@ bool ArchiveFile::Open() {
 }
 void ArchiveFile::Close() {
 	file_.close();
-
-	for (auto& itr : mapEntry_) {
-		if (itr.second) delete itr.second;
-		itr.second = nullptr;
-	}
 	mapEntry_.clear();
 }
 std::set<std::wstring> ArchiveFile::GetKeyList() {
 	std::set<std::wstring> res;
 	for (auto itr = mapEntry_.begin(); itr != mapEntry_.end(); itr++) {
-		ArchiveFileEntry* entry = itr->second;
+		ArchiveFileEntry::ptr entry = itr->second;
 		//std::wstring key = entry->GetDirectory() + entry->GetName();
 		res.insert(entry->name);
 	}
 	return res;
 }
-std::vector<ArchiveFileEntry*> ArchiveFile::GetEntryList(std::wstring name) {
-	std::vector<ArchiveFileEntry*> res;
+std::vector<ArchiveFileEntry::ptr> ArchiveFile::GetEntryList(std::wstring name) {
+	std::vector<ArchiveFileEntry::ptr> res;
 	if (!IsExists(name))return res;
 
 	for (auto itrPair = mapEntry_.equal_range(name); itrPair.first != itrPair.second; itrPair.first++) {
-		ArchiveFileEntry* entry = (itrPair.first)->second;
+		ArchiveFileEntry::ptr entry = (itrPair.first)->second;
 		res.push_back(entry);
 	}
 
@@ -383,7 +378,7 @@ std::vector<ArchiveFileEntry*> ArchiveFile::GetEntryList(std::wstring name) {
 bool ArchiveFile::IsExists(std::wstring name) {
 	return mapEntry_.find(name) != mapEntry_.end();
 }
-ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry) {
+ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry::ptr entry) {
 	ref_count_ptr<ByteBuffer> res;
 
 	std::ifstream file;
@@ -428,6 +423,17 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry* entry
 
 			break;
 		}
+		}
+
+		if (false) {
+			std::wstring nameTmp = entry->name;
+			std::wstring pathTest = PathProperty::GetModuleDirectory() +
+				StringUtility::Format(L"temp\\arch_buf_%d_%s", entry->sizeFull, nameTmp.c_str());
+			File file(pathTest);
+			file.CreateDirectory();
+			file.Create();
+			file.Write(res->GetPointer(), entry->sizeFull);
+			file.Close();
 		}
 	}
 	return res;
