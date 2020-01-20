@@ -187,8 +187,8 @@ namespace gstd {
 		std::map<std::wstring, ref_count_ptr<ArchiveFile>> mapArchiveFile_;
 		std::map<std::wstring, ref_count_ptr<ByteBuffer>> mapByteBuffer_;
 
-		ref_count_ptr<ByteBuffer> _GetByteBuffer(ArchiveFileEntry* entry);
-		void _ReleaseByteBuffer(ArchiveFileEntry* entry);
+		ref_count_ptr<ByteBuffer> _GetByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
+		void _ReleaseByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
 	public:
 		static FileManager* GetBase() { return thisBase_; }
 		FileManager();
@@ -267,12 +267,12 @@ namespace gstd {
 
 		FILETYPE type_;
 		ref_count_ptr<File> file_;
-		ArchiveFileEntry* entry_;
+		std::shared_ptr<ArchiveFileEntry> entry_;
 		ref_count_ptr<ByteBuffer> buffer_;
 		int offset_;
 
 	public:
-		ManagedFileReader(ref_count_ptr<File> file, ArchiveFileEntry* entry);
+		ManagedFileReader(ref_count_ptr<File> file, std::shared_ptr<ArchiveFileEntry> entry);
 		~ManagedFileReader();
 
 		virtual bool Open();
@@ -286,6 +286,8 @@ namespace gstd {
 
 		virtual bool IsArchived();
 		virtual bool IsCompressed();
+
+		virtual ref_count_ptr<ByteBuffer> GetBuffer() { return buffer_; }
 	};
 
 

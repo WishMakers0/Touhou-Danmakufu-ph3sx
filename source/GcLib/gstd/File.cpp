@@ -377,7 +377,7 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 	else {
 		//Cannot find a physical file, search in the archive entries.
 
-		std::vector<ArchiveFileEntry*> listEntry;
+		std::vector<ArchiveFileEntry::ptr> listEntry;
 
 		std::map<int, std::wstring> mapArchivePath;
 		std::wstring key = PathProperty::GetFileName(path);
@@ -388,18 +388,18 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 			if (!fileArchive->IsExists(key))continue;
 
 			//ref_count_ptr<File> file = new File(pathArchive);
-			std::vector<ArchiveFileEntry*> list = fileArchive->GetEntryList(key);
+			std::vector<ArchiveFileEntry::ptr> list = fileArchive->GetEntryList(key);
 			listEntry.insert(listEntry.end(), list.begin(), list.end());
 			for (int iEntry = 0; iEntry < list.size(); iEntry++) {
-				ArchiveFileEntry* entry = list[iEntry];
-				int addr = (int)entry;
+				ArchiveFileEntry::ptr entry = list[iEntry];
+				int addr = (int)entry.get();
 				mapArchivePath[addr] = pathArchive;
 			}
 		}
 
 		if (listEntry.size() == 1) {
-			ArchiveFileEntry* entry = listEntry[0];
-			int addr = (int)entry;
+			ArchiveFileEntry::ptr entry = listEntry[0];
+			int addr = (int)entry.get();
 			std::wstring pathArchive = mapArchivePath[addr];
 			ref_count_ptr<File> file = new File(pathArchive);
 			res = new ManagedFileReader(file, entry);
@@ -410,11 +410,11 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 
 			std::wstring target = StringUtility::ReplaceAll(path, module, L"");
 			for (int iEntry = 0; iEntry < listEntry.size(); iEntry++) {
-				ArchiveFileEntry* entry = listEntry[iEntry];
+				ArchiveFileEntry::ptr entry = listEntry[iEntry];
 				std::wstring dir = entry->directory;
 				if (target.find(dir) == std::wstring::npos)continue;
 
-				int addr = (int)entry;
+				int addr = (int)entry.get();
 				std::wstring pathArchive = mapArchivePath[addr];
 				ref_count_ptr<File> file = new File(pathArchive);
 				res = new ManagedFileReader(file, entry);
@@ -427,7 +427,7 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 	return res;
 }
 
-ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry* entry) {
+ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entry) {
 	ref_count_ptr<ByteBuffer> res = NULL;
 	try {
 		Lock lock(lock_);
@@ -444,7 +444,7 @@ ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry* entry) {
 
 	return res;
 }
-void FileManager::_ReleaseByteBuffer(ArchiveFileEntry* entry) {
+void FileManager::_ReleaseByteBuffer(ArchiveFileEntry::ptr entry) {
 	{
 		Lock lock(lock_);
 		std::wstring key = entry->directory + entry->name;
@@ -579,7 +579,7 @@ void FileManager::LoadThread::RemoveListener(FileManager::LoadThreadListener* li
 /**********************************************************
 //ManagedFileReader
 **********************************************************/
-ManagedFileReader::ManagedFileReader(ref_count_ptr<File> file, gstd::ArchiveFileEntry* entry) {
+ManagedFileReader::ManagedFileReader(ref_count_ptr<File> file, std::shared_ptr<ArchiveFileEntry> entry) {
 	offset_ = 0;
 	file_ = file;
 	entry_ = entry;
@@ -647,7 +647,7 @@ BOOL ManagedFileReader::SetFilePointerBegin() {
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		if (buffer_ != NULL) {
-			offset_ = buffer_->GetSize();
+			offset_ = 0;
 			res = TRUE;
 		}
 	}
