@@ -549,6 +549,8 @@ function const stgFunction[] =
 	{ "EV_PLAYER_SPELL", constant<StgStageScript::EV_PLAYER_SPELL>::func, 0 },
 	{ "EV_PLAYER_REBIRTH", constant<StgStageScript::EV_PLAYER_REBIRTH>::func, 0 },
 
+	{ "REBIRTH_DEFAULT", constant<StgPlayerObject::REBIRTH_DEFAULT>::func, 0 },
+
 	{ "EV_PAUSE_ENTER", constant<StgStageScript::EV_PAUSE_ENTER>::func, 0 },
 	{ "EV_PAUSE_LEAVE", constant<StgStageScript::EV_PAUSE_LEAVE>::func, 0 },
 
