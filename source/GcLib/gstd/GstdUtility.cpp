@@ -304,12 +304,12 @@ std::wstring StringUtility::Format(wchar_t* str, ...) {
 	wchar_t buf[256];
 	va_list	vl;
 	va_start(vl, str);
-	if (_vsnwprintf(buf, sizeof(buf) / 2, str, vl) < 0) {	//バッファを超えていた場合、動的に確保する
+	if (_vsnwprintf(buf, sizeof(buf) / 2U - 1U, str, vl) < 0) {	//バッファを超えていた場合、動的に確保する
 		int size = sizeof(buf);
 		while (true) {
-			size *= 2;
+			size *= 2U;
 			wchar_t* nBuf = new wchar_t[size];
-			if (_vsnwprintf(nBuf, size / 2, str, vl) >= 0) {
+			if (_vsnwprintf(nBuf, size / 2U - 1U, str, vl) >= 0) {
 				res = nBuf;
 				delete[] nBuf;
 				break;
