@@ -1676,14 +1676,13 @@ gstd::value ScriptCommonData::_ReadRecord(gstd::ByteBuffer &buffer) {
 	script_type_manager* scriptTypeManager = ScriptClientBase::GetDefaultScriptTypeManager();
 	gstd::value res;
 
-	type_data::type_kind kind = (type_data::type_kind)buffer.ReadInteger();
-	/*
+	type_data::type_kind kind;
+	//kind = (type_data::type_kind)buffer.ReadInteger();
 	{
 		uint8_t _kind;
 		buffer.Read(&_kind, sizeof(uint8_t));
 		kind = (type_data::type_kind)_kind;
 	}
-	*/
 
 	if (kind == type_data::type_kind::tk_real) {
 		double data = buffer.ReadDouble();
@@ -1728,13 +1727,11 @@ void ScriptCommonData::WriteRecord(gstd::RecordBuffer& record) {
 void ScriptCommonData::_WriteRecord(gstd::ByteBuffer &buffer, gstd::value& comValue) {
 	type_data::type_kind kind = comValue.get_type()->get_kind();
 
-	/*
 	{
 		uint8_t _kind = (uint8_t)kind;
 		buffer.Write(&_kind, sizeof(uint8_t));
 	}
-	*/
-	buffer.WriteInteger((uint8_t)kind);
+	//buffer.WriteInteger((uint8_t)kind);
 
 	if (kind == type_data::type_kind::tk_real) {
 		buffer.WriteDouble(comValue.as_real());
