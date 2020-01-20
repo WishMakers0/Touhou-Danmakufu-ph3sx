@@ -1280,9 +1280,7 @@ bool DxTextRenderer::AddFontFromFile(std::wstring path) {
 	DWORD  count = 0;
 	HANDLE handle = ::AddFontMemResourceEx(buf.GetPointer(), size, NULL, &count);
 
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-
-	Logger::WriteTop("Font loaded " + converter.to_bytes(path));
+	Logger::WriteTop(L"Font loaded: " + path);
 	return handle != 0;
 }
 
