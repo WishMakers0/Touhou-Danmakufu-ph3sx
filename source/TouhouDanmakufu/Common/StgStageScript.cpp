@@ -365,6 +365,10 @@ function const stgFunction[] =
 	{ "ObjMove_GetY", StgStageScript::Func_ObjMove_GetY, 1 },
 	{ "ObjMove_GetSpeed", StgStageScript::Func_ObjMove_GetSpeed, 1 },
 	{ "ObjMove_GetAngle", StgStageScript::Func_ObjMove_GetAngle, 1 },
+	{ "ObjMove_GetSpeedX", StgStageScript::Func_ObjMove_GetSpeedX, 1 },
+	{ "ObjMove_SetSpeedX", StgStageScript::Func_ObjMove_SetSpeedX, 2 },
+	{ "ObjMove_GetSpeedY", StgStageScript::Func_ObjMove_GetSpeedY, 1 },
+	{ "ObjMove_SetSpeedY", StgStageScript::Func_ObjMove_SetSpeedY, 2 },
 
 	//STG共通関数：敵オブジェクト操作
 	{ "ObjEnemy_Create", StgStageScript::Func_ObjEnemy_Create, 1 },
@@ -385,6 +389,7 @@ function const stgFunction[] =
 	{ "ObjEnemyBossScene_GetInfo", StgStageScript::Func_ObjEnemyBossScene_GetInfo, 2 },
 	{ "ObjEnemyBossScene_SetSpellTimer", StgStageScript::Func_ObjEnemyBossScene_SetSpellTimer, 2 },
 	{ "ObjEnemyBossScene_StartSpell", StgStageScript::Func_ObjEnemyBossScene_StartSpell, 1 },
+	{ "ObjEnemyBossScene_EndSpell", StgStageScript::Func_ObjEnemyBossScene_EndSpell, 1 },
 
 	//STG共通関数：弾オブジェクト操作
 	{ "ObjShot_Create", StgStageScript::Func_ObjShot_Create, 1 },
@@ -535,6 +540,7 @@ function const stgFunction[] =
 
 	{ "EV_TIMEOUT", constant<StgStageScript::EV_TIMEOUT>::func, 0 },
 	{ "EV_START_BOSS_SPELL", constant<StgStageScript::EV_START_BOSS_SPELL>::func, 0 },
+	{ "EV_END_BOSS_SPELL", constant<StgStageScript::EV_END_BOSS_SPELL>::func, 0 },
 	{ "EV_GAIN_SPELL", constant<StgStageScript::EV_GAIN_SPELL>::func, 0 },
 	{ "EV_START_BOSS_STEP", constant<StgStageScript::EV_START_BOSS_STEP>::func, 0 },
 	{ "EV_END_BOSS_STEP", constant<StgStageScript::EV_END_BOSS_STEP>::func, 0 },
@@ -3139,8 +3145,19 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_StartSpell(gstd::script_machi
 	if (sceneData == nullptr)return value();
 
 	sceneData->SetSpellCard(true);
-	ref_count_ptr<ScriptManager> scriptManager = script->scriptManager_;
-	scriptManager->RequestEventAll(EV_START_BOSS_SPELL);
+	script->scriptManager_->RequestEventAll(EV_START_BOSS_SPELL);
+	return value();
+}
+gstd::value StgStageScript::Func_ObjEnemyBossScene_EndSpell(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	StgStageScript* script = (StgStageScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	StgEnemyBossSceneObject* obj = dynamic_cast<StgEnemyBossSceneObject*>(script->GetObjectPointer(id));
+	if (obj == nullptr)return value();
+	ref_count_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
+	if (sceneData == nullptr)return value();
+
+	sceneData->SetSpellCard(false);
+	script->scriptManager_->RequestEventAll(EV_END_BOSS_SPELL);
 	return value();
 }
 

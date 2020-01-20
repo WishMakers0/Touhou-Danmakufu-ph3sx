@@ -127,6 +127,7 @@ public:
 
 		EV_TIMEOUT,//スペルタイムアウト
 		EV_START_BOSS_SPELL,//ボススペルカード開始
+		EV_END_BOSS_SPELL,//ボススペルカード開始
 		EV_GAIN_SPELL,//スペルカード取得
 		EV_START_BOSS_STEP,//スペルカード開始
 		EV_END_BOSS_STEP,//スペルカード終了
@@ -317,6 +318,7 @@ public:
 	static gstd::value Func_ObjEnemyBossScene_GetInfo(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemyBossScene_SetSpellTimer(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemyBossScene_StartSpell(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_ObjEnemyBossScene_EndSpell(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 	//STG共通関数：弾オブジェクト操作
 	static gstd::value Func_ObjShot_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
