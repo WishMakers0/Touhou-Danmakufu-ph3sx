@@ -25,8 +25,7 @@ void Logger::Write(std::string str) {
 	SYSTEMTIME systemTime;
 	GetLocalTime(&systemTime);
 
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	this->_WriteChild(systemTime, converter.from_bytes(str));
+	this->_WriteChild(systemTime, StringUtility::ConvertMultiToWide(str));
 }
 void Logger::Write(std::wstring str) {
 	SYSTEMTIME systemTime;
