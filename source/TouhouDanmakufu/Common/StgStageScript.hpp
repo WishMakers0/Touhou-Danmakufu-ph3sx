@@ -211,6 +211,7 @@ public:
 	static gstd::value Func_GetPlayerItemScope(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_SetPlayerStateEndEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_SetPlayerShootdownEventEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
+	static gstd::value Func_SetPlayerRebirthPosition(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
 	//STGã§í ä÷êîÅFìG

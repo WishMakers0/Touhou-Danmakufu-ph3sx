@@ -286,6 +286,7 @@ function const stgFunction[] =
 	{ "GetPlayerItemScope", StgStageScript::Func_GetPlayerItemScope, 0 },
 	{ "SetPlayerStateEndEnable", StgStageScript::Func_SetPlayerStateEndEnable, 1 },
 	{ "SetPlayerShootdownEventEnable", StgStageScript::Func_SetPlayerShootdownEventEnable, 1 },
+	{ "SetPlayerRebirthPosition", StgStageScript::Func_SetPlayerRebirthPosition, 2 },
 
 	//STG‹¤’ÊŠÖ”F“G
 	{ "GetEnemyBossSceneObjectID", StgStageScript::Func_GetEnemyBossSceneObjectID, 0 },
@@ -958,6 +959,18 @@ gstd::value StgStageScript::Func_SetPlayerShootdownEventEnable(gstd::script_mach
 
 	bool bEnable = argv[0].as_boolean();
 	obj->SetEnableShootdownEvent(bEnable);
+
+	return value();
+}
+gstd::value StgStageScript::Func_SetPlayerRebirthPosition(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	if (obj == nullptr)return value();
+
+	double x = argv[0].as_real();
+	double y = argv[1].as_real();
+	obj->SetRebirthPosition(x, y);
 
 	return value();
 }
