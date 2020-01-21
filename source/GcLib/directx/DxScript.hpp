@@ -384,8 +384,11 @@ namespace directx {
 		D3DXVECTOR2 center_;//ç¿ïWïœä∑ÇÃíÜêS
 		bool bAutoCenter_;
 
-		void _UpdateRenderer();
+		D3DXVECTOR2 angX_;
+		D3DXVECTOR2 angY_;
+		D3DXVECTOR2 angZ_;
 
+		void _UpdateRenderer();
 	public:
 		DxScriptTextObject();
 		virtual void Render();
@@ -422,6 +425,33 @@ namespace directx {
 		virtual void SetColor(int r, int g, int b);
 		void SetVertexColor(D3DCOLOR color) { text_.SetVertexColor(color); }
 		virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+
+		virtual void SetAngleX(double x) {
+			x = gstd::Math::DegreeToRadian(x);
+			if (angle_.x != x) {
+				angle_.x = x;
+				angX_ = D3DXVECTOR2(cosf(-x), sinf(-x));
+			}
+		}
+		virtual void SetAngleY(double y) {
+			y = gstd::Math::DegreeToRadian(y);
+			if (angle_.y != y) {
+				angle_.y = y;
+				angY_ = D3DXVECTOR2(cosf(-y), sinf(-y));
+			}
+		}
+		virtual void SetAngleZ(double z) {
+			z = gstd::Math::DegreeToRadian(z);
+			if (angle_.z != z) {
+				angle_.z = z;
+				angZ_ = D3DXVECTOR2(cosf(-z), sinf(-z));
+			}
+		}
+		virtual void SetAngle(D3DXVECTOR3 angle) {
+			SetAngleX(angle.x);
+			SetAngleY(angle.y);
+			SetAngleZ(angle.z);
+		}
 	};
 
 	/**********************************************************

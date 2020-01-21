@@ -548,6 +548,10 @@ DxScriptTextObject::DxScriptTextObject() {
 	bChange_ = true;
 	bAutoCenter_ = true;
 	center_ = D3DXVECTOR2(0, 0);
+
+	angX_ = D3DXVECTOR2(1, 0);
+	angY_ = D3DXVECTOR2(1, 0);
+	angZ_ = D3DXVECTOR2(1, 0);
 }
 void DxScriptTextObject::Render() {
 	//ƒtƒHƒO‚ð‰ðœ‚·‚é
@@ -566,7 +570,7 @@ void DxScriptTextObject::Render() {
 	objRender_->SetVertexColor(text_.GetVertexColor());
 	objRender_->SetTransCenter(center_);
 	objRender_->SetAutoCenter(bAutoCenter_);
-	objRender_->Render();
+	objRender_->Render(angX_, angY_, angZ_);
 	bChange_ = false;
 
 	if (bEnableFog)

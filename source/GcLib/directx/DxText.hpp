@@ -310,8 +310,8 @@ namespace directx {
 		};
 	protected:
 		POINT position_;//ˆÚ“®æÀ•W
-		D3DXVECTOR3 angle_;//‰ñ“]Šp“x
 		D3DXVECTOR3 scale_;//Šg‘å—¦
+		D3DXVECTOR3 angle_;
 		D3DCOLOR color_;
 		std::list<ObjectData> listData_;
 		D3DXVECTOR2 center_;//À•W•ÏŠ·‚Ì’†S
@@ -319,11 +319,13 @@ namespace directx {
 		bool bPermitCamera_;
 		gstd::ref_count_ptr<Shader> shader_;
 
+		gstd::ByteBuffer vertCopy_;
 	public:
 		DxTextRenderObject();
 		virtual ~DxTextRenderObject() {}
 
 		void Render();
+		void Render(D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ);
 		void AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj);
 		void AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias);
 

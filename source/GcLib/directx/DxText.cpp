@@ -684,7 +684,7 @@ double DxTextToken::GetReal() {
 }
 bool DxTextToken::GetBoolean() {
 	bool res = false;
-	if (type_ == TK_REAL && type_ == TK_INT) {
+	if (type_ == TK_REAL || type_ == TK_INT) {
 		res = GetReal() == 1;
 	}
 	else {
@@ -707,40 +707,31 @@ DxTextRenderObject::DxTextRenderObject() {
 	position_.x = 0;
 	position_.y = 0;
 
-	angle_ = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	scale_ = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 	center_ = D3DXVECTOR2(0.0f, 0.0f);
 	bAutoCenter_ = true;
 	bPermitCamera_ = true;
 }
 void DxTextRenderObject::Render() {
-	POINT pos = position_;
+	DxTextRenderObject::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
+}
+void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
+	D3DXVECTOR3 pos = D3DXVECTOR3(position_.x, position_.y, 1.0f);
 
-	bool bAngle = angle_.x != 0.0f || angle_.y != 0.0f || angle_.z != 0.0f;
-	bool bScale = scale_.x != 1.0f || scale_.y != 1.0f || scale_.z != 1.0f;
-	bool bMatrix = bAngle || bScale;
-	D3DXMATRIX mat;
-	D3DXMatrixIdentity(&mat);
-	if (bScale) {
-		D3DXMATRIX matScale;
-		D3DXMatrixScaling(&matScale, scale_.x, scale_.y, scale_.z);
-		mat = mat * matScale;
-	}
-	if (bAngle) {
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationYawPitchRoll(&matRot, angle_.y, angle_.x, angle_.z);
-		mat = mat * matRot;
-	}
+	auto camera = DirectGraphics::GetBase()->GetCamera2D();
+	bool bCamera = camera->IsEnable() && bPermitCamera_;
+
+	D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(pos, scale_, angX, angY, angZ,
+			bCamera ? &DirectGraphics::GetBase()->GetCamera2D()->GetMatrix() : nullptr);
 
 	D3DXVECTOR2 center = center_;
-	if (bMatrix && bAutoCenter_) {
+	if (bAutoCenter_) {
 		RECT rect;
 		ZeroMemory(&rect, sizeof(RECT));
-		std::list<ObjectData >::iterator itr = listData_.begin();
+		std::list<ObjectData>::iterator itr = listData_.begin();
 		for (; itr != listData_.end(); itr++) {
 			ObjectData obj = *itr;
-			gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
-			RECT_D rcDest = sprite->GetDestinationRect();
+			RECT_D rcDest = obj.sprite->GetDestinationRect();
 			rect.left = min(rect.left, rcDest.left);
 			rect.top = min(rect.top, rcDest.top);
 			rect.right = max(rect.right, rcDest.right);
@@ -750,27 +741,29 @@ void DxTextRenderObject::Render() {
 		center.y = (rect.bottom + rect.top) / 2;
 	}
 
-	std::list<ObjectData >::iterator itr = listData_.begin();
+	std::list<ObjectData>::iterator itr = listData_.begin();
 	for (; itr != listData_.end(); itr++) {
 		ObjectData obj = *itr;
 		POINT bias = obj.bias;
 		gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
 		sprite->SetColorRGB(color_);
 		sprite->SetAlpha(ColorAccess::GetColorA(color_));
-		RECT_D rcDestCopy = sprite->GetDestinationRect();
+
+		vertCopy_.Copy(*sprite->GetVertexPointer());
 
 		//À•W•ÏŠ·
-		if (bMatrix) {
+		{
 			int countVertex = sprite->GetVertexCount();
 			for (int iVert = 0; iVert < countVertex; iVert++) {
 				VERTEX_TLX* vert = sprite->GetVertex(iVert);
 				vert->position.x -= center.x;
 				vert->position.y -= center.y;
-				D3DXVec3TransformCoord((D3DXVECTOR3*)&vert->position, (D3DXVECTOR3*)&vert->position, &mat);
-				vert->position.x += center.x + pos.x + bias.x;
-				vert->position.y += center.y + pos.y + bias.y;
+				D3DXVec3TransformCoord((D3DXVECTOR3*)&vert->position, (D3DXVECTOR3*)&vert->position, &matWorld);
+				vert->position.x += center.x + bias.x;
+				vert->position.y += center.y + bias.y;
 			}
 		}
+		/*
 		else {
 			RECT_D tRect = sprite->GetDestinationRect();
 			tRect.left += pos.x + bias.x;
@@ -779,11 +772,16 @@ void DxTextRenderObject::Render() {
 			tRect.bottom += pos.y + bias.y;
 			sprite->SetDestinationRect(tRect);
 		}
+		*/
 
-		sprite->SetPermitCamera(bPermitCamera_);
+		sprite->SetPermitCamera(false);
 		sprite->SetShader(shader_);
+		//sprite->SetPosition(pos);
+		//sprite->SetScale(scale_);
+		sprite->SetDisableMatrixTransformation(true);
 		sprite->Render();
-		sprite->SetDestinationRect(rcDestCopy);
+
+		sprite->GetVertexPointer()->Copy(vertCopy_);
 	}
 }
 void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj) {

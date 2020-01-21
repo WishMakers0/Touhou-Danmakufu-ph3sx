@@ -159,6 +159,8 @@ namespace directx {
 		bool bCoordinate2D_;//2Dç¿ïWéwíË
 		gstd::ref_count_ptr<Shader> shader_;
 
+		bool disableMatrixTransform_;
+
 		virtual void _ReleaseVertexBuffer();
 		virtual void _RestoreVertexBuffer();
 		virtual void _CreateVertexDeclaration() {}
@@ -217,6 +219,8 @@ namespace directx {
 
 		bool IsCoordinate2D() { return bCoordinate2D_; }
 		void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
+
+		void SetDisableMatrixTransformation(bool b) { disableMatrixTransform_ = b; }
 
 		void SetFilteringMin(D3DTEXTUREFILTERTYPE filter) { filterMin_ = filter; }
 		void SetFilteringMag(D3DTEXTUREFILTERTYPE filter) { filterMag_ = filter; }

@@ -174,6 +174,8 @@ RenderObject::RenderObject() {
 	filterMip_ = D3DTEXF_NONE;
 
 	modeCulling_ = D3DCULL_NONE;
+
+	disableMatrixTransform_ = false;
 }
 RenderObject::~RenderObject() {
 	_ReleaseVertexBuffer();
@@ -666,14 +668,20 @@ void RenderObjectTLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 		}
 		*/
 
-		D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_, 
-			angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
+		//TODO: Copy these to the other types of render objects.
+		D3DXMATRIX matWorld; 
+		if (!disableMatrixTransform_) {
+			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
+				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
+		}
+
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
 			int pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
 			D3DXVECTOR4* vPos = &vert->position;
 
-			D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
+			if (!disableMatrixTransform_)
+				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
 		}
 		
 		{
