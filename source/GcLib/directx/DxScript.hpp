@@ -401,7 +401,7 @@ namespace directx {
 		int GetTotalHeight();
 
 		void SetFontType(std::wstring type) { text_.SetFontType(type.c_str()); bChange_ = true; }
-		void SetFontSize(int size) { text_.SetFontSize(size); bChange_ = true; }
+		void SetFontSize(int size) { text_.SetFontSize(min(size, 3000)); bChange_ = true; }
 		void SetFontBold(bool bBold) { text_.SetFontBold(bBold); }
 		void SetFontItalic(bool bItalic) { text_.SetFontItalic(bItalic); bChange_ = true; }
 		void SetFontUnderLine(bool bLine) { text_.SetFontUnderLine(bLine); bChange_ = true; }

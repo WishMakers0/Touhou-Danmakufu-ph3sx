@@ -78,7 +78,7 @@ bool ElfreinaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader
 				}
 
 				int iFace = 0;
-				std::vector<short>& indexVert = mesh_[iMesh]->vertexIndices_;
+				std::vector<uint16_t>& indexVert = mesh_[iMesh]->vertexIndices_;
 				int countFace = mesh_[iMesh]->vertexIndices_.size() / 3;
 				for (iFace = 0; iFace < countFace; iFace++) {
 					log = L"  vert ";

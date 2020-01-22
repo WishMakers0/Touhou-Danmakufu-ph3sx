@@ -757,7 +757,7 @@ void RenderObjectTLX::SetVertexPosition(int index, float x, float y, float z, fl
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex->position.x = x + bias;
 	vertex->position.y = y + bias;
 	vertex->position.z = z;

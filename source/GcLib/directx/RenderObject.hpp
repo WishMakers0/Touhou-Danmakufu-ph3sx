@@ -138,7 +138,7 @@ namespace directx {
 		D3DPRIMITIVETYPE typePrimitive_;//
 		int strideVertexStreamZero_;//1頂点のサイズ
 		gstd::ByteBuffer vertex_;//頂点
-		std::vector<short> vertexIndices_;
+		std::vector<uint16_t> vertexIndices_;
 		std::vector<gstd::ref_count_ptr<Texture> > texture_;//テクスチャ
 		D3DXVECTOR3 posWeightCenter_;//重心
 
@@ -201,7 +201,7 @@ namespace directx {
 			ZeroMemory(vertex_.GetPointer(), vertex_.GetSize()); 
 		}
 		virtual int GetVertexCount() { return vertex_.GetSize() / strideVertexStreamZero_; }
-		void SetVertexIndicies(std::vector<short>& indecies) { vertexIndices_ = indecies; }
+		void SetVertexIndicies(std::vector<uint16_t>& indecies) { vertexIndices_ = indecies; }
 		gstd::ByteBuffer* GetVertexPointer() { return &vertex_; }
 
 		//描画用設定
