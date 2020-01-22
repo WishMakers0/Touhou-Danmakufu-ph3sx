@@ -48,12 +48,16 @@ namespace directx {
 		D3DCOLOR GetBorderColor() { return colorBorder_; }
 	};
 
+	struct DxCharPointer {
+		size_t x, y, w, h;
+	};
+
 	/**********************************************************
 	//DxChar
 	//文字1文字のテクスチャ
 	**********************************************************/
 	class DxChar {
-		gstd::ref_count_ptr<Texture> texture_;
+		//gstd::ref_count_ptr<Texture> texture_;
 		int code_;
 		DxFont font_;
 
@@ -62,8 +66,8 @@ namespace directx {
 	public:
 		DxChar();
 		virtual ~DxChar();
-		bool Create(int code, gstd::Font& winFont, DxFont& dxFont);
-		gstd::ref_count_ptr<Texture> GetTexture() { return texture_; }
+		bool Create(int code, gstd::Font& winFont, DxFont& dxFont, DxCharCache* cache, DxCharPointer* charPointer);
+		//gstd::ref_count_ptr<Texture> GetTexture() { return texture_; }
 		int GetWidth() { return width_; }
 		int GetHeight() { return height_; }
 		LOGFONT GetInfo() { return font_.GetLogFont(); }
@@ -105,12 +109,27 @@ namespace directx {
 	};
 	class DxCharCache {
 		friend DxTextRenderer;
+		friend DxChar;
+	public:
+		enum {
+			CACHE_MAX = 1024,
+			MAX_TEXTURE_WIDTH = 8192,
+			MAX_TEXTURE_HEIGHT = 8192,
+		};
+
+		struct CharEntry {
+			gstd::ref_count_ptr<DxChar> dxChar;
+			DxCharPointer pChar;
+		};
 	private:
-		int sizeMax_;
 		int countPri_;
-		std::map<DxCharCacheKey, gstd::ref_count_ptr<DxChar> > mapCache_;
-		std::map<int, DxCharCacheKey > mapPriKey_;
-		std::map<DxCharCacheKey, int > mapKeyPri_;
+		std::map<DxCharCacheKey, gstd::ref_count_ptr<CharEntry>> mapCache_;
+		gstd::ref_count_ptr<Texture> fontSheet_;
+
+		std::vector<size_t> listAddedHeight_;
+		size_t lastAddX_;
+		size_t lastAddY_;
+		bool bLastTextureFilled_;
 
 		void _arrange();
 	public:
@@ -119,8 +138,8 @@ namespace directx {
 		void Clear();
 		int GetCacheCount() { return mapCache_.size(); }
 
-		gstd::ref_count_ptr<DxChar> GetChar(DxCharCacheKey& key);
-		void AddChar(DxCharCacheKey& key, gstd::ref_count_ptr<DxChar> value);
+		gstd::ref_count_ptr<CharEntry> GetChar(DxCharCacheKey& key);
+		gstd::ref_count_ptr<CharEntry> CreateChar(DxCharCacheKey& key, int code, gstd::Font& winFont, DxFont& dxFont);
 	};
 
 	/**********************************************************
@@ -303,45 +322,34 @@ namespace directx {
 
 	};
 
-	class DxTextRenderObject {
+	class DxTextRenderObject : public RenderObjectTLX {
 		struct ObjectData {
 			POINT bias;
-			gstd::ref_count_ptr<Sprite2D> sprite;
+			VERTEX_TLX verts[4];
 		};
 	protected:
-		POINT position_;//移動先座標
-		D3DXVECTOR3 scale_;//拡大率
-		D3DXVECTOR3 angle_;
-		D3DCOLOR color_;
 		std::list<ObjectData> listData_;
-		D3DXVECTOR2 center_;//座標変換の中心
+		std::vector<POINT*> vecBias_;
+		D3DXVECTOR2 center_;
+		D3DCOLOR color_;
 		bool bAutoCenter_;
-		bool bPermitCamera_;
-		gstd::ref_count_ptr<Shader> shader_;
-
-		gstd::ByteBuffer vertCopy_;
+		bool vertexInitialized_;
 	public:
 		DxTextRenderObject();
 		virtual ~DxTextRenderObject() {}
 
-		void Render();
-		void Render(D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ);
-		void AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj);
-		void AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias);
+		virtual void Render();
+		virtual void Render(D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ);
+		void AddVertexRectangle(VERTEX_TLX* verts);
+		void AddVertexRectangle(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias);
 
-		POINT GetPosition() { return position_; }
+		D3DXVECTOR3& GetPosition() { return position_; }
 		void SetPosition(POINT pos) { position_.x = pos.x; position_.y = pos.y; }
 		void SetPosition(int x, int y) { position_.x = x; position_.y = y; }
 		void SetVertexColor(D3DCOLOR color) { color_ = color; }
 
-		void SetAngle(D3DXVECTOR3& angle) { angle_ = angle; }
-		void SetScale(D3DXVECTOR3& scale) { scale_ = scale; }
 		void SetTransCenter(D3DXVECTOR2& center) { center_ = center; }
 		void SetAutoCenter(bool bAuto) { bAutoCenter_ = bAuto; }
-		void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
-
-		gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
-		void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
 	};
 
 	class DxTextRenderer {

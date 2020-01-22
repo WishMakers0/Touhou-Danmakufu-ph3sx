@@ -29,7 +29,7 @@ DxChar::DxChar() {
 }
 DxChar::~DxChar() {}
 
-bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
+bool DxChar::Create(int code, Font& winFont, DxFont& dxFont, DxCharCache* cache, DxCharPointer* charPointer) {
 	code_ = code;
 	font_ = dxFont;
 
@@ -46,7 +46,7 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 	TEXTMETRIC tm;
 	::GetTextMetrics(hDC, &tm);
 	GLYPHMETRICS gm;
-	CONST MAT2 mat = { {0,1},{0,0},{0,0},{0,1} };
+	CONST MAT2 mat = { { 0, 1 }, { 0, 0 }, { 0, 0 }, { 0, 1 } };
 	int uFormat = GGO_GRAY2_BITMAP;//typeBorder == DxFont::BORDER_FULL ? GGO_BITMAP : GGO_GRAY2_BITMAP;
 	if (dxFont.GetLogFont().lfHeight <= 12)
 		uFormat = GGO_BITMAP;
@@ -59,32 +59,12 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 	::ReleaseDC(NULL, hDC);
 
 	//テクスチャ作成
-	int tex_x = gm.gmCellIncX + widthBorder * 2;
-	int tex_y = tm.tmHeight + widthBorder * 2;
-	int widthTexture = 0;
-	int heightTexture = 0;
-	int num_x = 1;
-	while (TRUE) {
-		tex_x /= 2;
-		if (tex_x == 0) {
-			widthTexture = pow(2., num_x);
-			break;
-		}
-		num_x++;
-	}
-	int num_y = 1;
-	while (TRUE) {
-		tex_y /= 2;
-		if (tex_y == 0) {
-			heightTexture = pow(2., num_y);
-			break;
-		}
-		num_y++;
-	}
+	size_t tex_x = gm.gmCellIncX + widthBorder * 2;
+	size_t tex_y = tm.tmHeight + widthBorder * 2;
+
 	IDirect3DTexture9 *pTexture = NULL;
 	HRESULT hr = DirectGraphics::GetBase()->GetDevice()->CreateTexture(
-		widthTexture, heightTexture,
-		1, D3DPOOL_DEFAULT, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pTexture, NULL);
+		tex_x, tex_y, 1, D3DPOOL_DEFAULT, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pTexture, NULL);
 	if (FAILED(hr))return false;
 
 	D3DLOCKED_RECT lock;
@@ -226,11 +206,83 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 	}
 	pTexture->UnlockRect(0);
 
-	texture_ = new Texture();
-	texture_->SetTexture(pTexture);
+	//texture_ = new Texture();
+	//texture_->SetTexture(pTexture);
 
 	width_ = gm.gmCellIncX + widthBorder * 2;
 	height_ = tm.tmHeight + widthBorder * 2;
+
+	{
+		IDirect3DTexture9* cacheTexture = nullptr;
+
+		if (cache->bLastTextureFilled_ && 
+			(width_ <= DxCharCache::MAX_TEXTURE_WIDTH && height_ <= DxCharCache::MAX_TEXTURE_HEIGHT))
+		{
+			ref_count_ptr<Texture> newTexture = new Texture();
+
+			IDirect3DTexture9* pNewTex = nullptr;
+			HRESULT hr = DirectGraphics::GetBase()->GetDevice()->CreateTexture(
+				DxCharCache::MAX_TEXTURE_WIDTH, DxCharCache::MAX_TEXTURE_HEIGHT,
+				1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pNewTex, nullptr);
+
+			newTexture->SetTexture(pNewTex);
+			cache->fontSheet_ = newTexture;
+
+			cacheTexture = pNewTex;
+			cache->Clear();
+		}
+		else {
+			cacheTexture = cache->fontSheet_->GetD3DTexture();
+		}
+
+		{
+			DxCharPointer newPointer;
+			newPointer.x = cache->lastAddX_;
+			newPointer.y = cache->lastAddY_;
+			newPointer.w = tex_x;
+			newPointer.h = tex_y;
+
+			RECT rcLock = { newPointer.x, newPointer.y, newPointer.x + tex_x, newPointer.h + tex_y };
+
+			{
+				D3DLOCKED_RECT lock;
+				cacheTexture->LockRect(0, &lock, &rcLock, D3DLOCK_DISCARD);
+
+				D3DLOCKED_RECT lockChild;
+				pTexture->LockRect(0, &lockChild, nullptr, D3DLOCK_DISCARD);
+
+				memcpy(lock.pBits, lockChild.pBits, lockChild.Pitch * yMax);
+
+				cacheTexture->UnlockRect(0);
+				pTexture->UnlockRect(0);
+			}
+
+			cache->listAddedHeight_.push_back(tex_y);
+		}
+
+		{
+			cache->lastAddX_ += tex_x;
+			if (cache->lastAddX_ >= DxCharCache::MAX_TEXTURE_WIDTH) {
+				cache->lastAddX_ = 0U;
+
+				size_t maxH = 0U;
+				for (size_t& eHeight : cache->listAddedHeight_) {
+					maxH = max(maxH, eHeight);
+				}
+				cache->listAddedHeight_.clear();
+
+				cache->lastAddY_ += maxH;
+			}
+			if (cache->lastAddY_ >= DxCharCache::MAX_TEXTURE_HEIGHT) {
+				cache->bLastTextureFilled_ = true;
+				cache->lastAddX_ = 0U;
+				cache->lastAddY_ = 0U;
+				cache->listAddedHeight_.clear();
+			}
+		}
+	}
+
+	pTexture->Release();
 
 	return true;
 }
@@ -239,15 +291,18 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 //DxCharCache
 **********************************************************/
 DxCharCache::DxCharCache() {
-	sizeMax_ = 512;
 	countPri_ = 0;
+	lastAddX_ = 0;
+	lastAddY_ = 0;
+	bLastTextureFilled_ = true;
 }
 DxCharCache::~DxCharCache() {
 	Clear();
 }
 void DxCharCache::_arrange() {
 	countPri_ = 0;
-	std::map<int, DxCharCacheKey > mapPriKeyLast = mapPriKey_;
+	/*
+	std::map<int, DxCharCacheKey> mapPriKeyLast = mapPriKey_;
 	mapPriKey_.clear();
 	mapKeyPri_.clear();
 	std::map<int, DxCharCacheKey >::iterator itr;
@@ -260,17 +315,20 @@ void DxCharCache::_arrange() {
 
 		countPri_++;
 	}
+	*/
 }
 void DxCharCache::Clear() {
-	mapPriKey_.clear();
-	mapKeyPri_.clear();
+	//mapPriKey_.clear();
+	//mapKeyPri_.clear();
 	mapCache_.clear();
 }
-ref_count_ptr<DxChar> DxCharCache::GetChar(DxCharCacheKey& key) {
-	gstd::ref_count_ptr<DxChar> res;
-	bool bExist = mapCache_.find(key) != mapCache_.end();
+gstd::ref_count_ptr<DxCharCache::CharEntry> DxCharCache::GetChar(DxCharCacheKey& key) {
+	gstd::ref_count_ptr<CharEntry> res;
+
+	auto itr = mapCache_.find(key);
+	bool bExist = itr != mapCache_.end();
 	if (bExist) {
-		res = mapCache_[key];
+		res = (*itr).second;
 		/*
 				//キーの優先順位をトップにする
 				int tPri = mapKeyPri_[key];
@@ -291,12 +349,21 @@ ref_count_ptr<DxChar> DxCharCache::GetChar(DxCharCacheKey& key) {
 	return res;
 }
 
-void DxCharCache::AddChar(DxCharCacheKey& key, ref_count_ptr<DxChar> value) {
-	bool bExist = mapCache_.find(key) != mapCache_.end();
-	if (bExist)return;
-	mapCache_[key] = value;
+gstd::ref_count_ptr<DxCharCache::CharEntry> DxCharCache::CreateChar(DxCharCacheKey& key, int code, 
+	gstd::Font& winFont, DxFont& dxFont) 
+{
+	ref_count_ptr<DxCharCache::CharEntry> entry = new DxCharCache::CharEntry;
 
-	if (mapCache_.size() >= sizeMax_) {
+	ref_count_ptr<DxChar> value = new DxChar;
+	DxCharPointer charPointer;
+	value->Create(code, winFont, dxFont, this, &charPointer);
+
+	entry->dxChar = value;
+	entry->pChar = charPointer;
+
+	mapCache_[key] = entry;
+
+	if (mapCache_.size() >= DxCharCache::CACHE_MAX) {
 		mapCache_.clear();
 		/*
 				//優先度の低いキャッシュを削除
@@ -309,6 +376,8 @@ void DxCharCache::AddChar(DxCharCacheKey& key, ref_count_ptr<DxChar> value) {
 				mapPriKey_.erase(minPri);
 		*/
 	}
+
+	return entry;
 }
 
 
@@ -704,17 +773,160 @@ bool DxTextToken::GetBoolean() {
 
 //DxTextRenderObject
 DxTextRenderObject::DxTextRenderObject() {
-	position_.x = 0;
-	position_.y = 0;
-
-	scale_ = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
+	_SetTextureStageCount(1);
+	strideVertexStreamZero_ = sizeof(VERTEX_TLX);
+	
 	center_ = D3DXVECTOR2(0.0f, 0.0f);
 	bAutoCenter_ = true;
 	bPermitCamera_ = true;
+
+	vertexInitialized_ = false;
 }
 void DxTextRenderObject::Render() {
 	DxTextRenderObject::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
 }
+void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	ref_count_ptr<DxCamera2D> camera = graphics->GetCamera2D();
+	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+
+	IDirect3DDevice9* device = graphics->GetDevice();
+	ref_count_ptr<Texture>& texture = texture_[0];
+	if (texture != nullptr)
+		device->SetTexture(0, texture->GetD3DTexture());
+	else
+		device->SetTexture(0, nullptr);
+
+	device->SetSamplerState(0, D3DSAMP_MINFILTER, filterMin_);
+	device->SetSamplerState(0, D3DSAMP_MAGFILTER, filterMag_);
+	device->SetSamplerState(0, D3DSAMP_MIPFILTER, filterMip_);
+
+	device->SetFVF(VERTEX_TLX::fvf);
+
+	size_t countVertex = listData_.size() * 4U;
+	size_t countIndex = listData_.size() * 6U;
+
+	if (!vertexInitialized_) {
+		vertex_.SetSize(countVertex * strideVertexStreamZero_);
+		vecBias_.resize(listData_.size());
+		vertexIndices_.resize(countIndex);
+
+		size_t iVert = 0U;
+		for (auto itr = listData_.begin(); itr != listData_.end(); itr++) {
+			if (iVert > 10922U) break;	//65536 indices slot
+
+			ObjectData& obj = *itr;
+			/*
+			memcpy(vertTmp, obj.verts, sizeof(VERTEX_TLX) * 4U);
+			for (size_t i = 0U; i < 4U; ++i) {
+				vertTmp[i].position.x += obj.bias.x;
+				vertTmp[i].position.y += obj.bias.y;
+			}
+			*/
+			vecBias_[iVert] = &obj.bias;
+
+			{
+				size_t iIndex = iVert * 6U;
+				uint16_t iVertex = iVert * 4ui16;
+
+				memcpy((VERTEX_TLX*)vertex_.GetPointer() + iVertex, obj.verts, sizeof(VERTEX_TLX) * 4U);
+				
+				vertexIndices_[iIndex + 0] = iVertex + 0;
+				vertexIndices_[iIndex + 1] = iVertex + 1;
+				vertexIndices_[iIndex + 2] = iVertex + 2;
+				vertexIndices_[iIndex + 3] = iVertex + 1;
+				vertexIndices_[iIndex + 4] = iVertex + 2;
+				vertexIndices_[iIndex + 5] = iVertex + 3;
+			}
+
+			++iVert;
+		}
+		vertexInitialized_ = true;
+	}
+
+	bool bCamera = camera->IsEnable() && bPermitCamera_;
+	{
+		D3DXVECTOR2 center = center_;
+		if (bAutoCenter_) {
+			RECT rect;
+			ZeroMemory(&rect, sizeof(RECT));
+			std::list<ObjectData>::iterator itr = listData_.begin();
+			for (; itr != listData_.end(); itr++) {
+				ObjectData& obj = *itr;
+				VERTEX_TLX* vertex = obj.verts;
+
+				VERTEX_TLX* vertexLeftTop = &vertex[0];
+				VERTEX_TLX* vertexRightBottom = &vertex[3];
+				rect.left = min(rect.left, vertexLeftTop->position.x);
+				rect.top = min(rect.top, vertexLeftTop->position.y);
+				rect.right = max(rect.right, vertexRightBottom->position.x);
+				rect.bottom = max(rect.bottom, vertexRightBottom->position.y);
+			}
+			center.x = (rect.right + rect.left - 1.0f) / 2;
+			center.y = (rect.bottom + rect.top - 1.0f) / 2;
+		}
+
+		vertCopy_.Copy(vertex_);
+
+		D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
+			angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
+
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
+			size_t pos = iVert * strideVertexStreamZero_;
+			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
+			D3DXVECTOR4* vPos = &vert->position;
+
+			size_t posBias = iVert / 4U;
+			POINT* bias = vecBias_[posBias];
+
+			vert->position.x -= center.x;
+			vert->position.y -= center.y;
+			D3DXVec3TransformCoord((D3DXVECTOR3*)&vert->position, (D3DXVECTOR3*)&vert->position, &matWorld);
+			vert->position.x += center.x + bias->x;
+			vert->position.y += center.y + bias->y;
+		}
+
+		{
+			//TODO: Probably switch to static buffers
+			VertexBufferManager* vbManager = VertexBufferManager::GetBase();
+
+			IDirect3DVertexBuffer9* vertexBuffer = vbManager->GetVertexBuffer(VertexBufferManager::BUFFER_VERTEX_TLX);
+			IDirect3DIndexBuffer9* indexBuffer = vbManager->GetIndexBuffer();
+
+			size_t countPrim = vertexIndices_.size() / 3U;
+
+			void* tmp;
+			vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+			memcpy(tmp, vertCopy_.GetPointer(), countVertex * sizeof(VERTEX_TLX));
+			vertexBuffer->Unlock();
+			indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+			memcpy(tmp, &vertexIndices_[0], vertexIndices_.size() * sizeof(uint16_t));
+			indexBuffer->Unlock();
+
+			device->SetIndices(indexBuffer);
+			device->SetStreamSource(0, vertexBuffer, 0, sizeof(VERTEX_TLX));
+
+			{
+				UINT countPass = 1;
+				ID3DXEffect* effect = nullptr;
+				if (shader_ != nullptr) {
+					effect = shader_->GetEffect();
+					//shader_->_SetupParameter();
+					effect->Begin(&countPass, 0);
+				}
+				for (UINT iPass = 0; iPass < countPass; ++iPass) {
+					if (effect != nullptr) effect->BeginPass(iPass);
+					device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, countVertex, 0, countPrim);
+					if (effect != nullptr) effect->EndPass();
+				}
+				if (effect != nullptr) effect->End();
+			}
+
+			device->SetIndices(nullptr);
+		}
+	}
+}
+/*
 void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 	D3DXVECTOR3 pos = D3DXVECTOR3(position_.x, position_.y, 1.0f);
 
@@ -763,16 +975,6 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 				vert->position.y += center.y + bias.y;
 			}
 		}
-		/*
-		else {
-			RECT_D tRect = sprite->GetDestinationRect();
-			tRect.left += pos.x + bias.x;
-			tRect.right += pos.x + bias.x;
-			tRect.top += pos.y + bias.y;
-			tRect.bottom += pos.y + bias.y;
-			sprite->SetDestinationRect(tRect);
-		}
-		*/
 
 		sprite->SetPermitCamera(false);
 		sprite->SetShader(shader_);
@@ -784,16 +986,19 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 		sprite->GetVertexPointer()->Copy(vertCopy_);
 	}
 }
-void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj) {
+*/
+void DxTextRenderObject::AddVertexRectangle(VERTEX_TLX* verts) {
 	ObjectData data;
-	ZeroMemory(&data.bias, sizeof(POINT));
-	data.sprite = obj;
+	ZeroMemory(&data, sizeof(ObjectData));
+	memcpy(data.verts, verts, sizeof(VERTEX_TLX) * 4U);
 	listData_.push_back(data);
 }
-void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias) {
+void DxTextRenderObject::AddVertexRectangle(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias) {
 	std::list<ObjectData>::iterator itr = obj->listData_.begin();
 	for (; itr != obj->listData_.end(); itr++) {
-		(*itr).bias = bias;
+		ObjectData data;
+		memcpy(data.verts, (*itr).verts, sizeof(VERTEX_TLX) * 4U);
+		data.bias = bias;
 		listData_.push_back(*itr);
 	}
 }
@@ -1130,7 +1335,7 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 				POINT bias;
 				ZeroMemory(&bias, sizeof(POINT));
 
-				objRender->AddRenderObject(textRuby->CreateRenderObject(), bias);
+				objRender->AddVertexRectangle(textRuby->CreateRenderObject(), bias);
 
 				SetFont(dxFont.GetLogFont());
 
@@ -1145,35 +1350,67 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 		//キャッシュに存在するか確認
 		keyFont.code_ = code;
 		keyFont.font_ = dxFont;
-		ref_count_ptr<DxChar> dxChar = cache_.GetChar(keyFont);
-		if (dxChar == NULL) {
-			//キャッシュにない場合、作成して追加
-			dxChar = new DxChar();
-			dxChar->Create(code, winFont_, dxFont);
-			cache_.AddChar(keyFont, dxChar);
+		auto charEntry = cache_.GetChar(keyFont);
+		if (charEntry == nullptr) {
+			charEntry = cache_.CreateChar(keyFont, code, winFont_, dxFont);
 		}
 
 		//描画
-		ref_count_ptr<Sprite2D> spriteText = new Sprite2D();
 		int yGap = 0;
 		yRender = pos.y + yGap;
-		ref_count_ptr<Texture> texture = dxChar->GetTexture();
-		spriteText->SetTexture(texture);
+		objRender->SetTexture(cache_.fontSheet_);
 
 		//		int objWidth = texture->GetWidth();//dxChar->GetWidth();
 		//		int objHeight = texture->GetHeight();//dxChar->GetHeight();
-		int objWidth = dxChar->GetWidth();
-		int objHeight = dxChar->GetHeight();
-		RECT_D rcDest = { (double)xRender, (double)yRender, (double)(objWidth + xRender), (double)(objHeight + yRender) };
-		RECT_D rcSrc = { 0., 0., (double)objWidth, (double)objHeight };
-		spriteText->SetVertex(rcSrc, rcDest, colorVertex_);
-		objRender->AddRenderObject(spriteText);
+		double charX = charEntry->pChar.x;
+		double charY = charEntry->pChar.y;
+		double objWidth = charEntry->pChar.w;
+		double objHeight = charEntry->pChar.h;
+		RECT_D rcDest = { (double)xRender, (double)yRender, objWidth + (double)xRender, objHeight + (double)yRender };
+		RECT_D rcSrc = { charX, charY, charX + objWidth, charY + objHeight };
+		{
+			VERTEX_TLX verts[4];
+
+			{
+				constexpr float width = DxCharCache::MAX_TEXTURE_WIDTH;
+				constexpr float height = DxCharCache::MAX_TEXTURE_HEIGHT;
+
+				verts[0].texcoord = D3DXVECTOR2((float)rcSrc.left / width, (float)rcSrc.top / height);
+				verts[1].texcoord = D3DXVECTOR2((float)rcSrc.right / width, (float)rcSrc.top / height);
+				verts[2].texcoord = D3DXVECTOR2((float)rcSrc.left / width, (float)rcSrc.bottom / height);
+				verts[3].texcoord = D3DXVECTOR2((float)rcSrc.right / width, (float)rcSrc.bottom / height);
+			}
+			{
+				auto _LocalSetPos = [&](size_t index, float x, float y) {
+					VERTEX_TLX* vertex = &verts[index];
+					constexpr float bias = -0.5f;
+					vertex->position.x = x + bias;
+					vertex->position.y = y + bias;
+					vertex->position.z = 0.0f;
+					vertex->position.w = 0.0f;
+				};
+
+				_LocalSetPos(0, rcDest.left, rcDest.top);
+				_LocalSetPos(1, rcDest.right, rcDest.top);
+				_LocalSetPos(2, rcDest.left, rcDest.bottom);
+				_LocalSetPos(3, rcDest.right, rcDest.bottom);
+			}
+			{
+				for (size_t iVert = 0; iVert < 4U; ++iVert) {
+					verts[iVert].diffuse_color = colorVertex_;
+				}
+			}
+
+			objRender->AddVertexRectangle(verts);
+		}
+		
 
 		//次の文字
-		xRender += dxChar->GetWidth() - dxFont.GetBorderWidth() + textLine->GetSidePitch();
+		xRender += charEntry->dxChar->GetWidth() - dxFont.GetBorderWidth() + textLine->GetSidePitch();
 	}
 }
 
+//Previous: DxText::CreateRenderObject
 gstd::ref_count_ptr<DxTextRenderObject> DxTextRenderer::CreateRenderObject(DxText* dxText, ref_count_ptr<DxTextInfo> textInfo) {
 	{
 		Lock lock(lock_);
@@ -1380,6 +1617,7 @@ gstd::ref_count_ptr<DxTextRenderObject> DxText::CreateRenderObject() {
 		return res;
 	}
 }
+//Previous: DxScriptTextObject::_UpdateRenderer
 gstd::ref_count_ptr<DxTextRenderObject> DxText::CreateRenderObject(gstd::ref_count_ptr<DxTextInfo> textInfo) {
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	{
