@@ -1202,6 +1202,10 @@ void StgShotObject::ReserveShotList::Clear(StgStageController* stageController) 
 StgNormalShotObject::StgNormalShotObject(StgStageController* stageController) : StgShotObject(stageController) {
 	typeObject_ = TypeObject::OBJ_SHOT;
 	angularVelocity_ = 0;
+
+	c_ = 1;
+	s_ = 0;
+	lastAngle_ = 0;
 }
 StgNormalShotObject::~StgNormalShotObject() {
 
@@ -1221,9 +1225,20 @@ void StgNormalShotObject::Work() {
 		--frameFadeDelete_;
 	}
 
-	c_ = 1;
-	s_ = 0;
-	lastAngle_ = 0;
+	{
+		StgShotData* shotData = _GetShotData();
+
+		double angleZ = angle_.z;
+		if (shotData) {
+			if (!shotData->IsFixedAngle()) angleZ += GetDirectionAngle() + Math::DegreeToRadian(90);
+		}
+
+		if (angleZ != lastAngle_) {
+			c_ = cos(angleZ);
+			s_ = sin(angleZ);
+			lastAngle_ = angleZ;
+		}
+	}
 
 	_DeleteInAutoClip();
 	_DeleteInLife();
@@ -1383,16 +1398,6 @@ void StgNormalShotObject::RenderOnShotManager() {
 
 	double scaleX = 1.0;
 	double scaleY = 1.0;
-
-	double angleZ = 0;
-	if (!shotData->IsFixedAngle())angleZ = GetDirectionAngle() + Math::DegreeToRadian(90) + angle_.z;
-	else angleZ = angle_.z;
-
-	if (angleZ != lastAngle_) {
-		c_ = cos(angleZ);
-		s_ = sin(angleZ);
-		lastAngle_ = angleZ;
-	}
 
 	RECT rcSrc;
 	RECT rcDest;
@@ -1702,6 +1707,12 @@ void StgLooseLaserObject::_Move() {
 		posXE_ += speed * c_;
 		posYE_ += speed * s_;
 	}
+
+	if (lastAngle_ != GetDirectionAngle()) {
+		lastAngle_ = GetDirectionAngle();
+		c_ = cos(lastAngle_);
+		s_ = sin(lastAngle_);
+	}
 }
 void StgLooseLaserObject::_DeleteInAutoClip() {
 	if (IsDeleted())return;
@@ -1791,12 +1802,6 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	double scaleY = 1.0;
 	double renderC = 1.0;
 	double renderS = 0.0;
-
-	if (lastAngle_ != GetDirectionAngle()) {
-		lastAngle_ = GetDirectionAngle();
-		c_ = cos(lastAngle_);
-		s_ = sin(lastAngle_);
-	}
 
 	RECT rcSrc;
 	RECT rcDest;
