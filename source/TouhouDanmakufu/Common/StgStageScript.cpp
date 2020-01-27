@@ -1584,7 +1584,7 @@ gstd::value StgStageScript::Func_CreateShotB1(gstd::script_machine* machine, int
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
 
-		StgMovePattern_XY* pattern = dynamic_cast<StgMovePattern_XY*>(obj.GetPointer());
+		StgMovePattern_XY* pattern = new StgMovePattern_XY(obj.GetPointer());
 		pattern->SetSpeedX(speedX);
 		pattern->SetSpeedY(speedY);
 		obj->SetPattern(pattern);
@@ -2367,8 +2367,10 @@ gstd::value StgStageScript::Func_ObjMove_SetAcceleration(gstd::script_machine* m
 	int id = (int)argv[0].as_real();
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr)return value();
+	
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(obj->GetPattern());
 	if (pattern == nullptr) {
+		if (obj->GetPattern()) delete obj->GetPattern();
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
 	}
@@ -2382,8 +2384,10 @@ gstd::value StgStageScript::Func_ObjMove_SetAngularVelocity(gstd::script_machine
 	int id = (int)argv[0].as_real();
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr)return value();
+
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(obj->GetPattern());
 	if (pattern == nullptr) {
+		if (obj->GetPattern()) delete obj->GetPattern();
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
 	}
@@ -2397,8 +2401,10 @@ gstd::value StgStageScript::Func_ObjMove_SetMaxSpeed(gstd::script_machine* machi
 	int id = (int)argv[0].as_real();
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == nullptr)return value();
+
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(obj->GetPattern());
 	if (pattern == nullptr) {
+		if (obj->GetPattern()) delete obj->GetPattern();
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
 	}

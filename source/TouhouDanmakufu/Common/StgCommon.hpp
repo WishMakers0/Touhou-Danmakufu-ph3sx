@@ -45,10 +45,10 @@ public:
 	void SetDirectionAngle(double angle);
 
 	void SetSpeedX(double speedX);
-	void SetSpeedY(double sppedY);
+	void SetSpeedY(double speedY);
 
 	StgMovePattern* GetPattern() { return pattern_; }
-	void SetPattern(StgMovePattern* pattern) { pattern_ = pattern; }
+	void SetPattern(StgMovePattern* pattern);
 	void AddPattern(int frameDelay, StgMovePattern* pattern);
 };
 
@@ -56,6 +56,7 @@ public:
 //StgMovePattern
 **********************************************************/
 class StgMovePattern {
+	friend StgMoveObject;
 public:
 	enum {
 		TYPE_OTHER,

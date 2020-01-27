@@ -21,7 +21,7 @@ StgMoveObject::~StgMoveObject() {
 	}
 }
 void StgMoveObject::_Move() {
-	if (pattern_ == nullptr)return;
+	if (pattern_ == nullptr) return;
 
 	if (mapPattern_.size() > 0) {
 		std::map<int, StgMovePattern*>::iterator itr = mapPattern_.begin();
@@ -53,9 +53,9 @@ void StgMoveObject::_AttachReservedPattern(StgMovePattern* pattern) {
 		StgMovePattern_XY* xyPattern = dynamic_cast<StgMovePattern_XY*>(pattern);
 
 		double speed = pattern_->GetSpeed();
-		double angle = pattern_->GetDirectionAngle();
-		double speedX = speed * cos(angle);
-		double speedY = speed * sin(angle);
+		//double angle = pattern_->GetDirectionAngle();
+		double speedX = speed * pattern_->c_;
+		double speedY = speed * pattern_->s_;
 
 		if (xyPattern->GetSpeedX() == StgMovePattern::NO_CHANGE)
 			xyPattern->SetSpeedX(speedX);
@@ -67,12 +67,13 @@ void StgMoveObject::_AttachReservedPattern(StgMovePattern* pattern) {
 	pattern_ = pattern;
 }
 double StgMoveObject::GetSpeed() {
-	if (pattern_ == nullptr)return 0;
+	if (pattern_ == nullptr) return 0;
 	double res = pattern_->GetSpeed();
 	return res;
 }
 void StgMoveObject::SetSpeed(double speed) {
-	if (pattern_ == NULL || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
+	if (pattern_ == nullptr || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
+		if (pattern_) delete pattern_;
 		pattern_ = new StgMovePattern_Angle(this);
 	}
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_);
@@ -84,11 +85,16 @@ double StgMoveObject::GetDirectionAngle() {
 	return res;
 }
 void StgMoveObject::SetDirectionAngle(double angle) {
-	if (pattern_ == NULL || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
+	if (pattern_ == nullptr || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
+		if (pattern_) delete pattern_;
 		pattern_ = new StgMovePattern_Angle(this);
 	}
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_);
 	pattern->SetDirectionAngle(angle);
+}
+void StgMoveObject::SetPattern(StgMovePattern* pattern) {
+	if (pattern_) delete pattern_;
+	pattern_ = pattern;
 }
 void StgMoveObject::AddPattern(int frameDelay, StgMovePattern* pattern) {
 	if (frameDelay == 0)
