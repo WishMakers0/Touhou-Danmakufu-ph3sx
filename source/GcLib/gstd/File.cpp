@@ -431,9 +431,12 @@ ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entr
 	ref_count_ptr<ByteBuffer> res = NULL;
 	try {
 		Lock lock(lock_);
+
 		std::wstring key = entry->directory + entry->name;
-		if (mapByteBuffer_.find(key) != mapByteBuffer_.end()) {
-			res = mapByteBuffer_[key];
+		auto itr = mapByteBuffer_.find(key);
+
+		if (itr != mapByteBuffer_.end()) {
+			res = itr->second;
 		}
 		else {
 			res = ArchiveFile::CreateEntryBuffer(entry);
@@ -447,11 +450,14 @@ ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entr
 void FileManager::_ReleaseByteBuffer(ArchiveFileEntry::ptr entry) {
 	{
 		Lock lock(lock_);
+
 		std::wstring key = entry->directory + entry->name;
-		if (mapByteBuffer_.find(key) == mapByteBuffer_.end())return;
-		ref_count_ptr<ByteBuffer> buffer = mapByteBuffer_[key];
+		auto itr = mapByteBuffer_.find(key);
+
+		if (itr == mapByteBuffer_.end())return;
+		ref_count_ptr<ByteBuffer> buffer = itr->second;
 		if (buffer.GetReferenceCount() == 2) {
-			mapByteBuffer_.erase(key);
+			mapByteBuffer_.erase(itr);
 		}
 	}
 }
@@ -750,7 +756,12 @@ void RecordBuffer::Clear() {
 	mapEntry_.clear();
 }
 ref_count_ptr<RecordEntry> RecordBuffer::GetEntry(std::string key) {
-	return IsExists(key) ? mapEntry_[key] : NULL;
+	ref_count_ptr<RecordEntry> res;
+
+	auto itr = mapEntry_.find(key);
+	if (itr != mapEntry_.end()) res = itr->second;
+
+	return res;
 }
 bool RecordBuffer::IsExists(std::string key) {
 	return mapEntry_.find(key) != mapEntry_.end();
@@ -811,17 +822,20 @@ bool RecordBuffer::ReadFromFile(std::wstring path, std::string header) {
 	return true;
 }
 int RecordBuffer::GetEntryType(std::string key) {
-	if (!IsExists(key))return RecordEntry::TYPE_NOENTRY;
-	return mapEntry_[key]->GetType();
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return RecordEntry::TYPE_NOENTRY;
+	return itr->second->GetType();
 }
 int RecordBuffer::GetEntrySize(std::string key) {
-	if (!IsExists(key))return 0;
-	ByteBuffer& buffer = mapEntry_[key]->GetBufferRef();
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return 0;
+	ByteBuffer& buffer = itr->second->GetBufferRef();
 	return buffer.GetSize();
 }
 bool RecordBuffer::GetRecord(std::string key, LPVOID buf, DWORD size) {
-	if (!IsExists(key))return false;
-	ByteBuffer& buffer = mapEntry_[key]->GetBufferRef();
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return false;
+	ByteBuffer& buffer = itr->second->GetBufferRef();
 	buffer.Seek(0);
 	buffer.Read(buf, size);
 	return true;
@@ -847,10 +861,11 @@ double RecordBuffer::GetRecordAsDouble(std::string key) {
 	return res;
 }
 std::string RecordBuffer::GetRecordAsStringA(std::string key) {
-	if (!IsExists(key))return "";
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return "";
 
 	std::string res;
-	ref_count_ptr<RecordEntry> entry = mapEntry_[key];
+	ref_count_ptr<RecordEntry> entry = itr->second;
 	int type = entry->GetType();
 	ByteBuffer& buffer = entry->GetBufferRef();
 	buffer.Seek(0);
@@ -868,10 +883,11 @@ std::string RecordBuffer::GetRecordAsStringA(std::string key) {
 	return res;
 }
 std::wstring RecordBuffer::GetRecordAsStringW(std::string key) {
-	if (!IsExists(key))return L"";
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return L"";
 
 	std::wstring res;
-	ref_count_ptr<RecordEntry> entry = mapEntry_[key];
+	ref_count_ptr<RecordEntry> entry = itr->second;
 	int type = entry->GetType();
 	ByteBuffer& buffer = entry->GetBufferRef();
 	buffer.Seek(0);
@@ -890,8 +906,9 @@ std::wstring RecordBuffer::GetRecordAsStringW(std::string key) {
 	return res;
 }
 bool RecordBuffer::GetRecordAsRecordBuffer(std::string key, RecordBuffer& record) {
-	if (!IsExists(key))return false;
-	ByteBuffer& buffer = mapEntry_[key]->GetBufferRef();
+	auto itr = mapEntry_.find(key);
+	if (itr == mapEntry_.end()) return false;
+	ByteBuffer& buffer = itr->second->GetBufferRef();
 	buffer.Seek(0);
 	record.Read(buffer);
 	return true;

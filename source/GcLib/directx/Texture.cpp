@@ -277,9 +277,11 @@ void TextureManager::Clear() {
 void TextureManager::_ReleaseTextureData(std::wstring name) {
 	{
 		Lock lock(lock_);
-		if (IsDataExists(name)) {
-			mapTextureData_[name]->bLoad_ = true;//ì«Ç›çûÇ›äÆóπàµÇ¢
-			mapTextureData_.erase(name);
+
+		auto itr = mapTextureData_.find(name);
+		if (itr != mapTextureData_.end()) {
+			itr->second->bLoad_ = true;		//ì«Ç›çûÇ›äÆóπàµÇ¢
+			mapTextureData_.erase(itr);
 			Logger::WriteTop(StringUtility::Format(L"TextureManager: Texture released. [%s]", name.c_str()));
 		}
 	}
@@ -471,9 +473,10 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFile(std::wstring path, b
 	gstd::ref_count_ptr<Texture> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapTexture_.find(path) != mapTexture_.end();
-		if (bExist) {
-			res = mapTexture_[path];
+
+		auto itr = mapTexture_.find(path);
+		if (itr != mapTexture_.end()) {
+			res = itr->second;
 		}
 		else {
 			bool bSuccess = _CreateFromFile(path, genMipmap, flgNonPowerOfTwo);
@@ -490,9 +493,10 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring nam
 	gstd::ref_count_ptr<Texture> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapTexture_.find(name) != mapTexture_.end();
-		if (bExist) {
-			res = mapTexture_[name];
+
+		auto itr = mapTexture_.find(name);
+		if (itr != mapTexture_.end()) {
+			res = itr->second;
 		}
 		else {
 			bool bSuccess = _CreateRenderTarget(name);
@@ -511,10 +515,10 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 	gstd::ref_count_ptr<Texture> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapTexture_.find(path) != mapTexture_.end();
 
-		if (bExist) {
-			res = mapTexture_[path];
+		auto itr = mapTexture_.find(path);
+		if (itr != mapTexture_.end()) {
+			res = itr->second;
 		}
 		else {
 			bool bLoadTarget = true;
@@ -641,9 +645,10 @@ gstd::ref_count_ptr<TextureData> TextureManager::GetTextureData(std::wstring nam
 	gstd::ref_count_ptr<TextureData> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapTextureData_.find(name) != mapTextureData_.end();
-		if (bExist) {
-			res = mapTextureData_[name];
+
+		auto itr = mapTextureData_.find(name);
+		if (itr != mapTextureData_.end()) {
+			res = itr->second;
 		}
 	}
 	return res;
@@ -653,9 +658,10 @@ gstd::ref_count_ptr<Texture> TextureManager::GetTexture(std::wstring name) {
 	gstd::ref_count_ptr<Texture> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapTexture_.find(name) != mapTexture_.end();
-		if (bExist) {
-			res = mapTexture_[name];
+
+		auto itr = mapTexture_.find(name);
+		if (itr != mapTexture_.end()) {
+			res = itr->second;
 		}
 	}
 	return res;
@@ -664,6 +670,7 @@ gstd::ref_count_ptr<Texture> TextureManager::GetTexture(std::wstring name) {
 void TextureManager::Add(std::wstring name, gstd::ref_count_ptr<Texture> texture) {
 	{
 		Lock lock(lock_);
+
 		bool bExist = mapTexture_.find(name) != mapTexture_.end();
 		if (!bExist) {
 			mapTexture_[name] = texture;
