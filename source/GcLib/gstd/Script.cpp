@@ -698,6 +698,7 @@ void scanner::advance() {
 				word = std::string(pStart, pEnd);
 			}
 
+			/*
 			if (word == "alternative")
 				next = token_kind::tk_ALTERNATIVE;
 			else if (word == "ascent")
@@ -742,6 +743,81 @@ void scanner::advance() {
 				next = token_kind::tk_WAIT;
 			else if (word == "continue")
 				next = token_kind::tk_CONTINUE;
+			*/
+
+			size_t strHash = std::hash<std::string>{}(word);
+
+			switch (strHash) {
+			case 0xc606a268:	//alternative
+			case 0x93e05f71:	//switch
+				next = token_kind::tk_ALTERNATIVE;
+				break;
+			case 0x3b698387:	//ascent
+				next = token_kind::tk_ASCENT;
+				break;
+			case 0xc9648178:	//break
+				next = token_kind::tk_BREAK;
+				break;
+			case 0x9b2538b1:	//case
+				next = token_kind::tk_CASE;
+				break;
+			case 0x4fda1135:	//descent
+				next = token_kind::tk_DESCENT;
+				break;
+			case 0xbdbf5bf0:	//else
+				next = token_kind::tk_ELSE;
+				break;
+			case 0x9ed64249:	//function
+				next = token_kind::tk_FUNCTION;
+				break;
+			case 0x39386e06:	//if
+				next = token_kind::tk_IF;
+				break;
+			case 0x41387a9e:	//in
+				next = token_kind::tk_IN;
+				break;
+			case 0x506b03fa:	//let
+			case 0x8a25e7be:	//var
+				next = token_kind::tk_LET;
+				break;
+			case 0x9c436708:	//local
+				next = token_kind::tk_LOCAL;
+				break;
+			case 0xddef486b:	//loop
+				next = token_kind::tk_LOOP;
+				break;
+			case 0x23a5c9f2:	//others
+			case 0x933b5bde:	//default
+				next = token_kind::tk_OTHERS;
+				break;
+			case 0xd6dfb05d:	//real
+				next = token_kind::tk_REAL;
+				break;
+			case 0x85ee37bf:	//return
+				next = token_kind::tk_RETURN;
+				break;
+			case 0xdc4e3915:	//sub
+				next = token_kind::tk_SUB;
+				break;
+			case 0xf448886c:	//task
+				next = token_kind::tk_TASK;
+				break;
+			case 0x5d68eeb5:	//times
+				next = token_kind::tk_TIMES;
+				break;
+			case 0x0dc628ce:	//while
+				next = token_kind::tk_WHILE;
+				break;
+			case 0x6c96f2ae:	//yield
+				next = token_kind::tk_YIELD;
+				break;
+			case 0x892e4ca0:	//wait
+				next = token_kind::tk_WAIT;
+				break;
+			case 0xb1727e44:	//continue
+				next = token_kind::tk_CONTINUE;
+				break;
+			}
 		}
 		else {
 			next = token_kind::tk_invalid;
@@ -2921,7 +2997,7 @@ next:
 			stack_t* stack = &current->stack;
 			value& t = stack->at[stack->length - 1];
 			float r = t.as_real();
-			bool b;
+			bool b = false;
 			switch (c->command) {
 			case script_engine::command_kind::pc_compare_e:
 				b = r == 0;
