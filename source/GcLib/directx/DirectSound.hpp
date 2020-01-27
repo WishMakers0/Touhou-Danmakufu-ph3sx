@@ -63,9 +63,9 @@ namespace directx {
 		IDirectSoundBuffer8* pDirectSoundBuffer_;
 		gstd::CriticalSection lock_;
 		SoundManageThread* threadManage_;
-		std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer> > > mapPlayer_;
+		std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>> mapPlayer_;
 		std::map<int, SoundDivision*> mapDivision_;
-		std::map<std::wstring, gstd::ref_count_ptr<SoundInfo> > mapInfo_;
+		std::map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapInfo_;
 		gstd::ref_count_ptr<SoundInfoPanel> panelInfo_;
 
 		gstd::ref_count_ptr<SoundPlayer> _GetPlayer(std::wstring path);
@@ -203,6 +203,8 @@ namespace directx {
 		bool bAutoDelete_;//自動削除
 		double rateVolume_;//音量割合(0-100)
 		double rateVolumeFadePerSec_;//フェード時の音量低下割合
+		
+		size_t audioSizeTotal_;		//In bytes.
 
 		virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader) = 0;
 		virtual void _SetSoundInfo();
@@ -230,6 +232,9 @@ namespace directx {
 		double GetFadeVolumeRate();
 		void Delete() { bDelete_ = true; }
 		WAVEFORMATEX GetWaveFormat() { return formatWave_; }
+
+		DWORD GetCurrentPosition();
+		DWORD GetTotalAudioSize() { return audioSizeTotal_; }
 	};
 	class SoundPlayer::PlayStyle {
 		bool bLoop_;

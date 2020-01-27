@@ -591,6 +591,22 @@ void DxScriptTextObject::_UpdateRenderer() {
 	}
 	bChange_ = false;
 }
+void DxScriptTextObject::SetCharset(BYTE set) {
+	switch (set) {
+	case ANSI_CHARSET:
+	case HANGUL_CHARSET:
+	case ARABIC_CHARSET:
+	case HEBREW_CHARSET:
+	case THAI_CHARSET:
+	case SHIFTJIS_CHARSET:
+		break;
+	default:
+		set = ANSI_CHARSET;
+		break;
+	}
+	text_.SetFontCharset(set); 
+	bChange_ = true;
+}
 
 std::vector<int> DxScriptTextObject::GetTextCountCU() {
 	_UpdateRenderer();
@@ -1188,6 +1204,8 @@ function const dxFunction[] =
 	{ "PlayBGM", DxScript::Func_PlayBGM, 3 },
 	{ "PlaySE", DxScript::Func_PlaySE, 1 },
 	{ "StopSound", DxScript::Func_StopSound, 1 },
+	{ "SetSoundDivisionVolumeRate", DxScript::Func_SetSoundDivisionVolumeRate, 2 },
+	{ "GetSoundDivisionVolumeRate", DxScript::Func_GetSoundDivisionVolumeRate, 1 },
 
 	//Dx関数：キー系
 	{ "GetKeyState", DxScript::Func_GetKeyState, 1 },
@@ -1399,11 +1417,13 @@ function const dxFunction[] =
 	{ "ObjText_SetFontType", DxScript::Func_ObjText_SetFontType, 2 },
 	{ "ObjText_SetFontSize", DxScript::Func_ObjText_SetFontSize, 2 },
 	{ "ObjText_SetFontBold", DxScript::Func_ObjText_SetFontBold, 2 },
+	{ "ObjText_SetFontWeight", DxScript::Func_ObjText_SetFontWeight, 2 },
 	{ "ObjText_SetFontColorTop", DxScript::Func_ObjText_SetFontColorTop, 4 },
 	{ "ObjText_SetFontColorBottom", DxScript::Func_ObjText_SetFontColorBottom, 4 },
 	{ "ObjText_SetFontBorderWidth", DxScript::Func_ObjText_SetFontBorderWidth, 2 },
 	{ "ObjText_SetFontBorderType", DxScript::Func_ObjText_SetFontBorderType, 2 },
 	{ "ObjText_SetFontBorderColor", DxScript::Func_ObjText_SetFontBorderColor, 4 },
+	{ "ObjText_SetFontCharacterSet", DxScript::Func_ObjText_SetFontCharacterSet, 2 },
 	{ "ObjText_SetMaxWidth", DxScript::Func_ObjText_SetMaxWidth, 2 },
 	{ "ObjText_SetMaxHeight", DxScript::Func_ObjText_SetMaxHeight, 2 },
 	{ "ObjText_SetLinePitch", DxScript::Func_ObjText_SetLinePitch, 2 },
@@ -1430,12 +1450,16 @@ function const dxFunction[] =
 	{ "ObjSound_SetLoopEnable", DxScript::Func_ObjSound_SetLoopEnable, 2 },
 	{ "ObjSound_SetLoopTime", DxScript::Func_ObjSound_SetLoopTime, 3 },
 	{ "ObjSound_SetLoopSampleCount", DxScript::Func_ObjSound_SetLoopSampleCount, 3 },
-	{ "ObjSound_Seek", DxScript::Func_ObjSound_SetLoopTime, 2 },
-	{ "ObjSound_SeekSampleCount", DxScript::Func_ObjSound_Seek, 2 },
-	{ "ObjSound_SetRestartEnable", DxScript::Func_ObjSound_SeekSampleCount, 2 },
+	{ "ObjSound_Seek", DxScript::Func_ObjSound_Seek, 2 },
+	{ "ObjSound_SeekSampleCount", DxScript::Func_ObjSound_SeekSampleCount, 2 },
+	{ "ObjSound_SetRestartEnable", DxScript::Func_ObjSound_SetRestartEnable, 2 },
 	{ "ObjSound_SetSoundDivision", DxScript::Func_ObjSound_SetSoundDivision, 2 },
 	{ "ObjSound_IsPlaying", DxScript::Func_ObjSound_IsPlaying, 1 },
 	{ "ObjSound_GetVolumeRate", DxScript::Func_ObjSound_GetVolumeRate, 1 },
+	{ "ObjSound_GetWavePosition", DxScript::Func_ObjSound_GetWavePosition, 1 },
+	{ "ObjSound_GetWavePositionSampleCount", DxScript::Func_ObjSound_GetWavePositionSampleCount, 1 },
+	{ "ObjSound_GetTotalLength", DxScript::Func_ObjSound_GetTotalLength, 1 },
+	{ "ObjSound_GetTotalLengthSampleCount", DxScript::Func_ObjSound_GetTotalLengthSampleCount, 1 },
 
 	//Dx関数：ファイル操作(DxFileObject)
 	{ "ObjFile_Create", DxScript::Func_ObjFile_Create, 1 },
@@ -1529,6 +1553,13 @@ function const dxFunction[] =
 	{ "BORDER_NONE", constant<DxFont::BORDER_NONE>::func, 0 },
 	{ "BORDER_FULL", constant<DxFont::BORDER_FULL>::func, 0 },
 	{ "BORDER_SHADOW", constant<DxFont::BORDER_SHADOW>::func, 0 },
+
+	{ "CHARSET_ANSI", constant<ANSI_CHARSET>::func, 0 },
+	{ "CHARSET_SHIFTJIS", constant<SHIFTJIS_CHARSET>::func, 0 },
+	{ "CHARSET_HANGUL", constant<HANGUL_CHARSET>::func, 0 },
+	{ "CHARSET_ARABIC", constant<ARABIC_CHARSET>::func, 0 },
+	{ "CHARSET_HEBREW", constant<HEBREW_CHARSET>::func, 0 },
+	{ "CHARSET_THAI", constant<THAI_CHARSET>::func, 0 },
 
 	{ "SOUND_BGM", constant<SoundDivision::DIVISION_BGM>::func, 0 },
 	{ "SOUND_SE", constant<SoundDivision::DIVISION_SE>::func, 0 },
@@ -1986,7 +2017,6 @@ gstd::value DxScript::Func_PlaySE(gstd::script_machine* machine, int argc, const
 	script->GetObjectManager()->ReserveSound(player, style);
 	return value();
 }
-
 value DxScript::Func_StopSound(script_machine* machine, int argc, const value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
@@ -2000,6 +2030,32 @@ value DxScript::Func_StopSound(script_machine* machine, int argc, const value* a
 	script->GetObjectManager()->DeleteReservedSound(player);
 
 	return value();
+}
+value DxScript::Func_SetSoundDivisionVolumeRate(script_machine* machine, int argc, const value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	DirectSoundManager* manager = DirectSoundManager::GetBase();
+
+	int idDivision = (int)argv[0].as_real();
+	auto division = manager->GetSoundDivision(idDivision);
+
+	if (division != nullptr) {
+		double volume = argv[1].as_real();
+		division->SetVolumeRate(volume);
+	}
+
+	return value();
+}
+value DxScript::Func_GetSoundDivisionVolumeRate(script_machine* machine, int argc, const value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	DirectSoundManager* manager = DirectSoundManager::GetBase();
+
+	int idDivision = (int)argv[0].as_real();
+	auto division = manager->GetSoundDivision(idDivision);
+
+	if (division != nullptr) 
+		return value(machine->get_engine()->get_real_type(), division->GetVolumeRate());
+
+	return value(machine->get_engine()->get_real_type(), 0.0);
 }
 
 //Dx関数：キー系
@@ -4107,8 +4163,23 @@ value DxScript::Func_ObjText_SetFontBold(script_machine* machine, int argc, cons
 	int id = (int)argv[0].as_real();
 	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)return value();
+
 	bool bBold = argv[1].as_boolean();
-	obj->SetFontBold(bBold);
+	obj->SetFontWeight(bBold ? FW_BOLD : FW_NORMAL);
+
+	return value();
+}
+value DxScript::Func_ObjText_SetFontWeight(script_machine* machine, int argc, const value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+
+	int weight = argv[1].as_real();
+	if (weight < 0) weight = 0;
+	else if (weight > 1000) weight = 1000;
+	obj->SetFontWeight(weight);
+
 	return value();
 }
 value DxScript::Func_ObjText_SetFontColorTop(script_machine* machine, int argc, const value* argv) {
@@ -4160,6 +4231,19 @@ value DxScript::Func_ObjText_SetFontBorderColor(script_machine* machine, int arg
 	int g = (int)argv[2].as_real();
 	int b = (int)argv[3].as_real();
 	obj->SetFontBorderColor(r, g, b);
+	return value();
+}
+value DxScript::Func_ObjText_SetFontCharacterSet(script_machine* machine, int argc, const value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+
+	int cSet = (int)(argv[1].as_real() + 0.01);
+	if (cSet < 0) cSet = 0;
+	else if (cSet > 0xff) cSet = 0xff;
+	obj->SetCharset((BYTE)cSet);
+
 	return value();
 }
 value DxScript::Func_ObjText_SetMaxWidth(script_machine* machine, int argc, const value* argv) {
@@ -4455,7 +4539,10 @@ gstd::value DxScript::Func_ObjSound_Seek(gstd::script_machine* machine, int argc
 	if (player == NULL)return value();
 
 	double seekTime = argv[1].as_real();
-	player->Seek(seekTime);
+	if (obj->GetPlayer()->IsPlaying())
+		player->Seek(seekTime);
+	else
+		obj->GetStyle().SetStartTime(seekTime);
 
 	return value();
 }
@@ -4471,7 +4558,10 @@ gstd::value DxScript::Func_ObjSound_SeekSampleCount(gstd::script_machine* machin
 
 	WAVEFORMATEX fmt = obj->GetPlayer()->GetWaveFormat();
 	double seekTime = seekSample / (double)fmt.nSamplesPerSec;
-	player->Seek(seekTime);
+	if (obj->GetPlayer()->IsPlaying())
+		player->Seek(seekTime);
+	else
+		obj->GetStyle().SetStartTime(seekTime);
 
 	return value();
 }
@@ -4527,6 +4617,66 @@ gstd::value DxScript::Func_ObjSound_GetVolumeRate(gstd::script_machine* machine,
 	double rate = player->GetVolumeRate();
 
 	return value(machine->get_engine()->get_real_type(), (double)rate);
+}
+gstd::value DxScript::Func_ObjSound_GetWavePosition(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)
+		return value(machine->get_engine()->get_real_type(), (double)0);
+
+	DWORD pos = player->GetCurrentPosition();
+	double posSec = pos / player->GetWaveFormat().nAvgBytesPerSec;
+
+	return value(machine->get_engine()->get_real_type(), posSec);
+}
+gstd::value DxScript::Func_ObjSound_GetWavePositionSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)
+		return value(machine->get_engine()->get_real_type(), (double)0);
+
+	DWORD pos = player->GetCurrentPosition();
+	WAVEFORMATEX wave = player->GetWaveFormat();
+	size_t bytesPerSample = wave.wBitsPerSample / 8ui16 * wave.nChannels;
+	size_t posSamp = pos / bytesPerSample;
+
+	return value(machine->get_engine()->get_real_type(), (double)posSamp);
+}
+gstd::value DxScript::Func_ObjSound_GetTotalLength(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)
+		return value(machine->get_engine()->get_real_type(), (double)0);
+
+	DWORD pos = player->GetTotalAudioSize();
+	double posSec = pos / player->GetWaveFormat().nAvgBytesPerSec;
+
+	return value(machine->get_engine()->get_real_type(), posSec);
+}
+gstd::value DxScript::Func_ObjSound_GetTotalLengthSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)return value();
+	gstd::ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	if (player == NULL)
+		return value(machine->get_engine()->get_real_type(), (double)0);
+
+	DWORD pos = player->GetTotalAudioSize();
+	WAVEFORMATEX wave = player->GetWaveFormat();
+	size_t bytesPerSample = wave.wBitsPerSample / 8ui16 * wave.nChannels;
+	size_t posSamp = pos / bytesPerSample;
+
+	return value(machine->get_engine()->get_real_type(), (double)posSamp);
 }
 
 //Dx関数：ファイル操作(DxFileObject)

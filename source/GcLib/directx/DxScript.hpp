@@ -384,6 +384,8 @@ namespace directx {
 		D3DXVECTOR2 center_;//座標変換の中心
 		bool bAutoCenter_;
 
+		DWORD charSet_;
+
 		D3DXVECTOR2 angX_;
 		D3DXVECTOR2 angY_;
 		D3DXVECTOR2 angZ_;
@@ -401,8 +403,8 @@ namespace directx {
 		int GetTotalHeight();
 
 		void SetFontType(std::wstring type) { text_.SetFontType(type.c_str()); bChange_ = true; }
-		void SetFontSize(int size) { text_.SetFontSize(min(size, 3000)); bChange_ = true; }
-		void SetFontBold(bool bBold) { text_.SetFontBold(bBold); }
+		void SetFontSize(int size) { text_.SetFontSize(size); bChange_ = true; }
+		void SetFontWeight(int weight) { text_.SetFontWeight(weight); bChange_ = true; }
 		void SetFontItalic(bool bItalic) { text_.SetFontItalic(bItalic); bChange_ = true; }
 		void SetFontUnderLine(bool bLine) { text_.SetFontUnderLine(bLine); bChange_ = true; }
 
@@ -411,6 +413,8 @@ namespace directx {
 		void SetFontBorderWidth(int width) { text_.SetFontBorderWidth(width); bChange_ = true; }
 		void SetFontBorderType(int type) { text_.SetFontBorderType(type); bChange_ = true; }
 		void SetFontBorderColor(int r, int g, int b) { text_.SetFontBorderColor(D3DCOLOR_ARGB(255, r, g, b)); bChange_ = true; }
+
+		void SetCharset(BYTE set);
 
 		void SetMaxWidth(int width) { text_.SetMaxWidth(width); bChange_ = true; }
 		void SetMaxHeight(int height) { text_.SetMaxHeight(height); bChange_ = true; }
@@ -688,6 +692,8 @@ namespace directx {
 		static gstd::value Func_PlayBGM(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_PlaySE(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_StopSound(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_SetSoundDivisionVolumeRate(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_GetSoundDivisionVolumeRate(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dx関数：キー系
 		static gstd::value Func_GetKeyState(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -904,11 +910,13 @@ namespace directx {
 		static gstd::value Func_ObjText_SetFontType(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontSize(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontBold(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjText_SetFontWeight(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontColorTop(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontColorBottom(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontBorderWidth(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontBorderType(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetFontBorderColor(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjText_SetFontCharacterSet(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetMaxWidth(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetMaxHeight(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjText_SetLinePitch(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -941,6 +949,10 @@ namespace directx {
 		static gstd::value Func_ObjSound_SetSoundDivision(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_IsPlaying(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjSound_GetVolumeRate(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_GetWavePosition(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_GetWavePositionSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_GetTotalLength(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjSound_GetTotalLengthSampleCount(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dx関数：ファイル操作(DxFileObject)
 		static gstd::value Func_ObjFile_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);

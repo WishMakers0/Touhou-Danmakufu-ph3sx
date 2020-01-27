@@ -225,21 +225,24 @@ gstd::ref_count_ptr<SoundPlayer> DirectSoundManager::_CreatePlayer(std::wstring 
 	return res;
 }
 SoundDivision* DirectSoundManager::CreateSoundDivision(int index) {
-	if (mapDivision_.find(index) != mapDivision_.end())
-		return mapDivision_[index];
+	auto itrDiv = mapDivision_.find(index);
+	if (itrDiv != mapDivision_.end())
+		return itrDiv->second;
 
 	SoundDivision* division = new SoundDivision();
 	mapDivision_[index] = division;
 	return division;
 }
 SoundDivision* DirectSoundManager::GetSoundDivision(int index) {
-	if (mapDivision_.find(index) == mapDivision_.end())return nullptr;
-	return mapDivision_[index];
+	auto itrDiv = mapDivision_.find(index);
+	if (itrDiv == mapDivision_.end()) return nullptr;
+	return itrDiv->second;
 }
 gstd::ref_count_ptr<SoundInfo> DirectSoundManager::GetSoundInfo(std::wstring path) {
 	std::wstring name = PathProperty::GetFileName(path);
-	if (mapInfo_.find(name) == mapInfo_.end())return nullptr;
-	return mapInfo_[name];
+	auto itrInfo = mapInfo_.find(name);
+	if (itrInfo == mapInfo_.end()) return nullptr;
+	return itrInfo->second;
 }
 bool DirectSoundManager::AddSoundInfoFromFile(std::wstring path) {
 	bool res = false;
@@ -559,6 +562,8 @@ SoundPlayer::SoundPlayer() {
 	rateVolumeFadePerSec_ = 0;
 	bPause_ = false;
 
+	audioSizeTotal_ = 0U;
+
 	division_ = nullptr;
 	manager_ = nullptr;
 }
@@ -684,6 +689,12 @@ int SoundPlayer::_GetValumeAsDirectSoundDecibel(float rate) {
 	}
 	return result;
 }
+DWORD SoundPlayer::GetCurrentPosition() {
+	DWORD res = 0;
+	if (pDirectSoundBuffer_ == nullptr) return res;
+	pDirectSoundBuffer_->GetCurrentPosition(&res, nullptr);
+	return res;
+}
 
 //PlayStyle
 SoundPlayer::PlayStyle::PlayStyle() {
@@ -739,10 +750,10 @@ void SoundStreamingPlayer::_CopyStream(int indexCopy) {
 		LPVOID pMem1, pMem2;
 		DWORD dwSize1, dwSize2;
 
-		HRESULT hr = pDirectSoundBuffer_->Lock(sizeCopy_*indexCopy, sizeCopy_, &pMem1, &dwSize1, &pMem2, &dwSize2, 0);
+		HRESULT hr = pDirectSoundBuffer_->Lock(sizeCopy_ * indexCopy, sizeCopy_, &pMem1, &dwSize1, &pMem2, &dwSize2, 0);
 		if (hr == DSERR_BUFFERLOST) {
 			hr = pDirectSoundBuffer_->Restore();
-			hr = pDirectSoundBuffer_->Lock(sizeCopy_*indexCopy, sizeCopy_, &pMem1, &dwSize1, &pMem2, &dwSize2, 0);
+			hr = pDirectSoundBuffer_->Lock(sizeCopy_ * indexCopy, sizeCopy_, &pMem1, &dwSize1, &pMem2, &dwSize2, 0);
 		}
 		if (FAILED(hr))
 			_RequestStop();
@@ -788,6 +799,7 @@ bool SoundStreamingPlayer::Play(PlayStyle& style) {
 			this->Seek(style.GetStartTime());
 			pDirectSoundBuffer_->SetCurrentPosition(0);
 		}
+		style.SetStartTime(0);
 
 		if (bStreaming_) {
 			thread_->Start();
@@ -858,7 +870,7 @@ bool SoundPlayerWave::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader
 		char chunk[5] = "";
 		int sizeRiff = 0;
 		int sizeFormat = 0;
-		int sizeWave = 0;
+		DWORD sizeWave = 0;
 
 		reader_->Read(&chunk, 4);
 		if (memcmp(chunk, "RIFF", 4) != 0)throw(false);
@@ -881,6 +893,8 @@ bool SoundPlayerWave::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader
 			if (memcmp(chunk, "data", 4) == 0)break;
 		}
 		reader_->Read(&sizeWave, sizeof(int));
+
+		audioSizeTotal_ = sizeWave;
 
 		int posWaveStart = reader_->GetFilePointer();
 		int posWaveEnd = posWaveStart + sizeWave;
@@ -933,6 +947,7 @@ bool SoundPlayerWave::Play(PlayStyle& style) {
 		if (!(bPause_ && style.IsRestart())) {
 			this->Seek(style.GetStartTime());
 		}
+		style.SetStartTime(0);
 
 		HRESULT hr = pDirectSoundBuffer_->Play(0, 0, dwFlags);
 		if (hr == DSERR_BUFFERLOST) {
@@ -1010,6 +1025,8 @@ bool SoundStreamingPlayerWave::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReade
 			if (memcmp(chunk, "data", 4) == 0)break;
 		}
 		reader_->Read(&sizeWave, sizeof(int));
+
+		audioSizeTotal_ = sizeWave;
 
 		posWaveStart_ = reader_->GetFilePointer();
 		posWaveEnd_ = posWaveStart_ + sizeWave;
@@ -1112,6 +1129,8 @@ bool SoundStreamingPlayerOgg::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 		sizeof(wfh.cFmt) + sizeof(wfh.iSizeFmt) + sizeof(wfh.WaveFmt) +
 		sizeof(wfh.cData) + sizeof(wfh.iSizeData);
 	LONG sizeData = (LONG)ceil((double)vi->channels * (double)vi->rate * ov_time_total(&fileOgg_, -1) * 2.0);
+
+	audioSizeTotal_ = sizeData;
 
 	//WAVEHEADERÇÃíÜêgÇíËã`
 	memcpy(wfh.cRIFF, "RIFF", 4);
@@ -1425,6 +1444,8 @@ bool SoundStreamingPlayerMp3::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 	//BufferÇÃçÏêª
 	DirectSoundManager* soundManager = DirectSoundManager::GetBase();
 	DWORD sizeBuffer = min(2 * formatWave_.nAvgBytesPerSec, waveDataSize_);
+
+	audioSizeTotal_ = sizeBuffer;
 
 	DSBUFFERDESC desc;
 	ZeroMemory(&desc, sizeof(DSBUFFERDESC));
