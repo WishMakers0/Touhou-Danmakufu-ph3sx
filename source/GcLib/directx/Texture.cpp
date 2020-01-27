@@ -383,6 +383,15 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 		D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
 
 		data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
+		if (data->useMipMap_) {
+			UINT wd = data->infoImage_.Width;
+			UINT ht = data->infoImage_.Height;
+			while (wd > 1U && ht > 1U) {
+				wd /= 2U;
+				ht /= 2U;
+				data->resourceSize_ += wd * ht;
+			}
+		}
 		data->resourceSize_ *= Texture::GetFormatBPP(data->infoImage_.Format);
 
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Texture loaded. [%s]", path.c_str()));
@@ -551,6 +560,15 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 						}
 
 						data->resourceSize_ = data->infoImage_.Width * data->infoImage_.Height;
+						if (data->useMipMap_) {
+							UINT wd = data->infoImage_.Width;
+							UINT ht = data->infoImage_.Height;
+							while (wd > 1U && ht > 1U) {
+								wd /= 2U;
+								ht /= 2U;
+								data->resourceSize_ += wd * ht;
+							}
+						}
 						data->resourceSize_ *= Texture::GetFormatBPP(data->infoImage_.Format);
 
 						data->infoImage_ = info;
@@ -628,7 +646,6 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 			}
 
 			if (data->useMipMap_) data->pTexture_->GenerateMipSubLevels();
-
 			D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
 
 			Logger::WriteTop(StringUtility::Format(L"TextureManager: Texture loaded. (Load Thread) [%s]", path.c_str()));
