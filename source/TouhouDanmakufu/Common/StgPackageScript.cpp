@@ -46,28 +46,27 @@ ref_count_ptr<ManagedScript> StgPackageScriptManager::Create(int type) {
 const function stgPackageFunction[] =
 {
 	//パッケージ共通関数：パッケージ操作
-	{"ClosePackage", StgPackageScript::Func_ClosePackage, 0},
+	{ "ClosePackage", StgPackageScript::Func_ClosePackage, 0 },
 
 	//パッケージ共通関数：ステージ操作
-	{"InitializeStageScene", StgPackageScript::Func_InitializeStageScene, 0},
-	{"FinalizeStageScene", StgPackageScript::Func_FinalizeStageScene, 0},
-	{"StartStageScene", StgPackageScript::Func_StartStageScene, 0},
-	{"SetStageIndex", StgPackageScript::Func_SetStageIndex, 1},
-	{"SetStageMainScript", StgPackageScript::Func_SetStageMainScript, 1},
-	{"SetStagePlayerScript", StgPackageScript::Func_SetStagePlayerScript, 1},
-	{"SetStageReplayFile", StgPackageScript::Func_SetStageReplayFile, 1},
-	{"GetStageSceneState", StgPackageScript::Func_GetStageSceneState, 0},
-	{"GetStageSceneResult", StgPackageScript::Func_GetStageSceneResult, 0},
-	{"PauseStageScene", StgPackageScript::Func_PauseStageScene, 1},
-	{"TerminateStageScene", StgPackageScript::Func_TerminateStageScene, 0},
+	{ "InitializeStageScene", StgPackageScript::Func_InitializeStageScene, 0 },
+	{ "FinalizeStageScene", StgPackageScript::Func_FinalizeStageScene, 0 },
+	{ "StartStageScene", StgPackageScript::Func_StartStageScene, 0 },
+	{ "SetStageIndex", StgPackageScript::Func_SetStageIndex, 1 },
+	{ "SetStageMainScript", StgPackageScript::Func_SetStageMainScript, 1 },
+	{ "SetStagePlayerScript", StgPackageScript::Func_SetStagePlayerScript, 1 },
+	{ "SetStageReplayFile", StgPackageScript::Func_SetStageReplayFile, 1 },
+	{ "GetStageSceneState", StgPackageScript::Func_GetStageSceneState, 0 },
+	{ "GetStageSceneResult", StgPackageScript::Func_GetStageSceneResult, 0 },
+	{ "PauseStageScene", StgPackageScript::Func_PauseStageScene, 1 },
+	{ "TerminateStageScene", StgPackageScript::Func_TerminateStageScene, 0 },
 
 	//定数：
-	{"STAGE_STATE_FINISHED", constant<StgPackageScript::STAGE_STATE_FINISHED>::func, 0},
+	{ "STAGE_STATE_FINISHED", constant<StgPackageScript::STAGE_STATE_FINISHED>::func, 0 },
 
-	{"STAGE_RESULT_BREAK_OFF", constant<StgStageInformation::RESULT_BREAK_OFF>::func, 0},
-	{"STAGE_RESULT_PLAYER_DOWN", constant<StgStageInformation::RESULT_PLAYER_DOWN>::func, 0},
-	{"STAGE_RESULT_CLEARED", constant<StgStageInformation::RESULT_CLEARED>::func, 0},
-
+	{ "STAGE_RESULT_BREAK_OFF", constant<StgStageInformation::RESULT_BREAK_OFF>::func, 0 },
+	{ "STAGE_RESULT_PLAYER_DOWN", constant<StgStageInformation::RESULT_PLAYER_DOWN>::func, 0 },
+	{ "STAGE_RESULT_CLEARED", constant<StgStageInformation::RESULT_CLEARED>::func, 0 },
 };
 StgPackageScript::StgPackageScript(StgPackageController* packageController) : StgControlScript(packageController->GetSystemController()) {
 	_AddFunction(stgPackageFunction, sizeof(stgPackageFunction) / sizeof(function));
