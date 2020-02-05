@@ -1,5 +1,7 @@
-#include"GstdUtility.hpp"
-#include"Logger.hpp"
+#include "source/GcLib/pch.h"
+#include "GstdUtility.hpp"
+#include "Logger.hpp"
+
 using namespace gstd;
 
 std::wstring operator+(std::wstring l, const std::wstring& r) {
@@ -12,6 +14,7 @@ std::wstring operator+(std::wstring l, const std::wstring& r) {
 void DebugUtility::DumpMemoryLeaksOnExit() {
 #ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtDumpMemoryLeaks();
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
 	//if(!_CrtCheckMemory())
 #endif
@@ -143,7 +146,7 @@ void StringUtility::Split(std::string str, std::string delim, std::vector<std::s
 	*/
 }
 
-std::string StringUtility::Format(char* str, ...) {
+std::string StringUtility::Format(const char* str, ...) {
 	std::string res;
 	char buf[256];
 	va_list	vl;
@@ -299,7 +302,7 @@ void StringUtility::Split(std::wstring str, std::wstring delim, std::vector<std:
 		res.push_back(s);
 	}
 }
-std::wstring StringUtility::Format(wchar_t* str, ...) {
+std::wstring StringUtility::Format(const wchar_t* str, ...) {
 	std::wstring res;
 	wchar_t buf[256];
 	va_list	vl;
@@ -323,7 +326,7 @@ std::wstring StringUtility::Format(wchar_t* str, ...) {
 	va_end(vl);
 	return res;
 }
-std::wstring StringUtility::FormatToWide(char* str, ...) {
+std::wstring StringUtility::FormatToWide(const char* str, ...) {
 	std::string res;
 	char buf[256];
 	va_list	vl;
@@ -944,7 +947,7 @@ double Token::GetReal() {
 }
 bool Token::GetBoolean() {
 	bool res = false;
-	if (type_ == TK_REAL && type_ == TK_INT) {
+	if (type_ == TK_REAL || type_ == TK_INT) {
 		res = GetReal() == 1;
 	}
 	else {

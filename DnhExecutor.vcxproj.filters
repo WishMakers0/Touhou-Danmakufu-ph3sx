@@ -179,6 +179,9 @@
     <ClCompile Include="source\GcLib\gstd\Value.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
+    <ClCompile Include="source\GcLib\pch.cpp">
+      <Filter>source\GcLib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\GcLib\gstd\Application.hpp">
@@ -188,9 +191,6 @@
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp">
@@ -369,6 +369,9 @@
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\Value.hpp">
       <Filter>source\GcLib\gstd</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\pch.h">
+      <Filter>source\GcLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

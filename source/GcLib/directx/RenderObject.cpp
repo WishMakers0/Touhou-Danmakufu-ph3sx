@@ -1,10 +1,12 @@
-#include"RenderObject.hpp"
+#include "source/GcLib/pch.h"
 
-#include"DirectGraphics.hpp"
-#include"Shader.hpp"
+#include "RenderObject.hpp"
 
-#include"MetasequoiaMesh.hpp"
-#include"ElfreinaMesh.hpp"
+#include "DirectGraphics.hpp"
+#include "Shader.hpp"
+
+#include "MetasequoiaMesh.hpp"
+#include "ElfreinaMesh.hpp"
 
 #include "HLSL.hpp"
 
@@ -231,66 +233,43 @@ D3DXMATRIX RenderObject::CreateWorldMatrix(D3DXVECTOR3& position, D3DXVECTOR3& s
 {
 	D3DXMATRIX mat;
 	D3DXMatrixIdentity(&mat);
-
-	/*
-	if (scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f) {
-		D3DXMATRIX matScale;
-		D3DXMatrixScaling(&matScale, scale.x, scale.y, scale.z);
-		mat = mat * matScale;
-	}
-	if (angle.x != 0.0f || angle.y != 0.0f || angle.z != 0.0f) {
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationYawPitchRoll(&matRot, angle.y, angle.x, angle.z);
-		mat = mat * matRot;
-	}
-	if (position.x != 0.0f || position.y != 0.0f || position.z != 0.0f) {
-		D3DXMATRIX matTrans;
-		D3DXMatrixTranslation(&matTrans, position.x, position.y, position.z);
-		mat = mat * matTrans;
-	}
-	*/
 	{
-		D3DXMATRIX matSRT;
-		D3DXMatrixIdentity(&matSRT);
+		float cx = angleX.x;
+		float sx = angleX.y;
+		float cy = angleY.x;
+		float sy = angleY.y;
+		float cz = angleZ.x;
+		float sz = angleZ.y;
+		mat._11 = cy * cz - sx * sy * sz;
+		mat._12 = -cx * sz;
+		mat._13 = sy * cz + sx * cy * sz;
+		mat._21 = cy * sz + sx * sy * cz;
+		mat._22 = cx * cz;
+		mat._23 = sy * sz - sx * cy * cz;
+		mat._31 = -cx * sy;
+		mat._32 = sx;
+		mat._33 = cx * cy;
+	}
 
-		bool bScale = scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f;
-		bool bPos = position.x != 0.0f || position.y != 0.0f || position.z != 0.0f;
-
-		{
-			float cx = angleX.x;
-			float sx = angleX.y;
-			float cy = angleY.x;
-			float sy = angleY.y;
-			float cz = angleZ.x;
-			float sz = angleZ.y;
-			matSRT._11 = cy * cz - sx * sy * sz;
-			matSRT._12 = -cx * sz;
-			matSRT._13 = sy * cz + sx * cy * sz;
-			matSRT._21 = cy * sz + sx * sy * cz;
-			matSRT._22 = cx * cz;
-			matSRT._23 = sy * sz - sx * cy * cz;
-			matSRT._31 = -cx * sy;
-			matSRT._32 = sx;
-			matSRT._33 = cx * cy;
-		}
+	bool bScale = scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f;
+	bool bPos = position.x != 0.0f || position.y != 0.0f || position.z != 0.0f;
+	if (bScale || bPos) {
 		if (bScale) {
-			matSRT._11 *= scale.x;
-			matSRT._12 *= scale.x;
-			matSRT._13 *= scale.x;
-			matSRT._21 *= scale.y;
-			matSRT._22 *= scale.y;
-			matSRT._23 *= scale.y;
-			matSRT._31 *= scale.z;
-			matSRT._32 *= scale.z;
-			matSRT._33 *= scale.z;
+			mat._11 *= scale.x;
+			mat._12 *= scale.x;
+			mat._13 *= scale.x;
+			mat._21 *= scale.y;
+			mat._22 *= scale.y;
+			mat._23 *= scale.y;
+			mat._31 *= scale.z;
+			mat._32 *= scale.z;
+			mat._33 *= scale.z;
 		}
 		if (bPos) {
-			matSRT._41 = position.x;
-			matSRT._42 = position.y;
-			matSRT._43 = position.z;
+			mat._41 = position.x;
+			mat._42 = position.y;
+			mat._43 = position.z;
 		}
-
-		mat = mat * matSRT;
 	}
 	if (matRelative != nullptr) mat = mat * (*matRelative);
 
@@ -425,54 +404,34 @@ D3DXMATRIX RenderObject::CreateWorldMatrixSprite3D(D3DXVECTOR3& position, D3DXVE
 {
 	D3DXMATRIX mat;
 	D3DXMatrixIdentity(&mat);
-	/*
-	if (scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f) {
-		D3DXMATRIX matScale;
-		D3DXMatrixScaling(&matScale, scale.x, scale.y, scale.z);
-		mat = mat * matScale;
-	}
-	if (angle.x != 0.0f || angle.y != 0.0f || angle.z != 0.0f) {
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationYawPitchRoll(&matRot, angle.y, angle.x, angle.z);
-		mat = mat * matRot;
-	}
-	*/
 	{
-		D3DXMATRIX matSRT;
-		D3DXMatrixIdentity(&matSRT);
+		float cx = angleX.x;
+		float sx = angleX.y;
+		float cy = angleY.x;
+		float sy = angleY.y;
+		float cz = angleZ.x;
+		float sz = angleZ.y;
+		mat._11 = cy * cz - sx * sy * sz;
+		mat._12 = -cx * sz;
+		mat._13 = sy * cz + sx * cy * sz;
+		mat._21 = cy * sz + sx * sy * cz;
+		mat._22 = cx * cz;
+		mat._23 = sy * sz - sx * cy * cz;
+		mat._31 = -cx * sy;
+		mat._32 = sx;
+		mat._33 = cx * cy;
+	}
 
-		bool bScale = scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f;
-
-		{
-			float cx = angleX.x;
-			float sx = angleX.y;
-			float cy = angleY.x;
-			float sy = angleY.y;
-			float cz = angleZ.x;
-			float sz = angleZ.y;
-			matSRT._11 = cy * cz - sx * sy * sz;
-			matSRT._12 = -cx * sz;
-			matSRT._13 = sy * cz + sx * cy * sz;
-			matSRT._21 = cy * sz + sx * sy * cz;
-			matSRT._22 = cx * cz;
-			matSRT._23 = sy * sz - sx * cy * cz;
-			matSRT._31 = -cx * sy;
-			matSRT._32 = sx;
-			matSRT._33 = cx * cy;
-		}
-		if (bScale) {
-			matSRT._11 *= scale.x;
-			matSRT._12 *= scale.x;
-			matSRT._13 *= scale.x;
-			matSRT._21 *= scale.y;
-			matSRT._22 *= scale.y;
-			matSRT._23 *= scale.y;
-			matSRT._31 *= scale.z;
-			matSRT._32 *= scale.z;
-			matSRT._33 *= scale.z;
-		}
-
-		mat = mat * matSRT;
+	if (scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f) {
+		mat._11 *= scale.x;
+		mat._12 *= scale.x;
+		mat._13 *= scale.x;
+		mat._21 *= scale.y;
+		mat._22 *= scale.y;
+		mat._23 *= scale.y;
+		mat._31 *= scale.z;
+		mat._32 *= scale.z;
+		mat._33 *= scale.z;
 	}
 	if (bBillboard) {
 		DirectGraphics* graph = DirectGraphics::GetBase();
@@ -506,13 +465,62 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3& position, D3DXVECTOR3&
 {
 	D3DXMATRIX mat;
 	D3DXMatrixIdentity(&mat);
+	{
+		float cx = angleX.x;
+		float sx = angleX.y;
+		float cy = angleY.x;
+		float sy = angleY.y;
+		float cz = angleZ.x;
+		float sz = angleZ.y;
+		mat._11 = cy * cz - sx * sy * sz;
+		mat._12 = -cx * sz;
+		mat._13 = sy * cz + sx * cy * sz;
+		mat._21 = cy * sz + sx * sy * cz;
+		mat._22 = cx * cz;
+		mat._23 = sy * sz - sx * cy * cz;
+		mat._31 = -cx * sy;
+		mat._32 = sx;
+		mat._33 = cx * cy;
+	}
+
+	bool bScale = scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f;
+	bool bPos = position.x != 0.0f || position.y != 0.0f || position.z != 0.0f;
+
+	if (bScale || bPos) {
+		if (bScale) {
+			mat._11 *= scale.x;
+			mat._12 *= scale.x;
+			mat._13 *= scale.x;
+			mat._21 *= scale.y;
+			mat._22 *= scale.y;
+			mat._23 *= scale.y;
+			mat._31 *= scale.z;
+			mat._32 *= scale.z;
+			mat._33 *= scale.z;
+		}
+		if (bPos) {
+			mat._41 = position.x;
+			mat._42 = position.y;
+			mat._43 = position.z;
+		}
+	}
+	if (matCamera != nullptr) mat = mat * (*matCamera);
+
+	return mat;
+}
+D3DXMATRIX RenderObject::CreateWorldMatrixText2D(D3DXVECTOR2& centerPosition, D3DXVECTOR3& scale,
+	D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ,
+	D3DXVECTOR2& objectPosition, D3DXVECTOR2& biasPosition, D3DXMATRIX* matCamera)
+{
+	D3DXMATRIX mat;
+	D3DXMatrixTranslation(&mat, -centerPosition.x, -centerPosition.y, 0.0f);
 
 	{
 		D3DXMATRIX matSRT;
 		D3DXMatrixIdentity(&matSRT);
 
 		bool bScale = scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f;
-		bool bPos = position.x != 0.0f || position.y != 0.0f || position.z != 0.0f;
+		bool bPos = objectPosition.x != 0.0f || objectPosition.y != 0.0f;
 
 		{
 			float cx = angleX.x;
@@ -543,12 +551,14 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3& position, D3DXVECTOR3&
 			matSRT._33 *= scale.z;
 		}
 		if (bPos) {
-			matSRT._41 = position.x;
-			matSRT._42 = position.y;
-			matSRT._43 = position.z;
+			matSRT._41 = objectPosition.x;
+			matSRT._42 = objectPosition.y;
+			matSRT._43 = 0.0f;
 		}
 
-		mat = mat * matSRT;
+		matSRT = mat * matSRT;
+		D3DXMatrixTranslation(&mat, centerPosition.x + biasPosition.x, centerPosition.y + biasPosition.y, 0.0f);
+		mat = matSRT * mat;
 	}
 	if (matCamera != nullptr) mat = mat * (*matCamera);
 
@@ -626,6 +636,19 @@ void RenderObjectTLX::Render() {
 void RenderObjectTLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<DxCamera2D> camera = graphics->GetCamera2D();
+	bool bCamera = camera->IsEnable() && bPermitCamera_;
+
+	D3DXMATRIX matWorld;
+	if (!disableMatrixTransform_) {
+		matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
+			angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
+	}
+
+	RenderObjectTLX::Render(matWorld);
+}
+void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	ref_count_ptr<DxCamera2D> camera = graphics->GetCamera2D();
 	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
 
 	IDirect3DDevice9* device = graphics->GetDevice();
@@ -668,20 +691,12 @@ void RenderObjectTLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 		}
 		*/
 
-		//TODO: Copy these to the other types of render objects.
-		D3DXMATRIX matWorld; 
-		if (!disableMatrixTransform_) {
-			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
-				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
-		}
-
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
 			int pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
 			D3DXVECTOR4* vPos = &vert->position;
 
-			if (!disableMatrixTransform_)
-				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
+			D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matTransform);
 		}
 		
 		{
@@ -690,26 +705,30 @@ void RenderObjectTLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			IDirect3DVertexBuffer9* vertexBuffer = vbManager->GetVertexBuffer(VertexBufferManager::BUFFER_VERTEX_TLX);
 			IDirect3DIndexBuffer9* indexBuffer = vbManager->GetIndexBuffer();
 			
+			bool bUseIndex = vertexIndices_.size() > 0;
 			size_t countPrim = _GetPrimitiveCount(countVertex);
 
-			void* tmp;
-			bool bUseIndex = vertexIndices_.size() > 0;
-			vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-			if (bUseIndex) {
-				memcpy(tmp, vertCopy_.GetPointer(), countPrim * sizeof(VERTEX_TLX));
-				vertexBuffer->Unlock();
-				indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-				memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
-				indexBuffer->Unlock();
+			if (flgUseVertexBufferMode_) {
+				void* tmp;
 
-				device->SetIndices(indexBuffer);
-			}
-			else {
-				memcpy(tmp, vertCopy_.GetPointer(), countVertex * sizeof(VERTEX_TLX));
-				vertexBuffer->Unlock();
-			}
+				vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+				if (bUseIndex) {
+					memcpy(tmp, vertCopy_.GetPointer(), countPrim * sizeof(VERTEX_TLX));
+					vertexBuffer->Unlock();
 
-			device->SetStreamSource(0, vertexBuffer, 0, sizeof(VERTEX_TLX));
+					indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+					memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
+					indexBuffer->Unlock();
+
+					device->SetIndices(indexBuffer);
+				}
+				else {
+					memcpy(tmp, vertCopy_.GetPointer(), countVertex * sizeof(VERTEX_TLX));
+					vertexBuffer->Unlock();
+				}
+
+				device->SetStreamSource(0, vertexBuffer, 0, sizeof(VERTEX_TLX));
+			}
 
 			{
 				UINT countPass = 1;
@@ -722,11 +741,16 @@ void RenderObjectTLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 				for (UINT iPass = 0; iPass < countPass; ++iPass) {
 					if (effect != nullptr) effect->BeginPass(iPass);
 
-					if (bUseIndex) {
-						device->DrawIndexedPrimitive(typePrimitive_, 0, 0, countVertex, 0, countPrim);
+					if (flgUseVertexBufferMode_) {
+						if (bUseIndex) device->DrawIndexedPrimitive(typePrimitive_, 0, 0, countVertex, 0, countPrim);
+						else device->DrawPrimitive(typePrimitive_, 0, countPrim);
 					}
 					else {
-						device->DrawPrimitive(typePrimitive_, 0, countPrim);
+						if (bUseIndex)
+							device->DrawIndexedPrimitiveUP(typePrimitive_, 0, countVertex, countPrim,
+								vertexIndices_.data(), D3DFMT_INDEX16, vertCopy_.GetPointer(), strideVertexStreamZero_);
+						else
+							device->DrawPrimitiveUP(typePrimitive_, countPrim, vertCopy_.GetPointer(), strideVertexStreamZero_);
 					}
 
 					if (effect != nullptr) effect->EndPass();
@@ -984,27 +1008,28 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		IDirect3DVertexBuffer9* vertexBuffer = VertexBufferManager::GetBase()->GetVertexBuffer(VertexBufferManager::BUFFER_VERTEX_LX);
 		IDirect3DIndexBuffer9* indexBuffer = VertexBufferManager::GetBase()->GetIndexBuffer();
 
+		bool bUseIndex = vertexIndices_.size() > 0;
 		size_t countVertex = GetVertexCount();
 		size_t countPrim = _GetPrimitiveCount(countVertex);
 
-		void* tmp;
-		bool bUseIndex = vertexIndices_.size() > 0;
+		if (flgUseVertexBufferMode_) {
+			void* tmp;
+			vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+			if (bUseIndex) {
+				memcpy(tmp, vertex_.GetPointer(), countPrim * sizeof(VERTEX_LX));
+				vertexBuffer->Unlock();
+				indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+				memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
+				indexBuffer->Unlock();
 
-		device->SetStreamSource(0, vertexBuffer, 0, sizeof(VERTEX_LX));
+				device->SetIndices(indexBuffer);
+			}
+			else {
+				memcpy(tmp, vertex_.GetPointer(), countVertex * sizeof(VERTEX_LX));
+				vertexBuffer->Unlock();
+			}
 
-		vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-		if (bUseIndex) {
-			memcpy(tmp, vertex_.GetPointer(), countPrim * sizeof(VERTEX_LX));
-			vertexBuffer->Unlock();
-			indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-			memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
-			indexBuffer->Unlock();
-
-			device->SetIndices(indexBuffer);
-		}
-		else {
-			memcpy(tmp, vertex_.GetPointer(), countVertex * sizeof(VERTEX_LX));
-			vertexBuffer->Unlock();
+			device->SetStreamSource(0, vertexBuffer, 0, sizeof(VERTEX_LX));
 		}
 
 		UINT countPass = 1;
@@ -1017,11 +1042,16 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		for (UINT iPass = 0; iPass < countPass; ++iPass) {
 			if (effect != nullptr) effect->BeginPass(iPass);
 
-			if (bUseIndex) {
-				device->DrawIndexedPrimitive(typePrimitive_, 0, 0, countVertex, 0, countPrim);
+			if (flgUseVertexBufferMode_) {
+				if (bUseIndex) device->DrawIndexedPrimitive(typePrimitive_, 0, 0, countVertex, 0, countPrim);
+				else device->DrawPrimitive(typePrimitive_, 0, countPrim);
 			}
 			else {
-				device->DrawPrimitive(typePrimitive_, 0, countPrim);
+				if (bUseIndex)
+					device->DrawIndexedPrimitiveUP(typePrimitive_, 0, countVertex, countPrim,
+						vertexIndices_.data(), D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
+				else
+					device->DrawPrimitiveUP(typePrimitive_, countPrim, vertex_.GetPointer(), strideVertexStreamZero_);
 			}
 
 			if (effect != nullptr) effect->EndPass();

@@ -1,9 +1,11 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_PACKAGESCRIPT__
 #define __TOUHOUDANMAKUFU_DNHSTG_PACKAGESCRIPT__
 
-#include"StgCommon.hpp"
-#include"StgControlScript.hpp"
-#include"StgStageController.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgControlScript.hpp"
+#include "StgStageController.hpp"
 
 /**********************************************************
 //StgPackageScriptManager
@@ -12,7 +14,7 @@ class StgPackageScript;
 class StgPackageScriptManager : public StgControlScriptManager {
 protected:
 	StgSystemController* systemController_;
-	ref_count_ptr<DxScriptObjectManager> objectManager_;
+	std::shared_ptr<DxScriptObjectManager> objectManager_;
 
 public:
 	StgPackageScriptManager(StgSystemController* controller);
@@ -21,8 +23,8 @@ public:
 	virtual void Render();
 	virtual ref_count_ptr<ManagedScript> Create(int type);
 
-	DxScriptObjectManager* GetObjectManager() { return objectManager_.GetPointer(); }
-	ref_count_ptr<DxScriptObjectManager> GetObjectManagerRef() { return objectManager_; }
+	DxScriptObjectManager* GetObjectManager() { return objectManager_.get(); }
+	std::shared_ptr<DxScriptObjectManager> GetObjectManagerRef() { return objectManager_; }
 };
 
 /**********************************************************

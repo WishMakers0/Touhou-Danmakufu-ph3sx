@@ -1,6 +1,6 @@
-
-#include"StgCommon.hpp"
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
+#include "StgCommon.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgMoveObject
@@ -14,20 +14,16 @@ StgMoveObject::StgMoveObject(StgStageController* stageController) {
 	pattern_ = nullptr;
 }
 StgMoveObject::~StgMoveObject() {
-	for (auto& itr : mapPattern_) {
-		StgMovePattern*& pattern = itr.second;
-		if (pattern) delete pattern;
-		pattern = nullptr;
-	}
+	pattern_ = nullptr;
 }
 void StgMoveObject::_Move() {
 	if (pattern_ == nullptr) return;
 
 	if (mapPattern_.size() > 0) {
-		std::map<int, StgMovePattern*>::iterator itr = mapPattern_.begin();
+		auto itr = mapPattern_.begin();
 		int frame = itr->first;
 		if (frame == framePattern_) {
-			StgMovePattern* pattern = itr->second;
+			auto pattern = itr->second;
 			_AttachReservedPattern(pattern);
 			mapPattern_.erase(frame);
 		}
@@ -36,21 +32,21 @@ void StgMoveObject::_Move() {
 	pattern_->Move();
 	++framePattern_;
 }
-void StgMoveObject::_AttachReservedPattern(StgMovePattern* pattern) {
+void StgMoveObject::_AttachReservedPattern(std::shared_ptr<StgMovePattern> pattern) {
 	//ë¨ìxåpë±Ç»Ç«
 	if (pattern_ == nullptr)
-		pattern_ = new StgMovePattern_Angle(this);
+		pattern_ = std::shared_ptr<StgMovePattern_Angle>(new StgMovePattern_Angle(this));
 
 	int newMoveType = pattern->GetType();
 	if (newMoveType == StgMovePattern::TYPE_ANGLE) {
-		StgMovePattern_Angle* angPattern = dynamic_cast<StgMovePattern_Angle*>(pattern);
+		StgMovePattern_Angle* angPattern = dynamic_cast<StgMovePattern_Angle*>(pattern.get());
 		if (angPattern->GetSpeed() == StgMovePattern::NO_CHANGE)
 			angPattern->SetSpeed(pattern_->GetSpeed());
 		if (angPattern->GetDirectionAngle() == StgMovePattern::NO_CHANGE)
 			angPattern->SetDirectionAngle(pattern_->GetDirectionAngle());
 	}
 	else if (newMoveType == StgMovePattern::TYPE_XY) {
-		StgMovePattern_XY* xyPattern = dynamic_cast<StgMovePattern_XY*>(pattern);
+		StgMovePattern_XY* xyPattern = dynamic_cast<StgMovePattern_XY*>(pattern.get());
 
 		double speed = pattern_->GetSpeed();
 		//double angle = pattern_->GetDirectionAngle();
@@ -73,10 +69,9 @@ double StgMoveObject::GetSpeed() {
 }
 void StgMoveObject::SetSpeed(double speed) {
 	if (pattern_ == nullptr || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
-		if (pattern_) delete pattern_;
-		pattern_ = new StgMovePattern_Angle(this);
+		pattern_ = std::shared_ptr<StgMovePattern_Angle>(new StgMovePattern_Angle(this));
 	}
-	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_);
+	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_.get());
 	pattern->SetSpeed(speed);
 }
 double StgMoveObject::GetDirectionAngle() {
@@ -86,17 +81,15 @@ double StgMoveObject::GetDirectionAngle() {
 }
 void StgMoveObject::SetDirectionAngle(double angle) {
 	if (pattern_ == nullptr || pattern_->GetType() != StgMovePattern::TYPE_ANGLE) {
-		if (pattern_) delete pattern_;
-		pattern_ = new StgMovePattern_Angle(this);
+		pattern_ = std::shared_ptr<StgMovePattern_Angle>(new StgMovePattern_Angle(this));
 	}
-	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_);
+	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_.get());
 	pattern->SetDirectionAngle(angle);
 }
-void StgMoveObject::SetPattern(StgMovePattern* pattern) {
-	if (pattern_) delete pattern_;
+void StgMoveObject::SetPattern(std::shared_ptr<StgMovePattern> pattern) {
 	pattern_ = pattern;
 }
-void StgMoveObject::AddPattern(int frameDelay, StgMovePattern* pattern) {
+void StgMoveObject::AddPattern(int frameDelay, std::shared_ptr<StgMovePattern> pattern) {
 	if (frameDelay == 0)
 		_AttachReservedPattern(pattern);
 	else {

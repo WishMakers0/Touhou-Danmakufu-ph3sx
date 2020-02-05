@@ -1,9 +1,10 @@
-#include"DxScript.hpp"
-#include"DxUtility.hpp"
-#include"DirectGraphics.hpp"
-#include"DirectInput.hpp"
-#include"MetasequoiaMesh.hpp"
-#include"ElfreinaMesh.hpp"
+#include "source/GcLib/pch.h"
+#include "DxScript.hpp"
+#include "DxUtility.hpp"
+#include "DirectGraphics.hpp"
+#include "DirectInput.hpp"
+#include "MetasequoiaMesh.hpp"
+#include "ElfreinaMesh.hpp"
 
 using namespace gstd;
 using namespace directx;
@@ -1715,7 +1716,7 @@ function const dxFunction[] =
 
 DxScript::DxScript() {
 	_AddFunction(dxFunction, sizeof(dxFunction) / sizeof(function));
-	objManager_ = new DxScriptObjectManager();
+	objManager_ = std::shared_ptr<DxScriptObjectManager>(new DxScriptObjectManager);
 }
 DxScript::~DxScript() {
 	_ClearResource();
@@ -2986,7 +2987,7 @@ gstd::value DxScript::Func_Obj_GetValue(gstd::script_machine* machine, int argc,
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == NULL) return value();
 
-	auto& itr = obj->mapObjectValue_.find(key);
+	auto itr = obj->mapObjectValue_.find(key);
 	if (itr == obj->mapObjectValue_.end()) return value();
 
 	return itr->second;
@@ -3000,7 +3001,7 @@ gstd::value DxScript::Func_Obj_GetValueD(gstd::script_machine* machine, int argc
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == NULL) return def;
 
-	auto& itr = obj->mapObjectValue_.find(key);
+	auto itr = obj->mapObjectValue_.find(key);
 	if (itr == obj->mapObjectValue_.end()) return def;
 
 	return itr->second;
@@ -3426,7 +3427,7 @@ gstd::value DxScript::Func_ObjShader_Create(gstd::script_machine* machine, int a
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_;
+		obj->manager_ = script->objManager_.get();
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -3687,7 +3688,7 @@ value DxScript::Func_ObjPrimitive_Create(script_machine* machine, int argc, cons
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_;
+		obj->manager_ = script->objManager_.get();
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -4695,7 +4696,7 @@ gstd::value DxScript::Func_ObjFile_Create(gstd::script_machine* machine, int arg
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_;
+		obj->manager_ = script->objManager_.get();
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
@@ -4735,12 +4736,14 @@ gstd::value DxScript::Func_ObjFile_OpenNW(gstd::script_machine* machine, int arg
 	path = PathProperty::GetUnique(path);
 
 	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	bool res = false;
+
 	if (reader == nullptr) goto resFail;
 	if (!reader->Open()) goto resFail;
 
 	if (dynamic_cast<ManagedFileReader*>(reader.GetPointer()) == nullptr) goto resFail;
 	
-	bool res = obj->OpenW(path);
+	res = obj->OpenW(path);
 	return value(machine->get_engine()->get_boolean_type(), res);
 resFail:
 	return value(machine->get_engine()->get_boolean_type(), false);

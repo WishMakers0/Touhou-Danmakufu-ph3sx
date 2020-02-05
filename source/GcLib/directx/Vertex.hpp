@@ -1,6 +1,8 @@
 #ifndef __DIRECTX_VERTEX__
 #define __DIRECTX_VERTEX__
 
+#include "../pch.h"
+
 #include "DxConstant.hpp"
 
 namespace directx {

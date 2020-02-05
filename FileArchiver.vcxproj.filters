@@ -85,9 +85,6 @@
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>

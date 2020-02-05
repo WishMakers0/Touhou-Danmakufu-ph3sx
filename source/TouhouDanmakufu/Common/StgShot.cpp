@@ -1,10 +1,9 @@
+#include "source/GcLib/pch.h"
 #include "StgShot.hpp"
 #include "StgSystem.hpp"
 #include "StgIntersection.hpp"
 #include "StgItem.hpp"
 #include "../../GcLib/directx/HLSL.hpp"
-
-#include <locale>
 
 /**********************************************************
 //StgShotManager
@@ -1266,7 +1265,8 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 		if (obj == nullptr)return;
 		ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
-		StgIntersectionTarget_Circle::ptr target = std::make_shared<StgIntersectionTarget_Circle>();
+		StgIntersectionTarget_Circle::ptr target = 
+			std::shared_ptr<StgIntersectionTarget_Circle>(new StgIntersectionTarget_Circle);
 		if (target != nullptr) {
 			if (typeOwner_ == OWNER_PLAYER)
 				target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
@@ -1337,7 +1337,8 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 
 	{
-		StgIntersectionTarget::ptr target = std::make_shared<StgIntersectionTarget_Circle>();
+		StgIntersectionTarget::ptr target = 
+			std::shared_ptr<StgIntersectionTarget_Circle>(new StgIntersectionTarget_Circle);
 		StgIntersectionTarget_Circle::ptr cTarget = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
 
 		if (cTarget != nullptr) {
@@ -1753,7 +1754,8 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
 
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
-	StgIntersectionTarget_Line::ptr target = std::make_shared<StgIntersectionTarget_Line>();
+	StgIntersectionTarget_Line::ptr target = 
+		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
 	if (target != nullptr) {
 		if (typeOwner_ == OWNER_PLAYER)
 			target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
@@ -2029,7 +2031,8 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 	if (obj == nullptr)return res;
 
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
-	StgIntersectionTarget_Line::ptr target = std::make_shared<StgIntersectionTarget_Line>();
+	StgIntersectionTarget_Line::ptr target = 
+		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
 	if (target != nullptr) {
 		if (typeOwner_ == OWNER_PLAYER)
 			target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
@@ -2382,7 +2385,8 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 		*/
 
 		DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
-		StgIntersectionTarget_Line::ptr target = std::make_shared<StgIntersectionTarget_Line>();
+		StgIntersectionTarget_Line::ptr target = 
+			std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
 		if (target != nullptr) {
 			if (typeOwner_ == OWNER_PLAYER)
 				target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);

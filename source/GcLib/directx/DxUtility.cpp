@@ -1,4 +1,5 @@
-#include"DxUtility.hpp"
+#include "source/GcLib/pch.h"
+#include "DxUtility.hpp"
 
 using namespace gstd;
 using namespace directx;

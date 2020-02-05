@@ -1,8 +1,9 @@
 #ifndef __GSTD_APPLICATION__
 #define __GSTD_APPLICATION__
 
-#include"GstdConstant.hpp"
-#include"GstdUtility.hpp"
+#include "../pch.h"
+
+#include "GstdUtility.hpp"
 
 namespace gstd {
 	/**********************************************************

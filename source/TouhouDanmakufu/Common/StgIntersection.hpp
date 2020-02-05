@@ -1,7 +1,9 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_INTERSECTION__
 #define __TOUHOUDANMAKUFU_DNHSTG_INTERSECTION__
 
-#include"StgCommon.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
 
 class StgIntersectionManager;
 class StgIntersectionSpace;

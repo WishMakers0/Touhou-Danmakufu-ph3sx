@@ -1,8 +1,10 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_PACKAGECONTROLLER__
 #define __TOUHOUDANMAKUFU_DNHSTG_PACKAGECONTROLLER__
 
-#include"StgCommon.hpp"
-#include"StgPackageScript.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgPackageScript.hpp"
 
 class StgPackageInformation;
 /**********************************************************

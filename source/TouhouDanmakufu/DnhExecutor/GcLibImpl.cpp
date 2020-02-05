@@ -1,6 +1,7 @@
-#include"GcLibImpl.hpp"
-#include"System.hpp"
-#include"StgScene.hpp"
+#include "source/GcLib/pch.h"
+#include "GcLibImpl.hpp"
+#include "System.hpp"
+#include "StgScene.hpp"
 
 /**********************************************************
 //EApplication
@@ -20,7 +21,13 @@ bool EApplication::_Initialize() {
 
 	EFpsController* fpsController = EFpsController::CreateInstance();
 
-	std::wstring appName = L"“Œ•û•ó“V‹@` Treasure Castle Labyrinth";
+#if defined(GAME_VERSION_TCL)
+	std::wstring appName = L"“Œ•û•ó“V‹@` Treasure Castle Labyrinth ";
+#elif defined(GAME_VERSION_SP)
+	std::wstring appName = L"“Œ•û’ª¹‘@` Sapphire Panlogism ";
+#else
+	std::wstring appName = L"“Œ•û’e–‹•— ph3sx ";
+#endif
 	appName += DNH_VERSION;
 
 	DnhConfiguration* config = DnhConfiguration::CreateInstance();

@@ -1,5 +1,6 @@
-#include"ScriptSelectScene.hpp"
-#include"System.hpp"
+#include "source/GcLib/pch.h"
+#include "ScriptSelectScene.hpp"
+#include "System.hpp"
 
 /**********************************************************
 //ScriptSelectScene
@@ -39,7 +40,7 @@ void ScriptSelectScene::_ChangePage() {
 	dxText.SetFontBorderType(directx::DxFont::BORDER_FULL);
 	dxText.SetFontBorderWidth(2);
 	dxText.SetFontSize(16);
-	dxText.SetFontBold(true);
+	dxText.SetFontWeight(FW_BOLD);
 
 	int top = (pageCurrent_ - 1) * (pageMaxY_ + 1);
 	for (int iItem = 0; iItem <= pageMaxY_; iItem++) {
@@ -198,7 +199,7 @@ void ScriptSelectScene::Render() {
 	dxTextDescription.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 	dxTextDescription.SetFontBorderWidth(2);
 	dxTextDescription.SetFontSize(20);
-	dxTextDescription.SetFontBold(true);
+	dxTextDescription.SetFontWeight(FW_BOLD);
 	dxTextDescription.SetText(strDescription);
 	dxTextDescription.SetPosition(32, 8);
 	dxTextDescription.Render();
@@ -219,7 +220,7 @@ void ScriptSelectScene::Render() {
 		dxTextDir.SetFontBorderType(directx::DxFont::BORDER_NONE);
 		dxTextDir.SetFontBorderWidth(0);
 		dxTextDir.SetFontSize(14);
-		dxTextDir.SetFontBold(true);
+		dxTextDir.SetFontWeight(FW_BOLD);
 		dxTextDir.SetText(strDescription);
 		dxTextDir.SetPosition(40, 32);
 		dxTextDir.SetText(textDir);
@@ -260,7 +261,7 @@ void ScriptSelectScene::Render() {
 			dxTextInfo.SetFontBorderType(directx::DxFont::BORDER_NONE);
 			dxTextInfo.SetFontBorderWidth(0);
 			dxTextInfo.SetFontSize(16);
-			dxTextInfo.SetFontBold(true);
+			dxTextInfo.SetFontWeight(FW_BOLD);
 
 			//イメージ
 			ref_count_ptr<Texture> texture = spriteImage_->GetTexture();
@@ -348,7 +349,7 @@ void ScriptSelectScene::Render() {
 		dxTextNowLoad.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 		dxTextNowLoad.SetFontBorderWidth(2);
 		dxTextNowLoad.SetFontSize(18);
-		dxTextNowLoad.SetFontBold(true);
+		dxTextNowLoad.SetFontWeight(FW_BOLD);
 		dxTextNowLoad.SetText(strDescription);
 		dxTextNowLoad.SetPosition(24, 452);
 		dxTextNowLoad.SetText(text);
@@ -701,7 +702,7 @@ PlayTypeSelectMenuItem::PlayTypeSelectMenuItem(std::wstring text, int x, int y) 
 	dxText.SetFontBorderColor(D3DCOLOR_ARGB(255, 32, 32, 128));
 	dxText.SetFontBorderWidth(1);
 	dxText.SetFontSize(14);
-	dxText.SetFontBold(true);
+	dxText.SetFontWeight(FW_BOLD);
 	dxText.SetText(text);
 	objText_ = dxText.CreateRenderObject();
 }
@@ -838,7 +839,7 @@ void PlayerSelectScene::Render() {
 		DxText dxTextInfo;
 		dxTextInfo.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 		dxTextInfo.SetFontBorderType(directx::DxFont::BORDER_NONE);
-		dxTextInfo.SetFontBold(true);
+		dxTextInfo.SetFontWeight(FW_BOLD);
 
 		//イメージ
 		ref_count_ptr<Texture> texture = spriteImage_->GetTexture();
@@ -889,7 +890,7 @@ void PlayerSelectScene::Render() {
 
 		//テキスト
 		dxTextInfo.SetFontBorderType(directx::DxFont::BORDER_SHADOW);
-		dxTextInfo.SetFontBold(false);
+		dxTextInfo.SetFontWeight(FW_BOLD);
 		dxTextInfo.SetFontBorderWidth(2);
 		dxTextInfo.SetFontSize(16);
 		dxTextInfo.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
@@ -911,7 +912,7 @@ void PlayerSelectScene::Render() {
 	dxTextDescription.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 	dxTextDescription.SetFontBorderWidth(2);
 	dxTextDescription.SetFontSize(20);
-	dxTextDescription.SetFontBold(true);
+	dxTextDescription.SetFontWeight(FW_BOLD);
 	dxTextDescription.SetText(strDescription);
 	dxTextDescription.SetPosition(32, 8);
 	dxTextDescription.Render();
@@ -932,7 +933,7 @@ void PlayerSelectScene::Render() {
 				dxText.SetFontBorderType(directx::DxFont::BORDER_FULL);
 				dxText.SetFontBorderWidth(2);
 				dxText.SetFontSize(16);
-				dxText.SetFontBold(true);
+				dxText.SetFontWeight(FW_BOLD);
 				dxText.SetFontColorTop(D3DCOLOR_ARGB(255, 255, 255, 255));
 				dxText.SetFontColorBottom(D3DCOLOR_ARGB(255, 64, 64, 255));
 				dxText.SetFontBorderColor(D3DCOLOR_ARGB(255, 32, 32, 128));

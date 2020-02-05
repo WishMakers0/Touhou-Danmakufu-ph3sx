@@ -187,7 +187,6 @@
     <ClInclude Include="source\GcLib\gstd\ArchiveFile.h" />
     <ClInclude Include="source\GcLib\gstd\File.hpp" />
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp" />
-    <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp" />
     <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp" />

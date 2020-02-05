@@ -1,7 +1,8 @@
-#include"StgItem.hpp"
-#include"StgSystem.hpp"
-#include"StgStageScript.hpp"
-#include"StgPlayer.hpp"
+#include "source/GcLib/pch.h"
+#include "StgItem.hpp"
+#include "StgSystem.hpp"
+#include "StgStageScript.hpp"
+#include "StgPlayer.hpp"
 
 /**********************************************************
 //StgItemManager
@@ -664,7 +665,7 @@ StgItemObject::StgItemObject(StgStageController* stageController) : StgMoveObjec
 	stageController_ = stageController;
 	typeObject_ = TypeObject::OBJ_ITEM;
 
-	pattern_ = new StgMovePattern_Item(this);
+	pattern_ = std::shared_ptr<StgMovePattern_Item>(new StgMovePattern_Item(this));
 	color_ = D3DCOLOR_ARGB(255, 255, 255, 255);
 	score_ = 0;
 
@@ -677,7 +678,7 @@ StgItemObject::StgItemObject(StgStageController* stageController) : StgMoveObjec
 	SetRenderPriority(priItemD);
 }
 void StgItemObject::Work() {
-	bool bDefaultMovePattern = dynamic_cast<StgMovePattern_Item*>(GetPattern()) != nullptr;
+	bool bDefaultMovePattern = std::dynamic_pointer_cast<StgMovePattern_Item>(GetPattern()) != nullptr;
 	if (!bDefaultMovePattern && IsMoveToPlayer()) {
 		double speed = 8;
 		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
@@ -860,20 +861,20 @@ void StgItemObject::SetColor(int r, int g, int b) {
 	color_ = ColorAccess::SetColorB(color_, b);
 }
 void StgItemObject::SetToPosition(POINT pos) {
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetToPosition(pos);
 }
 int StgItemObject::GetMoveType() {
 	int res = StgMovePattern_Item::MOVE_NONE;
 
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
-	if (move != NULL)
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
+	if (move != nullptr)
 		res = move->GetItemMoveType();
 	return res;
 }
 void StgItemObject::SetMoveType(int type) {
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
-	if (move != NULL)
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
+	if (move != nullptr)
 		move->SetItemMoveType(type);
 }
 
@@ -881,7 +882,7 @@ void StgItemObject::SetMoveType(int type) {
 //StgItemObject_1UP
 StgItemObject_1UP::StgItemObject_1UP(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_1UP;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
 void StgItemObject_1UP::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -898,7 +899,7 @@ void StgItemObject_1UP::Intersect(StgIntersectionTarget::ptr ownTarget, StgInter
 //StgItemObject_Bomb
 StgItemObject_Bomb::StgItemObject_Bomb(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_SPELL;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
 void StgItemObject_Bomb::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -915,7 +916,7 @@ void StgItemObject_Bomb::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 //StgItemObject_Power
 StgItemObject_Power::StgItemObject_Power(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_POWER;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 	score_ = 10;
 }
@@ -937,7 +938,7 @@ void StgItemObject_Power::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 //StgItemObject_Point
 StgItemObject_Point::StgItemObject_Point(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_POINT;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
 void StgItemObject_Point::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -958,7 +959,7 @@ void StgItemObject_Point::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 //StgItemObject_Bonus
 StgItemObject_Bonus::StgItemObject_Bonus(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_BONUS;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPLAYER);
 
 	int graze = stageController->GetStageInformation()->GetGraze();
@@ -987,7 +988,7 @@ void StgItemObject_Bonus::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 //StgItemObject_Score
 StgItemObject_Score::StgItemObject_Score(StgStageController* stageController) : StgItemObject(stageController) {
 	typeItem_ = ITEM_SCORE;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_SCORE);
 
 	bPermitMoveToPlayer_ = false;
@@ -1012,7 +1013,7 @@ StgItemObject_User::StgItemObject_User(StgStageController* stageController) : St
 	typeItem_ = ITEM_USER;
 	idImage_ = -1;
 	frameWork_ = 0;
-	StgMovePattern_Item* move = dynamic_cast<StgMovePattern_Item*>(pattern_);
+	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_DOWN);
 
 	bChangeItemScore_ = true;

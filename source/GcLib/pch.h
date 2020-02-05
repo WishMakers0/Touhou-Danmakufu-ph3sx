@@ -1,5 +1,11 @@
-#ifndef __GSTD_GAMESTDCONSTANT__
-#define __GSTD_GAMESTDCONSTANT__
+#pragma once
+
+//------------------------------------------------------------------------------
+
+#define GAME_VERSION_TCL
+//#define GAME_VERSION_SP
+
+//------------------------------------------------------------------------------
 
 //Unicode
 #ifdef _MBCS
@@ -11,7 +17,6 @@
 #ifndef _UNICODE
 #define _UNICODE
 #endif
-
 
 //ïWèÄä÷êîëŒâûï\
 //http://www1.kokusaika.jp/advisory/org/ja/win32_unicode.html
@@ -42,19 +47,28 @@
 #pragma warning (disable:26495) //Variable x is uninitialized. Always initialize a member variable.
 #pragma warning (disable:26812) //The enum type x is unscoped. Prefer 'enum class' over 'enum'.
 
-
 //define
 #ifndef STRICT
 #define STRICT 1
 #endif
 
-//std
-#include <cwchar>
-#include <cstdlib>
+//--------------------------------STD--------------------------------
 
-#include <exception>
+//debug
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#endif
 #include <cstdlib>
+#include <crtdbg.h>
+
+#include <cwchar>
+#include <exception>
+
 #include <cmath>
+#include <cctype>
+#include <cstdio>
+#include <clocale>
+#include <locale>
 #include <string>
 #include <list>
 #include <vector>
@@ -66,13 +80,10 @@
 #include <algorithm>
 #include <iterator>
 
-#include <locale>
-#include <codecvt>
-
 #include <fstream>
 #include <sstream>
 
-#include <assert.h>
+#include <cassert>
 
 //Windows
 #include <windows.h>
@@ -87,8 +98,36 @@
 #include <mlang.h>
 #include <psapi.h>
 
+//--------------------------------DIRECTX--------------------------------
 
-//---------------------ZLIB---------------------
+//lib
+#pragma comment(lib, "msacm32.lib") //for acm
+#pragma comment(lib, "d3d9.lib")
+#pragma comment(lib, "d3dx9.lib")
+#pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dsound.lib")
+#pragma comment(lib, "d3dxof.lib")
+#pragma comment(lib, "dxerr9.lib")
+
+//define
+#define D3D_OVERLOADS
+#define DIRECTINPUT_VERSION 0x0800
+#define DIRECTSOUND_VERSION 0x0900
+
+//include
+#include <mmreg.h> //for acm
+#include <msacm.h> //for acm
+
+#include <basetsd.h>
+#include <d3d9.h>
+#include <d3dx9.h>
+#include <dinput.h>
+#include <dsound.h>
+#include <dmusici.h>
+#include <dxerr9.h>
+
+//--------------------------------EXTERNAL--------------------------------
 
 #include <zlib.h>
 
@@ -98,15 +137,20 @@
 #pragma comment (lib, "zlibstaticd.lib")
 #endif
 
+#include "ext/codec.h"
+#include "ext/vorbisfile.h"
+
+#pragma comment(lib, "source/GcLib/ext/ogg_static.lib")
+#pragma comment(lib, "source/GcLib/ext/vorbis_static.lib")
+#pragma comment(lib, "source/GcLib/ext/vorbisfile_static.lib")
+
 //----------------------------------------------
 
-
-#ifdef _DEBUG
-#include <crtdbg.h>
-#define _CRTDBG_MAP_ALLOC
-#define new  ::new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#if defined(UNICODE) || defined(_UNICODE)
+//#pragma comment(linker, "/entry:\"wWinMainCRTStartup\"")
 #endif
 
-#undef GetObject
-
+#ifdef _DEBUG
+#define __L_DBG_NEW__  ::new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#define new __L_DBG_NEW__
 #endif

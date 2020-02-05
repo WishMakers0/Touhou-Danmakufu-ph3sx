@@ -1,16 +1,18 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_SYSTEM__
 #define __TOUHOUDANMAKUFU_DNHSTG_SYSTEM__
 
-#include"StgCommon.hpp"
-#include"StgStageScript.hpp"
-#include"StgStageController.hpp"
-#include"StgPlayer.hpp"
-#include"StgEnemy.hpp"
-#include"StgShot.hpp"
-#include"StgItem.hpp"
-#include"StgIntersection.hpp"
-#include"StgUserExtendScene.hpp"
-#include"StgPackageController.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgStageScript.hpp"
+#include "StgStageController.hpp"
+#include "StgPlayer.hpp"
+#include "StgEnemy.hpp"
+#include "StgShot.hpp"
+#include "StgItem.hpp"
+#include "StgIntersection.hpp"
+#include "StgUserExtendScene.hpp"
+#include "StgPackageController.hpp"
 
 
 class StgSystemInformation;

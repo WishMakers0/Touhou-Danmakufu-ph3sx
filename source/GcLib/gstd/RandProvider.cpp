@@ -1,3 +1,4 @@
+#include "source/GcLib/pch.h"
 #include "RandProvider.hpp"
 
 using namespace gstd;

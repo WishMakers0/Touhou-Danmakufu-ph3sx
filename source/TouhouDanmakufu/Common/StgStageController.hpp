@@ -1,14 +1,16 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_STAGECONTROLLER__
 #define __TOUHOUDANMAKUFU_DNHSTG_STAGECONTROLLER__
 
-#include"StgCommon.hpp"
-#include"StgStageScript.hpp"
-#include"StgPlayer.hpp"
-#include"StgEnemy.hpp"
-#include"StgShot.hpp"
-#include"StgItem.hpp"
-#include"StgIntersection.hpp"
-#include"StgUserExtendScene.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgStageScript.hpp"
+#include "StgPlayer.hpp"
+#include "StgEnemy.hpp"
+#include "StgShot.hpp"
+#include "StgItem.hpp"
+#include "StgIntersection.hpp"
+#include "StgUserExtendScene.hpp"
 
 class StgStageInformation;
 class StgStageStartData;
@@ -25,7 +27,7 @@ private:
 
 	ref_count_ptr<StgPauseScene> pauseManager_;
 	ref_count_ptr<KeyReplayManager> keyReplayManager_;
-	ref_count_ptr<StgStageScriptObjectManager> objectManagerMain_;
+	std::shared_ptr<StgStageScriptObjectManager> objectManagerMain_;
 	//ref_count_ptr<StgStageScriptObjectManager> _objectManagerMain_;	//Why do I have to do this
 	std::shared_ptr<StgStageScriptManager> scriptManager_;
 	StgEnemyManager* enemyManager_;
@@ -44,8 +46,8 @@ public:
 	void Render();
 	void RenderToTransitionTexture();
 
-	StgStageScriptObjectManager* GetMainObjectManager() { return objectManagerMain_.GetPointer(); }
-	ref_count_ptr<StgStageScriptObjectManager> GetMainObjectManagerRef() { return objectManagerMain_; }
+	StgStageScriptObjectManager* GetMainObjectManager() { return objectManagerMain_.get(); }
+	std::shared_ptr<StgStageScriptObjectManager> GetMainObjectManagerRef() { return objectManagerMain_; }
 	StgStageScriptManager* GetScriptManager() { return scriptManager_.get(); }
 	std::shared_ptr<StgStageScriptManager> GetScriptManagerRef() { return scriptManager_; }
 	StgEnemyManager* GetEnemyManager() { return enemyManager_; }

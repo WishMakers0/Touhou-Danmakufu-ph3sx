@@ -1,4 +1,5 @@
-#include"ScriptManager.hpp"
+#include "source/GcLib/pch.h"
+#include "ScriptManager.hpp"
 
 using namespace gstd;
 using namespace directx;

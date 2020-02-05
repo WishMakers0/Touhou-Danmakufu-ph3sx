@@ -1,6 +1,8 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_SHOT__
 #define __TOUHOUDANMAKUFU_DNHSTG_SHOT__
 
+#include "../../GcLib/pch.h"
+
 #include "StgCommon.hpp"
 #include "StgIntersection.hpp"
 

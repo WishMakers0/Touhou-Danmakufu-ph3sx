@@ -1,6 +1,8 @@
 #ifndef __DIRECTX_VERTEXBUFFER__
 #define __DIRECTX_VERTEXBUFFER__
 
+#include "../pch.h"
+
 #include "DxConstant.hpp"
 #include "Vertex.hpp"
 

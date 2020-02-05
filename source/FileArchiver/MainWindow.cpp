@@ -408,7 +408,7 @@ void MainWindow::_Archive() {
 		std::wstring dir = wndListFile_.GetText(iRow, COL_DIRECTORY);
 		std::wstring ext = PathProperty::GetFileExtension(path);
 
-		gstd::ArchiveFileEntry* entry = new gstd::ArchiveFileEntry;
+		std::shared_ptr<gstd::ArchiveFileEntry> entry = std::shared_ptr<gstd::ArchiveFileEntry>(new gstd::ArchiveFileEntry);
 		entry->name = path;
 		//entry->nameSize = path.size();
 		entry->directory = dir;

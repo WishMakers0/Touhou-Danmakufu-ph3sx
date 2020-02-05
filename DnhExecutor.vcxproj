@@ -134,6 +134,11 @@
       <OpenMPSupport>true</OpenMPSupport>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
+      <SDLCheck>false</SDLCheck>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -196,6 +201,16 @@
     <ClCompile Include="source\GcLib\gstd\Thread.cpp" />
     <ClCompile Include="source\GcLib\gstd\Value.cpp" />
     <ClCompile Include="source\GcLib\gstd\Window.cpp" />
+    <ClCompile Include="source\GcLib\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">DnhExecutor/Debug/DnhExecutor.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">DnhExecutor/Debug/DnhExecutor.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pch.h</PrecompiledHeaderFile>
+    </ClCompile>
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhCommon.cpp" />
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhGcLibImpl.cpp" />
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhReplay.cpp" />
@@ -246,7 +261,6 @@
     <ClInclude Include="source\GcLib\gstd\ArchiveFile.h" />
     <ClInclude Include="source\GcLib\gstd\File.hpp" />
     <ClInclude Include="source\GcLib\gstd\FpsController.hpp" />
-    <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp" />
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp" />
     <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp" />
@@ -260,6 +274,7 @@
     <ClInclude Include="source\GcLib\gstd\Thread.hpp" />
     <ClInclude Include="source\GcLib\gstd\Value.hpp" />
     <ClInclude Include="source\GcLib\gstd\Window.hpp" />
+    <ClInclude Include="source\GcLib\pch.h" />
     <ClInclude Include="source\TouhouDanmakufu\Common\DnhCommon.hpp" />
     <ClInclude Include="source\TouhouDanmakufu\Common\DnhConstant.hpp" />
     <ClInclude Include="source\TouhouDanmakufu\Common\DnhGcLibImpl.hpp" />

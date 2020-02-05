@@ -1,7 +1,8 @@
-#include"DxText.hpp"
-#include"DxUtility.hpp"
-#include"DirectGraphics.hpp"
-#include"RenderObject.hpp"
+#include "source/GcLib/pch.h"
+#include "DxText.hpp"
+#include "DxUtility.hpp"
+#include "DirectGraphics.hpp"
+#include "RenderObject.hpp"
 
 using namespace gstd;
 using namespace directx;
@@ -606,7 +607,8 @@ DxTextToken& DxTextScanner::Next() {
 
 		if (type == DxTextToken::TK_STRING) {
 			//\‚ðœ‹Ž
-			std::wstring str = StringUtility::ReplaceAll(std::wstring(posStart, pointer_), L"\\\"", L"\"");
+			std::wstring tmpStr(posStart, pointer_);
+			std::wstring str = StringUtility::ReplaceAll(tmpStr, L"\\\"", L"\"");
 			token_ = DxTextToken(type, str);
 		}
 		else {
@@ -718,16 +720,14 @@ DxTextRenderObject::DxTextRenderObject() {
 	bPermitCamera_ = true;
 }
 void DxTextRenderObject::Render() {
-	DxTextRenderObject::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
+	D3DXVECTOR2 angZero(1, 0);
+	DxTextRenderObject::Render(angZero, angZero, angZero);
 }
 void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
-	D3DXVECTOR3 pos = D3DXVECTOR3(position_.x, position_.y, 1.0f);
+	D3DXVECTOR2 position = D3DXVECTOR2(position_.x, position_.y);
 
 	auto camera = DirectGraphics::GetBase()->GetCamera2D();
 	bool bCamera = camera->IsEnable() && bPermitCamera_;
-
-	D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(pos, scale_, angX, angY, angZ,
-		bCamera ? &DirectGraphics::GetBase()->GetCamera2D()->GetMatrix() : nullptr);
 
 	D3DXVECTOR2 center = center_;
 	if (bAutoCenter_) {
@@ -749,14 +749,17 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 	std::list<ObjectData>::iterator itr = listData_.begin();
 	for (; itr != listData_.end(); itr++) {
 		ObjectData obj = *itr;
-		POINT bias = obj.bias;
+		D3DXVECTOR2 bias = D3DXVECTOR2(obj.bias.x, obj.bias.y);
 		gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
 		sprite->SetColorRGB(color_);
 		sprite->SetAlpha(ColorAccess::GetColorA(color_));
 
-		vertCopy_.Copy(*sprite->GetVertexPointer());
+		D3DXMATRIX matWorld = RenderObject::CreateWorldMatrixText2D(center, scale_, angX, angY, angZ,
+			position, bias, bCamera ? &DirectGraphics::GetBase()->GetCamera2D()->GetMatrix() : nullptr);
 
-		//À•W•ÏŠ·
+		//vertCopy_.Copy(*sprite->GetVertexPointer());
+
+		/*
 		{
 			int countVertex = sprite->GetVertexCount();
 			for (int iVert = 0; iVert < countVertex; iVert++) {
@@ -768,6 +771,7 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 				vert->position.y += center.y + bias.y;
 			}
 		}
+		*/
 		/*
 		else {
 			RECT_D tRect = sprite->GetDestinationRect();
@@ -784,9 +788,7 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 		//sprite->SetPosition(pos);
 		//sprite->SetScale(scale_);
 		sprite->SetDisableMatrixTransformation(true);
-		sprite->Render();
-
-		sprite->GetVertexPointer()->Copy(vertCopy_);
+		sprite->Render(matWorld);
 	}
 }
 void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj) {

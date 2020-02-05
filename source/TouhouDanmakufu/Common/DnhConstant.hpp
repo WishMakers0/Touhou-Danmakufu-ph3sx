@@ -1,6 +1,7 @@
 #ifndef __TOUHOUDANMAKUFU_DNHCONSTANT__
 #define __TOUHOUDANMAKUFU_DNHCONSTANT__
 
+#include "../../GcLib/pch.h"
 #include "../../GcLib/GcLib.hpp"
 
 using namespace gstd;
@@ -15,8 +16,6 @@ typedef bool PriListBool;
 #else
 typedef byte PriListBool;
 #endif
-
-#undef GetObject
 
 #endif
 

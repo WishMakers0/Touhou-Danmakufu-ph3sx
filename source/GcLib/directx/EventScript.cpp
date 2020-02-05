@@ -389,7 +389,7 @@ double EventScriptToken::GetReal() {
 }
 bool EventScriptToken::GetBoolean() {
 	bool res = false;
-	if (type_ == TK_REAL && type_ == TK_INT) {
+	if (type_ == TK_REAL || type_ == TK_INT) {
 		res = GetReal() == 1;
 	}
 	else {
@@ -1173,7 +1173,7 @@ void EventScriptCodeExecuter_Transition::Execute() {
 		image->SwapForeBackLayerIndex();
 
 		int layer = image->GetForegroundLayerIndex();
-		gstd::ref_count_ptr<DxScriptObjectManager> objManager = image->GetObjectManager(layer);
+		DxScriptObjectManager* objManager = image->GetObjectManager(layer);
 		DxScriptObjectBase* obj = NULL;
 		int type = code_->GetTransType();
 		switch (type) {
@@ -1238,7 +1238,7 @@ void EventScriptCodeExecuter_Transition::Execute() {
 	if (bEnd_ || bkeyNext || bKeySkip) {
 		gstd::ref_count_ptr<EventImage> image = engine_->GetEventImage();
 		int layer = image->GetForegroundLayerIndex();
-		gstd::ref_count_ptr<DxScriptObjectManager> objManager = image->GetObjectManager(layer);
+		DxScriptObjectManager* objManager = image->GetObjectManager(layer);
 		objManager->DeleteObject(EventImage::ID_TRANSITION);
 	}
 	frame_++;
@@ -1475,7 +1475,7 @@ EventTextWindow::EventTextWindow() {
 	dxText_->SetFontBorderWidth(2);
 	dxText_->SetLinePitch(20);
 	dxText_->SetFontSize(24);
-	dxText_->SetFontBold(true);
+	dxText_->SetFontWeight(FW_BOLD);
 
 	ZeroMemory(&rcMargin_, sizeof(RECT));
 	rcMargin_.left = 16;
@@ -1540,7 +1540,7 @@ EventNameWindow::EventNameWindow() {
 	text_->SetFontBorderWidth(2);
 	text_->SetLinePitch(20);
 	text_->SetFontSize(28);
-	text_->SetFontBold(true);
+	text_->SetFontWeight(FW_BOLD);
 	SetAlpha(0);
 }
 void EventNameWindow::Work() {
@@ -1580,7 +1580,7 @@ EventLogWindow::EventLogWindow() {
 	dxText_->SetFontBorderWidth(2);
 	dxText_->SetLinePitch(20);
 	dxText_->SetFontSize(24);
-	dxText_->SetFontBold(true);
+	dxText_->SetFontWeight(FW_BOLD);
 }
 void EventLogWindow::AddedManager() {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -2136,7 +2136,12 @@ EventImage::EventImage() {
 	}
 	indexForeground_ = 0;
 }
-EventImage::~EventImage() {}
+EventImage::~EventImage() {
+	for (auto& itr : objManager_) {
+		delete itr;
+		itr = nullptr;
+	}
+}
 void EventImage::Render(int layer) {
 	objManager_[layer]->RenderObject();
 }

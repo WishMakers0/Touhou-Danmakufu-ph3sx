@@ -1,10 +1,10 @@
-#include"Common.hpp"
+#include "source/GcLib/pch.h"
+#include "Common.hpp"
 
 /**********************************************************
 //MenuTask
 **********************************************************/
-MenuTask::MenuTask()
-{
+MenuTask::MenuTask() {
 	bActive_ = true;
 	cursorFrame_.resize(CURSOR_COUNT);
 	cursorX_ = 0;
@@ -16,127 +16,103 @@ MenuTask::MenuTask()
 	bPageChangeY_ = false;
 	bWaitedKeyFree_ = false;
 }
-MenuTask::~MenuTask()
-{
+MenuTask::~MenuTask() {
 }
-void MenuTask::Clear()
-{
+void MenuTask::Clear() {
 	item_.clear();
 	cursorX_ = 0;
 	cursorY_ = 0;
 }
-int MenuTask::_GetCursorKeyState()
-{
+int MenuTask::_GetCursorKeyState() {
 	EDirectInput* input = EDirectInput::GetInstance();
 	int res = CURSOR_NONE;
-	int vkeys[] = {EDirectInput::KEY_LEFT, EDirectInput::KEY_RIGHT, EDirectInput::KEY_UP, EDirectInput::KEY_DOWN};
-	for(int iKey = 0 ; iKey < CURSOR_COUNT && res == CURSOR_NONE; iKey++)
-	{
+	int vkeys[] = { EDirectInput::KEY_LEFT, EDirectInput::KEY_RIGHT, EDirectInput::KEY_UP, EDirectInput::KEY_DOWN };
+	for (int iKey = 0; iKey < CURSOR_COUNT && res == CURSOR_NONE; iKey++) {
 		int state = input->GetVirtualKeyState(vkeys[iKey]);
-		if(state == KEY_PUSH)
-		{
+		if (state == KEY_PUSH) {
 			cursorFrame_[iKey] = 0;
 			res = iKey;
 		}
-		else if(state == KEY_HOLD)
-		{
+		else if (state == KEY_HOLD) {
 			cursorFrame_[iKey]++;
-			if(cursorFrame_[iKey] % 5 == 4 && cursorFrame_[iKey] > 15)
+			if (cursorFrame_[iKey] % 5 == 4 && cursorFrame_[iKey] > 15)
 				res = iKey;
-		}			
+		}
 	}
 	return res;
 }
-void MenuTask::_MoveCursor()
-{
+void MenuTask::_MoveCursor() {
 	int stateCursor = _GetCursorKeyState();
 
-	if(stateCursor != CURSOR_NONE)
-	{
+	if (stateCursor != CURSOR_NONE) {
 		Lock lock(cs_);
 		int pageLast = pageCurrent_;
 		int countItem = item_.size();
 		int countCurrentPageItem = GetCurrentPageItemCount();
 		int countCurrentPageMaxX = GetCurrentPageMaxX();
 		int countCurrentPageMaxY = GetCurrentPageMaxY();
-		if(stateCursor == CURSOR_LEFT)
-		{
+		if (stateCursor == CURSOR_LEFT) {
 			cursorX_--;
-			if(cursorX_ < 0)
-			{
-				if(bPageChangeX_)
-				{
+			if (cursorX_ < 0) {
+				if (bPageChangeX_) {
 					pageCurrent_--;
-					if(pageCurrent_ <= 0)
+					if (pageCurrent_ <= 0)
 						pageCurrent_ = GetPageCount();
 				}
 				cursorX_ = countCurrentPageMaxX;
 			}
 			cursorY_ = min(cursorY_, GetCurrentPageMaxY());
 		}
-		else if(stateCursor == CURSOR_RIGHT)
-		{
+		else if (stateCursor == CURSOR_RIGHT) {
 			cursorX_++;
-			if(cursorX_ > countCurrentPageMaxX)
-			{
-				if(bPageChangeX_)
-				{
+			if (cursorX_ > countCurrentPageMaxX) {
+				if (bPageChangeX_) {
 					pageCurrent_++;
-					if(pageCurrent_ > GetPageCount())
+					if (pageCurrent_ > GetPageCount())
 						pageCurrent_ = 1;
 				}
-				cursorX_ = 0;		
+				cursorX_ = 0;
 			}
 			cursorY_ = min(cursorY_, GetCurrentPageMaxY());
 		}
-		else if(stateCursor == CURSOR_UP)
-		{
+		else if (stateCursor == CURSOR_UP) {
 			cursorY_--;
-			if(cursorY_ < 0)
-			{
-				if(bPageChangeY_)	
-				{
+			if (cursorY_ < 0) {
+				if (bPageChangeY_) {
 					pageCurrent_--;
-					if(pageCurrent_ <= 0)
+					if (pageCurrent_ <= 0)
 						pageCurrent_ = GetPageCount();
 				}
 				cursorY_ = countCurrentPageMaxY;
 			}
 		}
-		else if(stateCursor == CURSOR_DOWN)
-		{
+		else if (stateCursor == CURSOR_DOWN) {
 			cursorY_++;
-			if(cursorY_ > countCurrentPageMaxY)
-			{
-				if(bPageChangeY_)
-				{
+			if (cursorY_ > countCurrentPageMaxY) {
+				if (bPageChangeY_) {
 					pageCurrent_++;
-					if(pageCurrent_ >= GetPageCount())
+					if (pageCurrent_ >= GetPageCount())
 						pageCurrent_ = 1;
 				}
-				cursorY_ = 0;		
+				cursorY_ = 0;
 			}
 		}
 
-		if(pageLast != pageCurrent_)
-		{
+		if (pageLast != pageCurrent_) {
 			//ページ変更
 			_ChangePage();
 		}
 	}
 }
-void MenuTask::Work()
-{
-	if(!bActive_)
-	{
+void MenuTask::Work() {
+	if (!bActive_) {
 		bWaitedKeyFree_ = false;
 		return;
 	}
 
 	EDirectInput* input = EDirectInput::GetInstance();
-	if(input->GetVirtualKeyState(EDirectInput::KEY_OK) == KEY_FREE &&
-		input->GetVirtualKeyState(EDirectInput::KEY_CANCEL) == KEY_FREE) 
-	{
+	if (input->GetVirtualKeyState(EDirectInput::KEY_OK) == KEY_FREE &&
+		input->GetVirtualKeyState(EDirectInput::KEY_CANCEL) == KEY_FREE) {
 		bWaitedKeyFree_ = true;
 	}
 
@@ -146,40 +122,35 @@ void MenuTask::Work()
 		Lock lock(cs_);
 		int indexTop = ((pageMaxX_ + 1) * (pageMaxY_ + 1)) * (pageCurrent_ - 1);
 		int countCurrentPageItem = GetCurrentPageItemCount();
-		for(int iItem = 0 ; iItem < countCurrentPageItem ; iItem++)
-		{
+		for (int iItem = 0; iItem < countCurrentPageItem; iItem++) {
 			int index = indexTop + iItem;
 			ref_count_ptr<MenuItem> item = item_[index];
-			if(item == NULL)continue;
+			if (item == NULL)continue;
 			item->Work();
 		}
 	}
 }
-void MenuTask::Render()
-{
+void MenuTask::Render() {
 	{
 		Lock lock(cs_);
 		int indexTop = ((pageMaxX_ + 1) * (pageMaxY_ + 1)) * (pageCurrent_ - 1);
 		int countCurrentPageItem = GetCurrentPageItemCount();
-		for(int iItem = 0 ; iItem < countCurrentPageItem ; iItem++)
-		{
+		for (int iItem = 0; iItem < countCurrentPageItem; iItem++) {
 			int index = indexTop + iItem;
 			ref_count_ptr<MenuItem> item = item_[index];
-			if(item == NULL)continue;
+			if (item == NULL)continue;
 			item->Render();
 		}
 	}
 }
-void MenuTask::AddMenuItem(ref_count_ptr<MenuItem> item)
-{
+void MenuTask::AddMenuItem(ref_count_ptr<MenuItem> item) {
 	{
 		Lock lock(cs_);
 		item->menu_ = this;
 		item_.push_back(item);
 	}
 }
-int MenuTask::GetPageCount()
-{
+int MenuTask::GetPageCount() {
 	int res = 0;
 	{
 		Lock lock(cs_);
@@ -189,8 +160,7 @@ int MenuTask::GetPageCount()
 	}
 	return res;
 }
-int MenuTask::GetSelectedItemIndex()
-{
+int MenuTask::GetSelectedItemIndex() {
 	int res = -1;
 	{
 		Lock lock(cs_);
@@ -199,58 +169,49 @@ int MenuTask::GetSelectedItemIndex()
 	}
 	return res;
 }
-ref_count_ptr<MenuItem> MenuTask::GetSelectedMenuItem()
-{
+ref_count_ptr<MenuItem> MenuTask::GetSelectedMenuItem() {
 	ref_count_ptr<MenuItem> res = NULL;
 	{
 		Lock lock(cs_);
 		int index = GetSelectedItemIndex();
-		if(index >= 0 && index < item_.size())
-		{
+		if (index >= 0 && index < item_.size()) {
 			res = item_[index];
 		}
 	}
 	return res;
 }
 
-int MenuTask::GetCurrentPageItemCount()
-{
+int MenuTask::GetCurrentPageItemCount() {
 	int countItem = item_.size();
 	int countCurrentPageItem = countItem - ((pageMaxX_ + 1) * (pageMaxY_ + 1)) * (pageCurrent_ - 1);
 	countCurrentPageItem = min(countCurrentPageItem, (pageMaxX_ + 1) * (pageMaxY_ + 1));
 	return countCurrentPageItem;
 }
-int MenuTask::GetCurrentPageMaxX()
-{
+int MenuTask::GetCurrentPageMaxX() {
 	int countCurrentPageItem = GetCurrentPageItemCount();
 	int countCurrentPageMaxX = min(pageMaxX_, max(0, countCurrentPageItem - 1));
 	return countCurrentPageMaxX;
 }
-int MenuTask::GetCurrentPageMaxY()
-{
+int MenuTask::GetCurrentPageMaxY() {
 	int countCurrentPageItem = GetCurrentPageItemCount();
 	int countCurrentPageMaxY = min(pageMaxY_, max(0, (countCurrentPageItem - 1) / (pageMaxX_ + 1)));
 	return countCurrentPageMaxY;
 }
 
 //TextLightUpMenuItem
-TextLightUpMenuItem::TextLightUpMenuItem()
-{
+TextLightUpMenuItem::TextLightUpMenuItem() {
 	frameSelected_ = 0;
 }
-void TextLightUpMenuItem::_WorkSelectedItem()
-{
-	if(menu_->GetSelectedMenuItem() == this)frameSelected_++;
+void TextLightUpMenuItem::_WorkSelectedItem() {
+	if (menu_->GetSelectedMenuItem() == this)frameSelected_++;
 	else frameSelected_ = 0;
 }
-int TextLightUpMenuItem::_GetSelectedItemAlpha()
-{
+int TextLightUpMenuItem::_GetSelectedItemAlpha() {
 	int res = 0;
-	if(menu_->GetSelectedMenuItem() == this)
-	{
+	if (menu_->GetSelectedMenuItem() == this) {
 		int cycle = 60;
 		int alpha = frameSelected_ % cycle;
-		if(alpha < cycle / 2)alpha = 255 * (float)((float)(cycle / 2 - alpha) / (float)(cycle / 2));
+		if (alpha < cycle / 2)alpha = 255 * (float)((float)(cycle / 2 - alpha) / (float)(cycle / 2));
 		else alpha = 255 * (float)((float)(alpha - cycle / 2) / (float)(cycle / 2));
 		res = alpha;
 	}

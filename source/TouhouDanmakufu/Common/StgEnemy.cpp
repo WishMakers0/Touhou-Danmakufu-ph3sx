@@ -1,5 +1,6 @@
-#include"StgEnemy.hpp"
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
+#include "StgEnemy.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgEnemyManager

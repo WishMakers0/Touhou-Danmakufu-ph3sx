@@ -1,6 +1,6 @@
-#include"DirectGraphics.hpp"
-
-#include"Texture.hpp"
+#include "source/GcLib/pch.h"
+#include "DirectGraphics.hpp"
+#include "Texture.hpp"
 
 using namespace gstd;
 using namespace directx;
@@ -43,14 +43,18 @@ DirectGraphics::DirectGraphics() {
 	stateFog_.bEnable = true;
 	stateFog_.color = D3DXVECTOR3(0, 0, 0);
 	stateFog_.bEnable = D3DXVECTOR2(0, 1);
+
+	bufferManager_ = nullptr;
 }
 DirectGraphics::~DirectGraphics() {
 	Logger::WriteTop("DirectGraphics: Finalizing.");
 
-	if (pZBuffer_ != nullptr) pZBuffer_->Release();
-	if (pBackSurf_ != nullptr) pBackSurf_->Release();
-	if (pDevice_ != nullptr) pDevice_->Release();
-	if (pDirect3D_ != nullptr) pDirect3D_->Release();
+	if (pZBuffer_) pZBuffer_->Release(); pZBuffer_ = nullptr;
+	if (pBackSurf_) pBackSurf_->Release(); pBackSurf_ = nullptr;
+	if (pDevice_) pDevice_->Release(); pDevice_ = nullptr;
+	if (pDirect3D_) pDirect3D_->Release(); pDirect3D_ = nullptr;
+	if (bufferManager_) bufferManager_->Release(); bufferManager_ = nullptr;
+
 	thisBase_ = nullptr;
 	Logger::WriteTop("DirectGraphics: Finalized.");
 }

@@ -1,8 +1,9 @@
 #ifndef __DIRECTX_HLSL__
 #define __DIRECTX_HLSL__
 
+#include "../pch.h"
+
 #include "DxConstant.hpp"
-#include <string>
 
 namespace directx {
 	static const std::wstring NAME_DEFAULT_SKINNED_MESH = L"__NAME_DEFAULT_SKINNED_MESH__";

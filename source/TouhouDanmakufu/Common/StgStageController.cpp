@@ -1,5 +1,6 @@
-#include"StgStageController.hpp"
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
+#include "StgStageController.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgStageController
@@ -144,9 +145,9 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		prevPlayerInfo->SetRebirthFrame(replayStageData->GetPlayerRebirthFrame());
 	}
 
-	objectManagerMain_ = new StgStageScriptObjectManager(this);
+	objectManagerMain_ = std::shared_ptr<StgStageScriptObjectManager>(new StgStageScriptObjectManager(this));
 	//_objectManagerMain_ = objectManagerMain_;
-	scriptManager_ = std::make_shared<StgStageScriptManager>(this);
+	scriptManager_ = std::shared_ptr<StgStageScriptManager>(new StgStageScriptManager(this));
 	enemyManager_ = new StgEnemyManager(this);
 	shotManager_ = new StgShotManager(this);
 	itemManager_ = new StgItemManager(this);
@@ -161,7 +162,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		ScriptManager::AddRelativeScriptManagerMutual(packageScriptManager, stageScriptManager);
 	}
 
-	StgStageScriptObjectManager* objectManager = scriptManager_->GetObjectManager();
+	auto objectManager = scriptManager_->GetObjectManager();
 
 	//メインスクリプト情報
 	ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();

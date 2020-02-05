@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_DIRECTSOUND__
 #define __DIRECTX_DIRECTSOUND__
 
-#include"DxConstant.hpp"
+#include "../pch.h"
+#include "DxConstant.hpp"
 
 namespace directx {
 	class DirectSoundManager;
@@ -204,6 +205,8 @@ namespace directx {
 		double rateVolume_;//音量割合(0-100)
 		double rateVolumeFadePerSec_;//フェード時の音量低下割合
 		
+		bool flgUpdateStreamOffset_;
+		size_t lastStreamCopyPos_;
 		size_t audioSizeTotal_;		//In bytes.
 
 		virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader) = 0;

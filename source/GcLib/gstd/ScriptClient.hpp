@@ -1,12 +1,13 @@
 #pragma once
 
-#include"GstdConstant.hpp"
-#include"GstdUtility.hpp"
-#include"Script.hpp"
-#include"RandProvider.hpp"
-#include"Thread.hpp"
-#include"File.hpp"
-#include"Logger.hpp"
+#include "../pch.h"
+
+#include "GstdUtility.hpp"
+#include "Script.hpp"
+#include "RandProvider.hpp"
+#include "Thread.hpp"
+#include "File.hpp"
+#include "Logger.hpp"
 
 namespace gstd {
 	class ScriptFileLineMap;

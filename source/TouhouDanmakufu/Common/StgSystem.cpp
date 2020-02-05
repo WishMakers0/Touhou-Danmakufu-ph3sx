@@ -1,8 +1,10 @@
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
 
-#include"StgPackageController.hpp"
-#include"StgStageScript.hpp"
-#include"StgPlayer.hpp"
+#include "StgSystem.hpp"
+
+#include "StgPackageController.hpp"
+#include "StgStageScript.hpp"
+#include "StgPlayer.hpp"
 
 /**********************************************************
 //StgSystemController

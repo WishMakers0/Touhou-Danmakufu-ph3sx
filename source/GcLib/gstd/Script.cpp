@@ -1,13 +1,6 @@
-#include"Script.hpp"
-#include"GstdUtility.hpp"
-
-#include<vector>
-#include<cctype>
-#include<cstdio>
-#include<clocale>
-#include<cmath>
-#include<cassert>
-#include<windows.h>
+#include "source/GcLib/pch.h"
+#include "Script.hpp"
+#include "GstdUtility.hpp"
 
 #ifdef _MSC_VER
 //#define for if(0);else for
@@ -37,23 +30,11 @@ using namespace gstd;
 
 std::string gstd::to_mbcs(std::wstring const& s) {
 	std::string result = StringUtility::ConvertWideToMulti(s);
-	//int len = std::wcstombs(NULL, s.c_str(), s.size());
-	//if(len < 0)
-	//	return "(BAD-DATA)";
-	//char * buffer = new char[len + 1];
-	//std::wcstombs(buffer, s.c_str(), len);
-	//std::string result(buffer, len);
-	//delete[] buffer;
 	return result;
 }
 
 std::wstring gstd::to_wide(std::string const& s) {
 	std::wstring result = StringUtility::ConvertMultiToWide(s);
-	//int len = std::mbstowcs(NULL, s.c_str(), s.size());
-	//wchar_t * buffer = new wchar_t[len + 1];
-	//std::mbstowcs(buffer, s.c_str(), len);
-	//std::wstring result(buffer, len);
-	//delete[] buffer;
 	return result;
 }
 
@@ -72,7 +53,7 @@ double fmodl2(double i, double j) {
 /* value */
 
 value::value(type_data* t, std::wstring v) {
-	data = std::make_shared<body>();
+	data = std::shared_ptr<body>(new body);
 	data->type = t;
 	for (unsigned i = 0; i < v.size(); ++i)
 		data->array_value.push_back(value(t->get_element(), v[i]));
@@ -3026,7 +3007,7 @@ next:
 		{
 			stack_t* stack = &current->stack;
 			assert(stack->length > 0);
-			stack->push_back(value(stack->at[stack->length - 1]));
+			stack->push_back(stack->at[stack->length - 1]);
 		}
 		break;
 
@@ -3035,8 +3016,8 @@ next:
 			stack_t* stack = &current->stack;
 			int len = stack->length;
 			assert(len >= 2);
-			stack->push_back(value(stack->at[len - 2]));
-			stack->push_back(value(stack->at[len - 1]));
+			stack->push_back(stack->at[len - 2]);
+			stack->push_back(stack->at[len - 1]);
 		}
 		break;
 

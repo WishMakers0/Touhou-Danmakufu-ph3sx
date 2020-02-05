@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_UTILITY__
 #define __DIRECTX_UTILITY__
 
-#include"DxConstant.hpp"
+#include "../pch.h"
+#include "DxConstant.hpp"
 
 namespace directx {
 	/**********************************************************

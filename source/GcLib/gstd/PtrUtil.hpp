@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../pch.h"
+
 namespace gstd {
 	template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
 		if (ptr) {

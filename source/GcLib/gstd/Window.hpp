@@ -1,9 +1,10 @@
 #ifndef __GSTD_WINDOW__
 #define __GSTD_WINDOW__
 
-#include"GstdConstant.hpp"
-#include"GstdUtility.hpp"
-#include"Thread.hpp"
+#include "../pch.h"
+
+#include "GstdUtility.hpp"
+#include "Thread.hpp"
 
 namespace gstd {
 	/**********************************************************

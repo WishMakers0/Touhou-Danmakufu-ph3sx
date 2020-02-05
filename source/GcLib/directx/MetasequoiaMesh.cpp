@@ -1,11 +1,10 @@
-#include"MetasequoiaMesh.hpp"
-#include"DxUtility.hpp"
-#include"DirectGraphics.hpp"
+#include "source/GcLib/pch.h"
+#include "MetasequoiaMesh.hpp"
+#include "DxUtility.hpp"
+#include "DirectGraphics.hpp"
 
 using namespace gstd;
 using namespace directx;
-
-
 
 /**********************************************************
 //MetasequoiaMesh

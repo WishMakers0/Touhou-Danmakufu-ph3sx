@@ -1,5 +1,6 @@
-#include"TitleScene.hpp"
-#include"System.hpp"
+#include "source/GcLib/pch.h"
+#include "TitleScene.hpp"
+#include "System.hpp"
 
 /**********************************************************
 //TitleScene
@@ -102,7 +103,7 @@ TitleSceneMenuItem::TitleSceneMenuItem(std::wstring text, std::wstring descripti
 	dxText.SetFontBorderColor(D3DCOLOR_ARGB(255, 32, 32, 128));
 	dxText.SetFontBorderWidth(2);
 	dxText.SetFontSize(24);
-	dxText.SetFontBold(true);
+	dxText.SetFontWeight(FW_BOLD);
 	dxText.SetText(text);
 	objText_ = dxText.CreateRenderObject();
 }

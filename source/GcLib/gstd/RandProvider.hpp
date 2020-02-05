@@ -1,7 +1,7 @@
 #ifndef __GSTD_RANDPROVIDER__
 #define __GSTD_RANDPROVIDER__
 
-#include"GstdConstant.hpp"
+#include "../pch.h"
 
 namespace gstd {
 	/*

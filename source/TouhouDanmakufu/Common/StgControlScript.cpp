@@ -1,5 +1,6 @@
-#include"StgControlScript.hpp"
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
+#include "StgControlScript.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgControlScriptManager

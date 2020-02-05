@@ -1,4 +1,5 @@
-#include"DirectSound.hpp"
+#include "source/GcLib/pch.h"
+#include "DirectSound.hpp"
 
 using namespace gstd;
 using namespace directx;
@@ -562,6 +563,8 @@ SoundPlayer::SoundPlayer() {
 	rateVolumeFadePerSec_ = 0;
 	bPause_ = false;
 
+	flgUpdateStreamOffset_ = true;
+	lastStreamCopyPos_ = 0U;
 	audioSizeTotal_ = 0U;
 
 	division_ = nullptr;
@@ -691,9 +694,11 @@ int SoundPlayer::_GetValumeAsDirectSoundDecibel(float rate) {
 }
 DWORD SoundPlayer::GetCurrentPosition() {
 	DWORD res = 0;
-	if (pDirectSoundBuffer_ == nullptr) return res;
-	pDirectSoundBuffer_->GetCurrentPosition(&res, nullptr);
-	return res;
+	if (pDirectSoundBuffer_ != nullptr) {
+		HRESULT hr = pDirectSoundBuffer_->GetCurrentPosition(&res, nullptr);
+		if (FAILED(hr)) res = 0;
+	}
+	return (res + lastStreamCopyPos_);
 }
 
 //PlayStyle
@@ -773,6 +778,8 @@ void SoundStreamingPlayer::_CopyStream(int indexCopy) {
 				memcpy(pMem2, 0, dwSize2);
 		}
 		pDirectSoundBuffer_->Unlock(pMem1, dwSize1, pMem2, dwSize2);
+
+		flgUpdateStreamOffset_ = true;
 	}
 }
 bool SoundStreamingPlayer::Play(PlayStyle& style) {
@@ -1058,6 +1065,10 @@ void SoundStreamingPlayerWave::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int blockSize = formatWave_.nBlockAlign;
 
 	int cPos = reader_->GetFilePointer();
+	//if (flgUpdateStreamOffset_) 
+		lastStreamCopyPos_ = cPos;
+	//flgUpdateStreamOffset_ = false;
+
 	if (cPos + cSize > posWaveEnd_) {//ファイル終点
 		int size1 = cSize + cPos - posWaveEnd_;
 		int size2 = (dwSize - cSize) / blockSize * blockSize;
@@ -1175,6 +1186,10 @@ bool SoundStreamingPlayerOgg::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 }
 void SoundStreamingPlayerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int blockSize = formatWave_.nBlockAlign;
+
+	//if (flgUpdateStreamOffset_) 
+		lastStreamCopyPos_ = (DWORD)(ov_time_tell(&fileOgg_) * formatWave_.nAvgBytesPerSec);
+	//flgUpdateStreamOffset_ = false;
 
 	int sizeWriteTotal = 0;
 	while (sizeWriteTotal < dwSize) {
@@ -1470,6 +1485,10 @@ bool SoundStreamingPlayerMp3::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 }
 void SoundStreamingPlayerMp3::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int blockSize = formatWave_.nBlockAlign;
+
+	//if (flgUpdateStreamOffset_)
+		lastStreamCopyPos_ = (DWORD)(timeCurrent_ * formatWave_.nAvgBytesPerSec);
+	//flgUpdateStreamOffset_ = false;
 
 	int sizeWriteTotal = 0;
 	while (sizeWriteTotal < dwSize) {

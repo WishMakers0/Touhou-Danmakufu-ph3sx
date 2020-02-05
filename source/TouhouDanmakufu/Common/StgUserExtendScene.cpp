@@ -1,7 +1,9 @@
-#include"StgUserExtendScene.hpp"
+#include "source/GcLib/pch.h"
 
-#include"StgSystem.hpp"
-#include"StgStageScript.hpp"
+#include "StgUserExtendScene.hpp"
+
+#include "StgSystem.hpp"
+#include "StgStageScript.hpp"
 
 /**********************************************************
 //StgUserExtendScene
@@ -66,7 +68,7 @@ void StgUserExtendScene::Finish() {}
 **********************************************************/
 StgUserExtendSceneScriptManager::StgUserExtendSceneScriptManager(StgSystemController* controller) {
 	systemController_ = controller;
-	objectManager_ = new DxScriptObjectManager();
+	objectManager_ = std::shared_ptr<DxScriptObjectManager>(new DxScriptObjectManager);
 }
 StgUserExtendSceneScriptManager::~StgUserExtendSceneScriptManager() {}
 void StgUserExtendSceneScriptManager::Work() {
@@ -97,7 +99,7 @@ ref_count_ptr<ManagedScript> StgUserExtendSceneScriptManager::Create(int type) {
 	}
 
 	if (res != NULL) {
-		res->SetObjectManager(objectManager_.GetPointer());
+		res->SetObjectManager(objectManager_);
 		res->SetScriptManager(this);
 	}
 
@@ -188,7 +190,7 @@ void StgPauseScene::Start() {
 
 	//í‚é~èàóùèâä˙âª
 	scriptManager_ = NULL;
-	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
+	scriptManager_ = std::shared_ptr<StgUserExtendSceneScriptManager>(new StgUserExtendSceneScriptManager(systemController_));
 	_AddRelativeManager();
 	ref_count_ptr<StgSystemInformation> sysInfo = systemController_->GetSystemInformation();
 
@@ -268,7 +270,7 @@ void StgEndScene::Work() {
 
 void StgEndScene::Start() {
 	scriptManager_ = NULL;
-	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
+	scriptManager_ = std::shared_ptr<StgUserExtendSceneScriptManager>(new StgUserExtendSceneScriptManager(systemController_));
 	_AddRelativeManager();
 
 	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
@@ -333,7 +335,7 @@ void StgReplaySaveScene::Work() {
 
 void StgReplaySaveScene::Start() {
 	scriptManager_ = NULL;
-	scriptManager_ = std::make_shared<StgUserExtendSceneScriptManager>(systemController_);
+	scriptManager_ = std::shared_ptr<StgUserExtendSceneScriptManager>(new StgUserExtendSceneScriptManager(systemController_));
 	_AddRelativeManager();
 
 	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();

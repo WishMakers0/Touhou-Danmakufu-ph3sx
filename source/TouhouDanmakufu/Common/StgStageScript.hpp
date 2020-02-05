@@ -1,8 +1,10 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_STAGESCRIPT__
 #define __TOUHOUDANMAKUFU_DNHSTG_STAGESCRIPT__
 
-#include"StgCommon.hpp"
-#include"StgControlScript.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgControlScript.hpp"
 
 class StgStageScriptObjectManager;
 class StgStageScript;
@@ -14,7 +16,7 @@ class StgStageScript;
 class StgStageScriptManager : public StgControlScriptManager {
 protected:
 	StgStageController* stageController_;
-	gstd::ref_count_ptr<StgStageScriptObjectManager> objManager_;
+	std::shared_ptr<StgStageScriptObjectManager> objManager_;
 
 	int64_t idPlayerScript_;
 	int64_t idItemScript_;
@@ -30,7 +32,7 @@ public:
 	virtual void SetError(std::wstring error);
 	virtual bool IsError();
 
-	StgStageScriptObjectManager* GetObjectManager() { return objManager_.GetPointer(); }
+	std::shared_ptr<StgStageScriptObjectManager> GetObjectManager() { return objManager_; }
 	virtual ref_count_ptr<ManagedScript> Create(int type);
 
 	int64_t GetPlayerScriptID() { return idPlayerScript_; }
@@ -154,7 +156,7 @@ public:
 	StgStageScript(StgStageController* stageController);
 	virtual ~StgStageScript();
 
-	StgStageScriptObjectManager* GetStgObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> GetStgObjectManager();
 
 	//STG共通関数：共通データ
 	static gstd::value Func_SaveCommonDataAreaToReplayFile(gstd::script_machine* machine, int argc, const gstd::value* argv);

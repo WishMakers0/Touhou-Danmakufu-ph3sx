@@ -1,6 +1,8 @@
 #ifndef __DIRECTX_RENDEROBJECT__
 #define __DIRECTX_RENDEROBJECT__
 
+#include "../pch.h"
+
 #include "DxConstant.hpp"
 #include "DxUtility.hpp"
 #include "Vertex.hpp"
@@ -190,6 +192,9 @@ namespace directx {
 			D3DXMATRIX* matRelative, bool bBillboard = false);
 		static D3DXMATRIX CreateWorldMatrix2D(D3DXVECTOR3& position, D3DXVECTOR3& scale, 
 			D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ, D3DXMATRIX* matCamera);
+		static D3DXMATRIX CreateWorldMatrixText2D(D3DXVECTOR2& centerPosition, D3DXVECTOR3& scale,
+			D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ, 
+			D3DXVECTOR2& objectPosition, D3DXVECTOR2& biasPosition, D3DXMATRIX* matCamera);
 		static void SetCoordinate2dDeviceMatrix();
 
 		//í∏ì_ê›íË
@@ -249,6 +254,7 @@ namespace directx {
 		~RenderObjectTLX();
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
+		virtual void Render(D3DXMATRIX& matTransform);
 		virtual void SetVertexCount(int count);
 
 		//í∏ì_ê›íË

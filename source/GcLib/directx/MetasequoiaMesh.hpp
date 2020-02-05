@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_METASEQUOIAMESH__
 #define __DIRECTX_METASEQUOIAMESH__
 
-#include"RenderObject.hpp"
+#include "../pch.h"
+#include "RenderObject.hpp"
 
 namespace directx {
 	/**********************************************************

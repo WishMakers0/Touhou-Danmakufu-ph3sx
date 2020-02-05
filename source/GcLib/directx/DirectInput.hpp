@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_DIRECTINPUT__
 #define __DIRECTX_DIRECTINPUT__
 
-#include"DxConstant.hpp"
+#include "../pch.h"
+#include "DxConstant.hpp"
 
 namespace directx {
 	enum {

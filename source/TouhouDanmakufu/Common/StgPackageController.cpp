@@ -1,5 +1,6 @@
-#include"StgPackageController.hpp"
-#include"StgSystem.hpp"
+#include "source/GcLib/pch.h"
+#include "StgPackageController.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgPackageController
@@ -12,7 +13,7 @@ StgPackageController::~StgPackageController() {
 }
 void StgPackageController::Initialize() {
 	infoPackage_ = new StgPackageInformation();
-	scriptManager_ = std::make_shared<StgPackageScriptManager>(systemController_);
+	scriptManager_ = std::shared_ptr<StgPackageScriptManager>(new StgPackageScriptManager(systemController_));
 
 	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	ref_count_ptr<ScriptInformation> infoScript = infoSystem->GetMainScriptInformation();

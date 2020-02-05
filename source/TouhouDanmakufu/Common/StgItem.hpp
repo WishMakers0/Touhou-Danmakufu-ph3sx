@@ -1,8 +1,10 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_ITEM__
 #define __TOUHOUDANMAKUFU_DNHSTG_ITEM__
 
-#include"StgCommon.hpp"
-#include"StgIntersection.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgIntersection.hpp"
 
 class StgItemDataList;
 class StgItemObject;

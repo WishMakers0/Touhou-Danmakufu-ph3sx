@@ -1,11 +1,13 @@
 #ifndef __DIRECTX_DXSCRIPT__
 #define __DIRECTX_DXSCRIPT__
 
-#include"DxConstant.hpp"
-#include"Texture.hpp"
-#include"DxText.hpp"
-#include"RenderObject.hpp"
-#include"DirectSound.hpp"
+#include "../pch.h"
+
+#include "DxConstant.hpp"
+#include "Texture.hpp"
+#include "DxText.hpp"
+#include "RenderObject.hpp"
+#include "DirectSound.hpp"
 
 namespace directx {
 	class DxScript;
@@ -57,7 +59,6 @@ namespace directx {
 		bool bActive_;
 
 		std::unordered_map<std::wstring, gstd::value> mapObjectValue_;
-
 	public:
 		DxScriptObjectBase();
 		virtual ~DxScriptObjectBase();
@@ -643,7 +644,7 @@ namespace directx {
 			CODE_UTF16BE,
 		};
 	protected:
-		DxScriptObjectManager* objManager_;
+		std::shared_ptr<DxScriptObjectManager> objManager_;
 
 		//ÉäÉ\Å[ÉX
 		std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
@@ -657,8 +658,8 @@ namespace directx {
 		DxScript();
 		virtual ~DxScript();
 
-		void SetObjectManager(DxScriptObjectManager* manager) { objManager_ = manager; }
-		DxScriptObjectManager* GetObjectManager() { return objManager_; }
+		void SetObjectManager(std::shared_ptr<DxScriptObjectManager> manager) { objManager_ = manager; }
+		std::shared_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
 		void SetMaxObject(int max) { objManager_->SetMaxObject(max); }
 		void SetRenderBucketCapacity(int capacity) { objManager_->SetRenderBucketCapacity(capacity); }
 		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);

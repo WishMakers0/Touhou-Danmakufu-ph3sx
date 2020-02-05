@@ -1,9 +1,11 @@
 #ifndef __DIRECTX_DXTEXT__
 #define __DIRECTX_DXTEXT__
 
-#include"DxConstant.hpp"
-#include"Texture.hpp"
-#include"RenderObject.hpp"
+#include "../pch.h"
+
+#include "DxConstant.hpp"
+#include "Texture.hpp"
+#include "RenderObject.hpp"
 
 namespace directx {
 	class DxChar;
@@ -428,7 +430,7 @@ namespace directx {
 		gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject();
 		gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject(gstd::ref_count_ptr<DxTextInfo> textInfo);
 
-		DxFont GetFont() { return dxFont_; }
+		DxFont& GetFont() { return dxFont_; }
 		void SetFont(DxFont font) { dxFont_ = font; }
 		void SetFont(LOGFONT logFont) { dxFont_.SetLogFont(logFont); }
 

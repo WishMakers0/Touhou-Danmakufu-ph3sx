@@ -1,12 +1,10 @@
-#include"GcLibImpl.hpp"
+#include "source/GcLib/pch.h"
+#include "GcLibImpl.hpp"
 
 /**********************************************************
 WinMain
 **********************************************************/
-int APIENTRY wWinMain(HINSTANCE hInstance,
-	HINSTANCE hPrevInstance,
-	LPWSTR lpCmdLine,
-	int nCmdShow) {
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
 	gstd::DebugUtility::DumpMemoryLeaksOnExit();
 
 	HWND handleWindow = nullptr;

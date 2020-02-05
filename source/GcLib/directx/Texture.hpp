@@ -1,8 +1,10 @@
 #ifndef __DIRECTX_TEXTURE__
 #define __DIRECTX_TEXTURE__
 
-#include"DxConstant.hpp"
-#include"DirectGraphics.hpp"
+#include "../pch.h"
+
+#include "DxConstant.hpp"
+#include "DirectGraphics.hpp"
 
 namespace directx {
 	class TextureData;

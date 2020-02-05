@@ -1,13 +1,14 @@
-#include"StgPackageScript.hpp"
-#include"StgSystem.hpp"
-#include"StgPackageController.hpp"
+#include "source/GcLib/pch.h"
+#include "StgPackageScript.hpp"
+#include "StgSystem.hpp"
+#include "StgPackageController.hpp"
 
 /**********************************************************
 //StgPackageScriptManager
 **********************************************************/
 StgPackageScriptManager::StgPackageScriptManager(StgSystemController* controller) {
 	systemController_ = controller;
-	objectManager_ = new DxScriptObjectManager();
+	objectManager_ = std::shared_ptr<DxScriptObjectManager>(new DxScriptObjectManager);
 }
 StgPackageScriptManager::~StgPackageScriptManager() {}
 void StgPackageScriptManager::Work() {
@@ -32,7 +33,7 @@ ref_count_ptr<ManagedScript> StgPackageScriptManager::Create(int type) {
 	}
 
 	if (res != NULL) {
-		res->SetObjectManager(objectManager_.GetPointer());
+		res->SetObjectManager(objectManager_);
 		res->SetScriptManager(this);
 	}
 

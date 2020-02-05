@@ -1,7 +1,9 @@
 #ifndef __TOUHOUDANMAKUFU_DNHREPLAY__
 #define __TOUHOUDANMAKUFU_DNHREPLAY__
 
-#include"DnhCommon.hpp"
+#include "../../GcLib/pch.h"
+
+#include "DnhCommon.hpp"
 
 /**********************************************************
 //ReplayInformation

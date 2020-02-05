@@ -1,6 +1,6 @@
-#include"StgPlayer.hpp"
-#include"StgSystem.hpp"
-
+#include "source/GcLib/pch.h"
+#include "StgPlayer.hpp"
+#include "StgSystem.hpp"
 
 /**********************************************************
 //StgPlayerObject

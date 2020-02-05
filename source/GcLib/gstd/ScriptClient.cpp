@@ -1,6 +1,7 @@
-#include"ScriptClient.hpp"
-#include"File.hpp"
-#include"Logger.hpp"
+#include "source/GcLib/pch.h"
+#include "ScriptClient.hpp"
+#include "File.hpp"
+#include "Logger.hpp"
 
 using namespace gstd;
 

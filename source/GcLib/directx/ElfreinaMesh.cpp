@@ -1,6 +1,7 @@
-#include"ElfreinaMesh.hpp"
-#include"DirectGraphics.hpp"
-#include"DxUtility.hpp"
+#include "source/GcLib/pch.h"
+#include "ElfreinaMesh.hpp"
+#include "DirectGraphics.hpp"
+#include "DxUtility.hpp"
 
 using namespace gstd;
 using namespace directx;

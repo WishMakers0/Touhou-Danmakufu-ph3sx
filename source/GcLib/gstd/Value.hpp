@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../pch.h"
+
 /*
-#include "GstdConstant.hpp"
 #include "LightweightVector.hpp"
 
 namespace gstd {

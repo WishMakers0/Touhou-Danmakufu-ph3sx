@@ -1,6 +1,7 @@
 #ifndef __DIRECTX_DIRECTGRAPHICS__
 #define __DIRECTX_DIRECTGRAPHICS__
 
+#include "../pch.h"
 #include "DxConstant.hpp"
 #include "VertexBuffer.hpp"
 

@@ -1,5 +1,6 @@
-#include"DnhCommon.hpp"
-#include"DnhGcLibImpl.hpp"
+#include "source/GcLib/pch.h"
+#include "DnhCommon.hpp"
+#include "DnhGcLibImpl.hpp"
 
 /**********************************************************
 //ScriptInformation

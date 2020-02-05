@@ -1,7 +1,8 @@
-#include"System.hpp"
-#include"TitleScene.hpp"
-#include"ScriptSelectScene.hpp"
-#include"StgScene.hpp"
+#include "source/GcLib/pch.h"
+#include "System.hpp"
+#include "TitleScene.hpp"
+#include "ScriptSelectScene.hpp"
+#include "StgScene.hpp"
 
 /**********************************************************
 //SystemController
@@ -356,7 +357,7 @@ SystemResidentTask::SystemResidentTask() {
 	textFps_.SetFontBorderColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 	textFps_.SetFontBorderWidth(2);
 	textFps_.SetFontSize(14);
-	textFps_.SetFontBold(true);
+	textFps_.SetFontWeight(FW_BOLD);
 	textFps_.SetMaxWidth(screenWidth - 8);
 	textFps_.SetHorizontalAlignment(DxText::ALIGNMENT_RIGHT);
 	textFps_.SetPosition(0, screenHeight - 20);

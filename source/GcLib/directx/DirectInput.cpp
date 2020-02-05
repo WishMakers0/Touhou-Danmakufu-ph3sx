@@ -1,4 +1,5 @@
-#include"DirectInput.hpp"
+#include "source/GcLib/pch.h"
+#include "DirectInput.hpp"
 
 using namespace gstd;
 using namespace directx;

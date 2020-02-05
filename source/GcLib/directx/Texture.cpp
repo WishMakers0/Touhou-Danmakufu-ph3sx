@@ -1,5 +1,6 @@
-#include"Texture.hpp"
-#include"DirectGraphics.hpp"
+#include "source/GcLib/pch.h"
+#include "Texture.hpp"
+#include "DirectGraphics.hpp"
 
 using namespace gstd;
 using namespace directx;

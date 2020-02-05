@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_ElfreinaMeshData__
 #define __DIRECTX_ElfreinaMeshData__
 
-#include"RenderObject.hpp"
+#include "../pch.h"
+#include "RenderObject.hpp"
 
 namespace directx {
 	class RenderObjectElfreinaBlock;

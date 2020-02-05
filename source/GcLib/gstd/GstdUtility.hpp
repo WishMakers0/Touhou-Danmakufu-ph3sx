@@ -1,7 +1,8 @@
 #ifndef __GSTD_UTILITIY__
 #define __GSTD_UTILITIY__
 
-#include "GstdConstant.hpp"
+#include "../pch.h"
+
 #include "SmartPointer.hpp"
 
 namespace gstd {
@@ -56,7 +57,7 @@ namespace gstd {
 		//----------------------------------------------------------------
 		static std::vector<std::string> Split(std::string str, std::string delim);
 		static void Split(std::string str, std::string delim, std::vector<std::string>& res);
-		static std::string Format(char* str, ...);
+		static std::string Format(const char* str, ...);
 
 		static int CountCharacter(std::string& str, char c);
 		static int CountCharacter(std::vector<char>& str, char c);
@@ -71,8 +72,8 @@ namespace gstd {
 		//std::wstring.sizeは文字数を返す。バイト数ではない。
 		static std::vector<std::wstring> Split(std::wstring str, std::wstring delim);
 		static void Split(std::wstring str, std::wstring delim, std::vector<std::wstring>& res);
-		static std::wstring Format(wchar_t* str, ...);
-		static std::wstring FormatToWide(char* str, ...);
+		static std::wstring Format(const wchar_t* str, ...);
+		static std::wstring FormatToWide(const char* str, ...);
 
 		static int CountCharacter(std::wstring& str, wchar_t c);
 		static int ToInteger(std::wstring const & s);
@@ -202,7 +203,7 @@ namespace gstd {
 		static std::wstring GetFileDirectory(std::wstring path) {
 			wchar_t pDrive[_MAX_PATH];
 			wchar_t pDir[_MAX_PATH];
-			_wsplitpath(path.c_str(), pDrive, pDir, NULL, NULL);
+			_wsplitpath_s(path.c_str(), pDrive, _MAX_PATH, pDir, _MAX_PATH, nullptr, 0, nullptr, 0);
 			return std::wstring(pDrive) + std::wstring(pDir);
 		}
 
@@ -217,25 +218,25 @@ namespace gstd {
 		static std::wstring GetFileName(std::wstring path) {
 			wchar_t pFileName[_MAX_PATH];
 			wchar_t pExt[_MAX_PATH];
-			_wsplitpath(path.c_str(), NULL, NULL, pFileName, pExt);
+			_wsplitpath_s(path.c_str(), nullptr, 0, nullptr, 0, pFileName, _MAX_PATH, pExt, _MAX_PATH);
 			return std::wstring(pFileName) + std::wstring(pExt);
 		}
 
 		static std::wstring GetDriveName(std::wstring path) {
 			wchar_t pDrive[_MAX_PATH];
-			_wsplitpath(path.c_str(), pDrive, NULL, NULL, NULL);
+			_wsplitpath_s(path.c_str(), pDrive, _MAX_PATH, nullptr, 0, nullptr, 0, nullptr, 0);
 			return std::wstring(pDrive);
 		}
 
 		static std::wstring GetFileNameWithoutExtension(std::wstring path) {
 			wchar_t pFileName[_MAX_PATH];
-			_wsplitpath(path.c_str(), NULL, NULL, pFileName, NULL);
+			_wsplitpath_s(path.c_str(), nullptr, 0, nullptr, 0, pFileName, _MAX_PATH, nullptr, 0);
 			return std::wstring(pFileName);
 		}
 
 		static std::wstring GetFileExtension(std::wstring path) {
 			wchar_t pExt[_MAX_PATH];
-			_wsplitpath(path.c_str(), NULL, NULL, NULL, pExt);
+			_wsplitpath_s(path.c_str(), nullptr, 0, nullptr, 0, nullptr, 0, pExt, _MAX_PATH);
 			return std::wstring(pExt);
 		}
 
@@ -573,6 +574,7 @@ namespace gstd {
 		LOGFONT GetInfo() { return info_; }
 	};
 
+	/*
 	//================================================================
 	//ObjectPool
 	template <class T, bool SYNC>
@@ -639,7 +641,7 @@ namespace gstd {
 			return res;
 		}
 	};
-
+	*/
 }
 
 #endif

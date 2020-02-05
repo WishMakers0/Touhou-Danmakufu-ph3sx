@@ -1,7 +1,9 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_CONTROLSCRIPT__
 #define __TOUHOUDANMAKUFU_DNHSTG_CONTROLSCRIPT__
 
-#include"StgCommon.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
 
 class StgControlScript;
 /**********************************************************

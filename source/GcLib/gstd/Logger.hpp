@@ -1,12 +1,13 @@
 #ifndef __GSTD_LOGGER__
 #define __GSTD_LOGGER__
 
-#include"GstdConstant.hpp"
-#include"GstdUtility.hpp"
-#include"File.hpp"
-#include"Thread.hpp"
+#include "../pch.h"
 
-#include"Window.hpp"
+#include "GstdUtility.hpp"
+#include "File.hpp"
+#include "Thread.hpp"
+
+#include "Window.hpp"
 
 
 namespace gstd {

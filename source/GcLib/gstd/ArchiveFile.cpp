@@ -1,3 +1,4 @@
+#include "source/GcLib/pch.h"
 #include "ArchiveFile.h"
 
 using namespace gstd;
@@ -61,8 +62,7 @@ void FileArchiver::GetKeyHashHeader(std::string& key, byte& keyBase, byte& keySt
 	keyStep = ((hash & 0x0000ff00) >> 8) ^ 0xc8;
 }
 void FileArchiver::GetKeyHashFile(std::wstring& key, byte headerBase, byte headerStep,
-	byte& keyBase, byte& keyStep)
-{
+	byte& keyBase, byte& keyStep) {
 	uint32_t hash = std::hash<std::wstring>{}(key);
 	keyBase = ((hash & 0xff000000) >> 24) ^ 0x4a;
 	keyStep = ((hash & 0x00ff0000) >> 16) ^ 0xeb;
@@ -225,7 +225,7 @@ bool FileArchiver::EncryptArchive(std::wstring path, ArchiveFileHeader* header, 
 			size_t count = entry->sizeStored;
 
 			byte localBase = entry->keyBase;
-			byte localStep = (entry->keyStep << 3) ^ (entry->keyStep & 0x66);
+			byte localStep = entry->keyStep;
 
 			src.seekg(entry->offsetPos, std::ios::beg);
 			dest.seekp(entry->offsetPos, std::ios::beg);
@@ -330,7 +330,7 @@ bool ArchiveFile::Open() {
 		file_.clear(std::ios::eofbit);
 
 		for (size_t iEntry = 0U; iEntry < header.entryCount; iEntry++) {
-			ArchiveFileEntry::ptr entry = std::make_shared<ArchiveFileEntry>();
+			ArchiveFileEntry::ptr entry = std::shared_ptr<ArchiveFileEntry>(new ArchiveFileEntry);
 
 			uint32_t sizeEntry = 0U; 
 			bufInfo.read((char*)&sizeEntry, sizeof(uint32_t));
@@ -394,7 +394,7 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry::ptr e
 
 			uint8_t keyBase = entry->keyBase;
 			FileArchiver::EncodeBlock((byte*)res->GetPointer(), entry->sizeFull, 
-				keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+				keyBase, entry->keyStep);
 
 			break;
 		}
@@ -409,7 +409,7 @@ ref_count_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry::ptr e
 
 			uint8_t keyBase = entry->keyBase;
 			FileArchiver::EncodeBlock((byte*)tmp, entry->sizeStored, 
-				keyBase, (entry->keyStep << 3) ^ (entry->keyStep & 0x66));
+				keyBase, entry->keyStep);
 
 			size_t sizeVerif = 0U;
 

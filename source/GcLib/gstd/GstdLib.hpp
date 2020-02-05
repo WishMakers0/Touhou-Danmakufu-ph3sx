@@ -1,7 +1,8 @@
 #ifndef __GSTD_LIB__
 #define __GSTD_LIB__
 
-#include "GstdConstant.hpp"
+#include "../pch.h"
+
 #include "GstdUtility.hpp"
 
 #include "PtrUtil.hpp"

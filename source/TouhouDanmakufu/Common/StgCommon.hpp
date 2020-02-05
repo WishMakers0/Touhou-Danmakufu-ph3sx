@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../GcLib/pch.h"
+
 #include "DnhCommon.hpp"
 #include "DnhGcLibImpl.hpp"
 #include "DnhReplay.hpp"
@@ -23,12 +25,12 @@ private:
 protected:
 	double posX_;
 	double posY_;
-	StgMovePattern* pattern_;
+	std::shared_ptr<StgMovePattern> pattern_;
 
 	int framePattern_;
-	std::map<int, StgMovePattern*> mapPattern_;
+	std::map<int, std::shared_ptr<StgMovePattern>> mapPattern_;
 	virtual void _Move();
-	void _AttachReservedPattern(StgMovePattern* pattern);
+	void _AttachReservedPattern(std::shared_ptr<StgMovePattern> pattern);
 
 public:
 	StgMoveObject(StgStageController* stageController);
@@ -47,9 +49,9 @@ public:
 	void SetSpeedX(double speedX);
 	void SetSpeedY(double speedY);
 
-	StgMovePattern* GetPattern() { return pattern_; }
-	void SetPattern(StgMovePattern* pattern);
-	void AddPattern(int frameDelay, StgMovePattern* pattern);
+	std::shared_ptr<StgMovePattern> GetPattern() { return pattern_; }
+	void SetPattern(std::shared_ptr<StgMovePattern> pattern);
+	void AddPattern(int frameDelay, std::shared_ptr<StgMovePattern> pattern);
 };
 
 /**********************************************************

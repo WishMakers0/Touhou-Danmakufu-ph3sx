@@ -1,8 +1,9 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_USER_EXTEND_SCENE__
 #define __TOUHOUDANMAKUFU_DNHSTG_USER_EXTEND_SCENE__
 
-#include"StgCommon.hpp"
-#include"StgControlScript.hpp"
+#include "../../GcLib/pch.h"
+#include "StgCommon.hpp"
+#include "StgControlScript.hpp"
 
 /**********************************************************
 //StgUserExtendScene
@@ -39,7 +40,7 @@ class StgUserExtendSceneScript;
 class StgUserExtendSceneScriptManager : public StgControlScriptManager {
 protected:
 	StgSystemController* systemController_;
-	ref_count_ptr<DxScriptObjectManager> objectManager_;
+	std::shared_ptr<DxScriptObjectManager> objectManager_;
 
 public:
 	StgUserExtendSceneScriptManager(StgSystemController* controller);

@@ -1,6 +1,7 @@
 #ifndef __DIRECTX_DXLIB__
 #define __DIRECTX_DXLIB__
 
+#include "../pch.h"
 
 #include "DxConstant.hpp"
 

@@ -1,7 +1,8 @@
 #ifndef __DIRECTX_SCRIPTMANAGER__
 #define __DIRECTX_SCRIPTMANAGER__
 
-#include"DxScript.hpp"
+#include "../pch.h"
+#include "DxScript.hpp"
 
 namespace directx {
 	class ManagedScript;

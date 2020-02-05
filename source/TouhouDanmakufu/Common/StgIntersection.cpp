@@ -1,7 +1,8 @@
-#include"StgIntersection.hpp"
-#include"StgShot.hpp"
-#include"StgPlayer.hpp"
-#include"StgEnemy.hpp"
+#include "source/GcLib/pch.h"
+#include "StgIntersection.hpp"
+#include "StgShot.hpp"
+#include "StgPlayer.hpp"
+#include "StgEnemy.hpp"
 
 /**********************************************************
 //StgIntersectionManager

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../pch.h"
+
 //Currently not used, somehow broken.
 
 /*

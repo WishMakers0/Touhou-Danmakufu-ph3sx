@@ -1,9 +1,11 @@
 #ifndef __TOUHOUDANMAKUFU_DNHSTG_PLAYER__
 #define __TOUHOUDANMAKUFU_DNHSTG_PLAYER__
 
-#include"StgCommon.hpp"
-#include"StgStageScript.hpp"
-#include"StgIntersection.hpp"
+#include "../../GcLib/pch.h"
+
+#include "StgCommon.hpp"
+#include "StgStageScript.hpp"
+#include "StgIntersection.hpp"
 
 class StgPlayerObject;
 class StgPlayerInformation;

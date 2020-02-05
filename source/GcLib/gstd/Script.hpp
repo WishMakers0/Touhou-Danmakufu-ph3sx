@@ -19,14 +19,11 @@
 
 #pragma once
 
+#include "../pch.h"
+
 #pragma warning (disable:4786)	//STL Warning—}~
 #pragma warning (disable:4018)	//signed ‚Æ unsigned ‚Ì”’l‚ğ”äŠr
 #pragma warning (disable:4244)	//double' ‚©‚ç 'float' ‚É•ÏŠ·
-
-#include <list>
-#include <vector>
-#include <string>
-#include <map>
 
 #include "Logger.hpp"
 
@@ -212,17 +209,17 @@ namespace gstd {
 	public:
 		value() : data(nullptr) {}
 		value(type_data* t, double v) {
-			data = std::make_shared<body>();
+			data = std::shared_ptr<body>(new body);
 			data->type = t;
 			data->real_value = v;
 		}
 		value(type_data* t, wchar_t v) {
-			data = std::make_shared<body>();
+			data = std::shared_ptr<body>(new body);
 			data->type = t;
 			data->char_value = v;
 		}
 		value(type_data* t, bool v) {
-			data = std::make_shared<body>();
+			data = std::shared_ptr<body>(new body);
 			data->type = t;
 			data->boolean_value = v;
 		}
@@ -270,11 +267,12 @@ namespace gstd {
 
 		void unique() const {
 			if (data == nullptr) {
-				data = std::make_shared<body>();
+				data = std::shared_ptr<body>(new body);
 				data->type = nullptr;
 			}
 			else if (!data.unique()) {
-				data = std::make_shared<body>(*data);
+				body* newData = new body(*data);
+				data = std::shared_ptr<body>(newData);
 			}
 		}
 

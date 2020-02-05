@@ -1,9 +1,11 @@
 #ifndef __DIRECTX_SHADER__
 #define __DIRECTX_SHADER__
 
-#include"DxConstant.hpp"
-#include"DirectGraphics.hpp"
-#include"Texture.hpp"
+#include "../pch.h"
+
+#include "DxConstant.hpp"
+#include "DirectGraphics.hpp"
+#include "Texture.hpp"
 
 namespace directx {
 	//http://msdn.microsoft.com/ja-jp/library/bb944006(v=vs.85).aspx

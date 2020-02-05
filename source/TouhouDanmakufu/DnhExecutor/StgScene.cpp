@@ -1,15 +1,14 @@
-#include"StgScene.hpp"
-#include"System.hpp"
+#include "source/GcLib/pch.h"
+#include "StgScene.hpp"
+#include "System.hpp"
 
 /**********************************************************
 //EStgSystemController
 **********************************************************/
-void EStgSystemController::DoEnd()
-{
+void EStgSystemController::DoEnd() {
 	SystemController::GetInstance()->GetSceneManager()->TransScriptSelectScene_Last();
 }
-void EStgSystemController::DoRetry()
-{
+void EStgSystemController::DoRetry() {
 	SceneManager* sceneManager = SystemController::GetInstance()->GetSceneManager();
 	ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
 	sceneManager->TransStgScene(infoStage->GetMainScriptInformation(), infoStage->GetPlayerScriptInformation(), NULL);
@@ -19,13 +18,11 @@ void EStgSystemController::DoRetry()
 /**********************************************************
 //PStgSystemController
 **********************************************************/
-void PStgSystemController::DoEnd()
-{
+void PStgSystemController::DoEnd() {
 	EDirectGraphics* graphics = EDirectGraphics::CreateInstance();
 	graphics->SetWindowVisible(false);
 	EApplication::GetInstance()->End();
 }
-void PStgSystemController::DoRetry()
-{
+void PStgSystemController::DoRetry() {
 	SystemController::GetInstance()->Reset();
 }
