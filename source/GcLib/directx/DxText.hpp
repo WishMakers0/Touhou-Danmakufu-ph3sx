@@ -308,7 +308,7 @@ namespace directx {
 	class DxTextRenderObject {
 		struct ObjectData {
 			POINT bias;
-			gstd::ref_count_ptr<Sprite2D> sprite;
+			Sprite2D* sprite;
 		};
 	protected:
 		POINT position_;//à⁄ìÆêÊç¿ïW
@@ -320,15 +320,13 @@ namespace directx {
 		bool bAutoCenter_;
 		bool bPermitCamera_;
 		gstd::ref_count_ptr<Shader> shader_;
-
-		gstd::ByteBuffer vertCopy_;
 	public:
 		DxTextRenderObject();
-		virtual ~DxTextRenderObject() {}
+		virtual ~DxTextRenderObject();
 
 		void Render();
 		void Render(D3DXVECTOR2& angleX, D3DXVECTOR2& angleY, D3DXVECTOR2& angleZ);
-		void AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj);
+		void AddRenderObject(Sprite2D* obj);
 		void AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias);
 
 		POINT GetPosition() { return position_; }

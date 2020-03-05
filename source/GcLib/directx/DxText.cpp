@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "DxText.hpp"
 #include "DxUtility.hpp"
 #include "DirectGraphics.hpp"
@@ -108,123 +109,127 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 
 	int xMax = iBmp_w + iOfs_x + widthBorder * 2;
 	int yMax = iBmp_h + iOfs_y + widthBorder * 2;
-	for (int iy = 0; iy < yMax && size > 0; iy++) {
-		int yBmp = iy - iOfs_y - widthBorder;
-		int colorR = ColorAccess::GetColorR(colorTop) - gapColorR * yBmp;
-		int colorG = ColorAccess::GetColorG(colorTop) - gapColorG * yBmp;
-		int colorB = ColorAccess::GetColorB(colorTop) - gapColorB * yBmp;
 
-		for (int ix = 0; ix < xMax; ix++) {
-			int xBmp = ix - iOfs_x - widthBorder;
+	if (size > 0) {
+#pragma omp parallel for
+		for (int iy = 0; iy < yMax; iy++) {
+			int yBmp = iy - iOfs_y - widthBorder;
+			int colorR = ColorAccess::GetColorR(colorTop) - gapColorR * yBmp;
+			int colorG = ColorAccess::GetColorG(colorTop) - gapColorG * yBmp;
+			int colorB = ColorAccess::GetColorB(colorTop) - gapColorB * yBmp;
 
-			DWORD alpha = 255;
-			if (uFormat != GGO_BITMAP) {
-				int posBmp = xBmp + iBmp_w * yBmp;
-				alpha = xBmp >= 0 && xBmp < iBmp_w && yBmp >= 0 && yBmp < iBmp_h ?
-					(255 * ptr[posBmp]) / (level - 1) : 0;
-			}
-			else {
-				if (xBmp >= 0 && xBmp < iBmp_w && yBmp >= 0 && yBmp < iBmp_h) {
-					int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
-					int posBmp = xBmp / 8 + lineByte * yBmp;
-					alpha = BitAccess::GetBit(ptr[posBmp], 7 - xBmp % 8) ? 255 : 0;
-				}
-				else alpha = 0;
-			}
+			for (int ix = 0; ix < xMax; ix++) {
+				int xBmp = ix - iOfs_x - widthBorder;
 
-			DWORD color = 0;
-			if (typeBorder != DxFont::BORDER_NONE && alpha != 255) {
-				if (alpha == 0) {
-					int count = 0;
-					int antiDist = 0;
-					int bx = typeBorder == DxFont::BORDER_FULL ? xBmp + widthBorder + antiDist : xBmp + 1;
-					int by = typeBorder == DxFont::BORDER_FULL ? yBmp + widthBorder + antiDist : yBmp + 1;
-					int minAlphaEnableDist = 255 * 255;
-					for (int ax = xBmp - widthBorder - antiDist; ax <= bx; ax++) {
-						for (int ay = yBmp - widthBorder - antiDist; ay <= by; ay++) {
-							int dist = abs(ax - xBmp) + abs(ay - yBmp);
-							if (dist > widthBorder + antiDist || dist == 0)continue;
-
-							DWORD tAlpha = 255;
-							if (uFormat != GGO_BITMAP) {
-								tAlpha = ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h ?
-									(255 * ptr[ax + iBmp_w * ay]) / (level - 1) : 0;
-							}
-							else {
-								if (ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h) {
-									int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
-									int tPos = ax / 8 + lineByte * ay;
-									tAlpha = BitAccess::GetBit(ptr[tPos], 7 - ax % 8) ? 255 : 0;
-								}
-								else tAlpha = 0;
-							}
-
-							if (tAlpha > 0)
-								minAlphaEnableDist = min(minAlphaEnableDist, dist);
-
-							int tCount = tAlpha /= dist;
-							tCount *= 2;
-							if (typeBorder == DxFont::BORDER_SHADOW && (ax >= xBmp || ay >= yBmp))
-								tCount /= 2;
-							count += tCount;
-
-						}
-					}
-					color = colorBorder;
-
-					int destAlpha = 0;
-					if (minAlphaEnableDist < widthBorder)
-						destAlpha = 255;
-					else if (minAlphaEnableDist == widthBorder)
-						destAlpha = count;
-					else destAlpha = 0;
-					//color = ColorAccess::SetColorA(color, ColorAccess::GetColorA(colorBorder)*count/255);
-					color = ColorAccess::SetColorA(color, ColorAccess::GetColorA(colorBorder) * destAlpha / 255);
+				DWORD alpha = 255;
+				if (uFormat != GGO_BITMAP) {
+					int posBmp = xBmp + iBmp_w * yBmp;
+					alpha = xBmp >= 0 && xBmp < iBmp_w && yBmp >= 0 && yBmp < iBmp_h ?
+						(255 * ptr[posBmp]) / (level - 1) : 0;
 				}
 				else {
-					int oAlpha = alpha + 64;
-					if (alpha > 255)alpha = 255;
-
-					int count = 0;
-					int cDist = 1;
-					int bx = typeBorder == DxFont::BORDER_FULL ? xBmp + cDist : xBmp + 1;
-					int by = typeBorder == DxFont::BORDER_FULL ? yBmp + cDist : yBmp + 1;
-					for (int ax = xBmp - cDist; ax <= bx; ax++) {
-						for (int ay = yBmp - cDist; ay <= by; ay++) {
-							DWORD tAlpha = 255;
-							if (uFormat != GGO_BITMAP) {
-								tAlpha = tAlpha = ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h ?
-									(255 * ptr[ax + iBmp_w * ay]) / (level - 1) : 0;
-							}
-							else {
-								if (ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h) {
-									int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
-									int tPos = ax / 8 + lineByte * ay;
-									tAlpha = BitAccess::GetBit(ptr[tPos], 7 - ax % 8) ? 255 : 0;
-								}
-								else tAlpha = 0;
-							}
-
-							if (tAlpha > 0)count++;
-						}
+					if (xBmp >= 0 && xBmp < iBmp_w && yBmp >= 0 && yBmp < iBmp_h) {
+						int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
+						int posBmp = xBmp / 8 + lineByte * yBmp;
+						alpha = BitAccess::GetBit(ptr[posBmp], 7 - xBmp % 8) ? 255 : 0;
 					}
-					if (count >= 2)oAlpha = alpha;
-
-					int bAlpha = 255 - oAlpha;
-					color = ColorAccess::SetColorA(color, 255);
-					color = ColorAccess::SetColorR(color, colorR * oAlpha / 255 + ColorAccess::GetColorR(colorBorder) * bAlpha / 255);
-					color = ColorAccess::SetColorG(color, colorG * oAlpha / 255 + ColorAccess::GetColorG(colorBorder) * bAlpha / 255);
-					color = ColorAccess::SetColorB(color, colorB * oAlpha / 255 + ColorAccess::GetColorB(colorBorder) * bAlpha / 255);
+					else alpha = 0;
 				}
+
+				DWORD color = 0;
+				if (typeBorder != DxFont::BORDER_NONE && alpha != 255) {
+					if (alpha == 0) {
+						int count = 0;
+						int antiDist = 0;
+						int bx = typeBorder == DxFont::BORDER_FULL ? xBmp + widthBorder + antiDist : xBmp + 1;
+						int by = typeBorder == DxFont::BORDER_FULL ? yBmp + widthBorder + antiDist : yBmp + 1;
+						int minAlphaEnableDist = 255 * 255;
+						for (int ax = xBmp - widthBorder - antiDist; ax <= bx; ax++) {
+							for (int ay = yBmp - widthBorder - antiDist; ay <= by; ay++) {
+								int dist = abs(ax - xBmp) + abs(ay - yBmp);
+								if (dist > widthBorder + antiDist || dist == 0)continue;
+
+								DWORD tAlpha = 255;
+								if (uFormat != GGO_BITMAP) {
+									tAlpha = ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h ?
+										(255 * ptr[ax + iBmp_w * ay]) / (level - 1) : 0;
+								}
+								else {
+									if (ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h) {
+										int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
+										int tPos = ax / 8 + lineByte * ay;
+										tAlpha = BitAccess::GetBit(ptr[tPos], 7 - ax % 8) ? 255 : 0;
+									}
+									else tAlpha = 0;
+								}
+
+								if (tAlpha > 0)
+									minAlphaEnableDist = std::min(minAlphaEnableDist, dist);
+
+								int tCount = tAlpha /= dist;
+								tCount *= 2;
+								if (typeBorder == DxFont::BORDER_SHADOW && (ax >= xBmp || ay >= yBmp))
+									tCount /= 2;
+								count += tCount;
+
+							}
+						}
+						color = colorBorder;
+
+						int destAlpha = 0;
+						if (minAlphaEnableDist < widthBorder)
+							destAlpha = 255;
+						else if (minAlphaEnableDist == widthBorder)
+							destAlpha = count;
+						else destAlpha = 0;
+						//color = ColorAccess::SetColorA(color, ColorAccess::GetColorA(colorBorder)*count/255);
+						color = ColorAccess::SetColorA(color, ColorAccess::GetColorA(colorBorder) * destAlpha / 255);
+					}
+					else {
+						int oAlpha = alpha + 64;
+						if (alpha > 255)alpha = 255;
+
+						int count = 0;
+						int cDist = 1;
+						int bx = typeBorder == DxFont::BORDER_FULL ? xBmp + cDist : xBmp + 1;
+						int by = typeBorder == DxFont::BORDER_FULL ? yBmp + cDist : yBmp + 1;
+						for (int ax = xBmp - cDist; ax <= bx; ax++) {
+							for (int ay = yBmp - cDist; ay <= by; ay++) {
+								DWORD tAlpha = 255;
+								if (uFormat != GGO_BITMAP) {
+									tAlpha = tAlpha = ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h ?
+										(255 * ptr[ax + iBmp_w * ay]) / (level - 1) : 0;
+								}
+								else {
+									if (ax >= 0 && ax < iBmp_w && ay >= 0 && ay < iBmp_h) {
+										int lineByte = (1 + (iBmp_w / 32)) * 4; // 1行に使用しているBYTE数（4バイト境界あり）
+										int tPos = ax / 8 + lineByte * ay;
+										tAlpha = BitAccess::GetBit(ptr[tPos], 7 - ax % 8) ? 255 : 0;
+									}
+									else tAlpha = 0;
+								}
+
+								if (tAlpha > 0)count++;
+							}
+						}
+						if (count >= 2)oAlpha = alpha;
+
+						int bAlpha = 255 - oAlpha;
+						color = ColorAccess::SetColorA(color, 255);
+						color = ColorAccess::SetColorR(color, colorR * oAlpha / 255 + ColorAccess::GetColorR(colorBorder) * bAlpha / 255);
+						color = ColorAccess::SetColorG(color, colorG * oAlpha / 255 + ColorAccess::GetColorG(colorBorder) * bAlpha / 255);
+						color = ColorAccess::SetColorB(color, colorB * oAlpha / 255 + ColorAccess::GetColorB(colorBorder) * bAlpha / 255);
+					}
+				}
+				else {
+					if (typeBorder != DxFont::BORDER_NONE && alpha > 0)alpha = 255;
+					color = 0x00ffffff | (alpha << 24);
+					color = ColorAccess::SetColorR(color, colorR);
+					color = ColorAccess::SetColorG(color, colorG);
+					color = ColorAccess::SetColorB(color, colorB);
+				}
+				memcpy((BYTE*)lock.pBits + lock.Pitch * iy + 4 * ix, &color, sizeof(DWORD));
 			}
-			else {
-				if (typeBorder != DxFont::BORDER_NONE && alpha > 0)alpha = 255;
-				color = 0x00ffffff | (alpha << 24);
-				color = ColorAccess::SetColorR(color, colorR);
-				color = ColorAccess::SetColorG(color, colorG);
-				color = ColorAccess::SetColorB(color, colorB);
-			}
-			memcpy((BYTE*)lock.pBits + lock.Pitch * iy + 4 * ix, &color, sizeof(DWORD));
 		}
 	}
 	pTexture->UnlockRect(0);
@@ -719,6 +724,12 @@ DxTextRenderObject::DxTextRenderObject() {
 	bAutoCenter_ = true;
 	bPermitCamera_ = true;
 }
+DxTextRenderObject::~DxTextRenderObject() {
+	for (auto itr = listData_.begin(); itr != listData_.end(); itr++) {
+		if (itr->sprite) delete itr->sprite;
+		itr->sprite = nullptr;
+	}
+}
 void DxTextRenderObject::Render() {
 	D3DXVECTOR2 angZero(1, 0);
 	DxTextRenderObject::Render(angZero, angZero, angZero);
@@ -733,55 +744,32 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 	if (bAutoCenter_) {
 		RECT rect;
 		ZeroMemory(&rect, sizeof(RECT));
-		std::list<ObjectData>::iterator itr = listData_.begin();
+
+		std::list<DxTextRenderObject::ObjectData>::iterator itr = listData_.begin();
 		for (; itr != listData_.end(); itr++) {
 			ObjectData obj = *itr;
 			RECT_D rcDest = obj.sprite->GetDestinationRect();
-			rect.left = min(rect.left, rcDest.left);
-			rect.top = min(rect.top, rcDest.top);
-			rect.right = max(rect.right, rcDest.right);
-			rect.bottom = max(rect.bottom, rcDest.bottom);
+			rect.left = std::min(rect.left, (LONG)rcDest.left);
+			rect.top = std::min(rect.top, (LONG)rcDest.top);
+			rect.right = std::max(rect.right, (LONG)rcDest.right);
+			rect.bottom = std::max(rect.bottom, (LONG)rcDest.bottom);
 		}
 		center.x = (rect.right + rect.left) / 2;
 		center.y = (rect.bottom + rect.top) / 2;
 	}
 
-	std::list<ObjectData>::iterator itr = listData_.begin();
+	auto itr = listData_.begin();
 	for (; itr != listData_.end(); itr++) {
 		ObjectData obj = *itr;
+
 		D3DXVECTOR2 bias = D3DXVECTOR2(obj.bias.x, obj.bias.y);
-		gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
+		Sprite2D* sprite = obj.sprite;
+
 		sprite->SetColorRGB(color_);
 		sprite->SetAlpha(ColorAccess::GetColorA(color_));
 
 		D3DXMATRIX matWorld = RenderObject::CreateWorldMatrixText2D(center, scale_, angX, angY, angZ,
 			position, bias, bCamera ? &DirectGraphics::GetBase()->GetCamera2D()->GetMatrix() : nullptr);
-
-		//vertCopy_.Copy(*sprite->GetVertexPointer());
-
-		/*
-		{
-			int countVertex = sprite->GetVertexCount();
-			for (int iVert = 0; iVert < countVertex; iVert++) {
-				VERTEX_TLX* vert = sprite->GetVertex(iVert);
-				vert->position.x -= center.x;
-				vert->position.y -= center.y;
-				D3DXVec3TransformCoord((D3DXVECTOR3*)&vert->position, (D3DXVECTOR3*)&vert->position, &matWorld);
-				vert->position.x += center.x + bias.x;
-				vert->position.y += center.y + bias.y;
-			}
-		}
-		*/
-		/*
-		else {
-			RECT_D tRect = sprite->GetDestinationRect();
-			tRect.left += pos.x + bias.x;
-			tRect.right += pos.x + bias.x;
-			tRect.top += pos.y + bias.y;
-			tRect.bottom += pos.y + bias.y;
-			sprite->SetDestinationRect(tRect);
-		}
-		*/
 
 		sprite->SetPermitCamera(false);
 		sprite->SetShader(shader_);
@@ -791,7 +779,7 @@ void DxTextRenderObject::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 		sprite->Render(matWorld);
 	}
 }
-void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj) {
+void DxTextRenderObject::AddRenderObject(Sprite2D* obj) {
 	ObjectData data;
 	ZeroMemory(&data.bias, sizeof(POINT));
 	data.sprite = obj;
@@ -872,7 +860,7 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 		int lh = size.cy;
 		if (textLine->width_ + lw + sizeNext.cx >= widthMax) {
 			//改行
-			totalWidth = max(totalWidth, textLine->width_);
+			totalWidth = std::max(totalWidth, textLine->width_);
 			totalHeight += textLine->height_ + linePitch;
 			textInfo->AddTextLine(textLine);
 			textLine = new DxTextLine();
@@ -884,7 +872,7 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 			break;
 		}
 		textLine->width_ += lw;
-		textLine->height_ = max(textLine->height_, lh);
+		textLine->height_ = std::max(textLine->height_, lh);
 		textLine->code_.push_back(code);
 
 		pText += charCount;
@@ -919,7 +907,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText) {
 			if (!scan.HasNext()) {
 				//残りを加える
 				if (textLine->code_.size() > 0) {
-					totalWidth = max(totalWidth, textLine->width_);
+					totalWidth = std::max(totalWidth, textLine->width_);
 					totalHeight += textLine->height_;
 					res->AddTextLine(textLine);
 				}
@@ -948,7 +936,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText) {
 					}
 
 					if (textLine != NULL) {
-						totalWidth = max(totalWidth, textLine->width_);
+						totalWidth = std::max(totalWidth, textLine->width_);
 						totalHeight += textLine->height_ + linePitch;
 						res->AddTextLine(textLine);
 					}
@@ -987,7 +975,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText) {
 					std::wstring sRuby = tag->GetRuby();
 					int rubyCount = StringUtility::CountAsciiSizeCharacter(sRuby);
 					if (rubyCount > 0) {
-						int rubyPitch = max(sizeText.cx / rubyCount - rubyWidth, 0);
+						int rubyPitch = std::max(sizeText.cx / rubyCount - rubyWidth, 0L);
 						int rubyMarginLeft = rubyPitch / 2;
 						tag->SetLeftMargin(rubyMarginLeft);
 
@@ -1161,7 +1149,8 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 		}
 
 		//描画
-		ref_count_ptr<Sprite2D> spriteText = new Sprite2D();
+		Sprite2D* spriteText = new Sprite2D();
+
 		int yGap = 0;
 		yRender = pos.y + yGap;
 		ref_count_ptr<Texture> texture = dxChar->GetTexture();
