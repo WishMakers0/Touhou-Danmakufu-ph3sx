@@ -21,15 +21,12 @@ public:
 
 	static std::wstring GetReplaySaveDirectory(std::wstring scriptPath);
 	static std::wstring GetCommonDataPath(std::wstring scriptPath, std::wstring area);
-
-	static std::wstring ExtendRelativeToFull(std::wstring dir, std::wstring path);
 };
 
 /**********************************************************
 //ELogger
 **********************************************************/
 class ELogger : public Singleton<ELogger>, public WindowLogger {
-private:
 	gstd::ref_count_ptr<gstd::ScriptCommonDataInfoPanel> panelCommonData_;
 public:
 	ELogger();

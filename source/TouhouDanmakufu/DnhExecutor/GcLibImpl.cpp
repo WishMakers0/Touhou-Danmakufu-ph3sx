@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "GcLibImpl.hpp"
 #include "System.hpp"
 #include "StgScene.hpp"
@@ -142,25 +143,24 @@ bool EApplication::_Loop() {
 	fpsController->Wait();
 
 	//ƒƒOŠÖ˜A
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-	std::wstring fps = StringUtility::Format(L"Work: %.2ffps, Draw: %.2ffps",
-		fpsController->GetCurrentWorkFps(),
-		fpsController->GetCurrentRenderFps());
-	logger->SetInfo(0, L"Fps", fps);
+	if (logger->IsWindowVisible()) {
+		std::wstring fps = StringUtility::Format(L"Work: %.2ffps, Draw: %.2ffps",
+			fpsController->GetCurrentWorkFps(),
+			fpsController->GetCurrentRenderFps());
+		logger->SetInfo(0, L"Fps", fps);
 
-	int widthConfig = graphics->GetConfigData().GetScreenWidth();
-	int heightConfig = graphics->GetConfigData().GetScreenHeight();
-	int widthScreen = widthConfig * graphics->GetScreenWidthRatio();
-	int heightScreen = heightConfig * graphics->GetScreenHeightRatio();
+		int widthConfig = graphics->GetConfigData().GetScreenWidth();
+		int heightConfig = graphics->GetConfigData().GetScreenHeight();
+		int widthScreen = widthConfig * graphics->GetScreenWidthRatio();
+		int heightScreen = heightConfig * graphics->GetScreenHeightRatio();
+		std::wstring screen = StringUtility::Format(L"Width: %d/%d, Height: %d/%d",
+			widthScreen, widthConfig,
+			heightScreen, heightConfig);
+		logger->SetInfo(1, L"Screen", screen);
 
-	std::wstring screen = StringUtility::Format(L"Width: %d/%d, Height: %d/%d",
-		widthScreen, widthConfig,
-		heightScreen, heightConfig);
-	logger->SetInfo(1, L"Screen", screen);
-
-	logger->SetInfo(2, L"Font cache",
-		StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
+		logger->SetInfo(2, L"Font cache",
+			StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
+	}
 
 	//‚‘¬“®ì
 	int fastModeKey = fpsController->GetFastModeKey();

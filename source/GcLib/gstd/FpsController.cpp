@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "FpsController.hpp"
 
 using namespace gstd;
@@ -55,7 +56,7 @@ int FpsController::GetControlObjectFps() {
 		ref_count_weak_ptr<FpsControlObject> obj = (*itr);
 		if (obj.IsExists()) {
 			int fps = obj->GetFps();
-			res = min(res, fps);
+			res = std::min(res, fps);
 			itr++;
 		}
 		else
@@ -82,7 +83,7 @@ void StaticFpsController::Wait() {
 	int time = _GetTime();
 
 	double tFps = fps_;
-	tFps = min(tFps, GetControlObjectFps());
+	tFps = std::min(tFps, (double)GetControlObjectFps());
 	if (bFastMode_)tFps = FPS_FAST_MODE;
 
 	int sTime = time - timePrevious_;//前フレームとの時間差
@@ -176,7 +177,7 @@ void AutoSkipFpsController::Wait() {
 	int time = _GetTime();
 
 	double tFps = fps_;
-	tFps = min(tFps, GetControlObjectFps());
+	tFps = std::min(tFps, (double)GetControlObjectFps());
 	if (bFastMode_)tFps = FPS_FAST_MODE;
 
 	int sTime = time - timePrevious_;//前フレームとの時間差

@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "DnhCommon.hpp"
 #include "DnhGcLibImpl.hpp"
 
@@ -148,7 +149,7 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 bool ScriptInformation::IsExcludeExtention(std::wstring ext) {
 	bool res = false;
 	if (ext == L".dat" || ext == L".mid" || ext == L".wav" || ext == L".mp3" || ext == L".ogg" ||
-		ext == L".bmp" || ext == L".png" || ext == L"jpg" ||
+		ext == L".bmp" || ext == L".png" || ext == L".jpg" ||
 		ext == L".mqo" || ext == L".elem") {
 		res = true;
 	}
@@ -447,12 +448,12 @@ bool DnhConfiguration::_LoadDefintionFile() {
 	windowTitle_ = prop.GetString(L"window.title", L"");
 
 	screenWidth_ = prop.GetInteger(L"screen.width", 640);
-	screenWidth_ = max(screenWidth_, 640);
-	screenWidth_ = min(screenWidth_, 1920);
+	screenWidth_ = std::max(screenWidth_, 640);
+	screenWidth_ = std::min(screenWidth_, 1920);
 
 	screenHeight_ = prop.GetInteger(L"screen.height", 480);
-	screenHeight_ = max(screenHeight_, 480);
-	screenHeight_ = min(screenHeight_, 1200);
+	screenHeight_ = std::max(screenHeight_, 480);
+	screenHeight_ = std::min(screenHeight_, 1200);
 
 	return true;
 }

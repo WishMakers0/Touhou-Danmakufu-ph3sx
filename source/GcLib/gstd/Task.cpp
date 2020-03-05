@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "Task.hpp"
 
 using namespace gstd;
@@ -53,7 +54,7 @@ void TaskManager::_ArrangeTask() {
 				if (*itrFunc == NULL)itrFunc = listFunc.erase(itrFunc);
 				else {
 					int delay = (*itrFunc)->GetDelay();
-					delay = max(0, delay - 1);
+					delay = std::max(0, delay - 1);
 					(*itrFunc)->SetDelay(delay);
 					itrFunc++;
 				}

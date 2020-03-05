@@ -144,25 +144,25 @@ bool EApplication::_Loop()
 	fpsController->Wait();
 
 	//ログ関連
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-	std::wstring fps = StringUtility::Format(L"Work：%.2ffps、Draw：%.2ffps",
-		fpsController->GetCurrentWorkFps(), 
-		fpsController->GetCurrentRenderFps());
-	logger->SetInfo(0, L"fps", fps);
+	if (logger->IsWindowVisible()) {
+		std::wstring fps = StringUtility::Format(L"Work：%.2ffps、Draw：%.2ffps",
+			fpsController->GetCurrentWorkFps(),
+			fpsController->GetCurrentRenderFps());
+		logger->SetInfo(0, L"fps", fps);
 
-	int widthConfig = graphics->GetConfigData().GetScreenWidth();
-	int heightConfig = graphics->GetConfigData().GetScreenHeight();
-	int widthScreen = widthConfig * graphics->GetScreenWidthRatio();
-	int heightScreen = heightConfig * graphics->GetScreenHeightRatio();
+		int widthConfig = graphics->GetConfigData().GetScreenWidth();
+		int heightConfig = graphics->GetConfigData().GetScreenHeight();
+		int widthScreen = widthConfig * graphics->GetScreenWidthRatio();
+		int heightScreen = heightConfig * graphics->GetScreenHeightRatio();
 
-	std::wstring screen = StringUtility::Format(L"width：%d/%d、height：%d/%d",
-		widthScreen, widthConfig, 
-		heightScreen, heightConfig);
-	logger->SetInfo(1, L"screen", screen);
+		std::wstring screen = StringUtility::Format(L"width：%d/%d、height：%d/%d",
+			widthScreen, widthConfig,
+			heightScreen, heightConfig);
+		logger->SetInfo(1, L"screen", screen);
 
-	logger->SetInfo(2, L"font cache", 
-		StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount() ));
+		logger->SetInfo(2, L"font cache",
+			StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
+	}
 	
 	//高速動作
 	int fastModeKey = fpsController->GetFastModeKey();

@@ -327,7 +327,7 @@ namespace directx {
 		void SetFocus(D3DXVECTOR2 pos) { pos_ = pos; }
 		void SetFocusX(float x) { pos_.x = x; }
 		void SetFocusY(float y) { pos_.y = y; }
-		double GetRatio() { return max(ratioX_, ratioY_); }
+		double GetRatio() { return std::max(ratioX_, ratioY_); }
 		void SetRatio(double ratio) { ratioX_ = ratio; ratioY_ = ratio; }
 		double GetRatioX() { return ratioX_; }
 		void SetRatioX(double ratio) { ratioX_ = ratio; }

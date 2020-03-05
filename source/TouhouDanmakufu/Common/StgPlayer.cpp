@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgPlayer.hpp"
 #include "StgSystem.hpp"
 
@@ -177,7 +178,7 @@ void StgPlayerObject::Work() {
 	}
 
 	--frameInvincibility_;
-	frameInvincibility_ = max(frameInvincibility_, 0);
+	frameInvincibility_ = std::max(frameInvincibility_, 0);
 	listGrazedShot_.clear();
 	hitObjectID_ = DxScript::ID_INVALID;
 }
@@ -222,10 +223,10 @@ void StgPlayerObject::_Move() {
 	double py = posY_ + sy;
 
 	//‚Í‚Ýo‚½‚Æ‚«‚Ìˆ—
-	px = max(px, rcClip_.left);
-	px = min(px, rcClip_.right);
-	py = max(py, rcClip_.top);
-	py = min(py, rcClip_.bottom);
+	px = std::max(px, (double)rcClip_.left);
+	px = std::min(px, (double)rcClip_.right);
+	py = std::max(py, (double)rcClip_.top);
+	py = std::min(py, (double)rcClip_.bottom);
 
 	SetX(px);
 	SetY(py);
@@ -263,7 +264,7 @@ void StgPlayerObject::CallSpell() {
 	if (state_ == STATE_HIT) {
 		state_ = STATE_NORMAL;
 		infoPlayer_->frameRebirth_ -= frameRebirthDiff_;
-		infoPlayer_->frameRebirth_ = max(infoPlayer_->frameRebirth_, 0);
+		infoPlayer_->frameRebirth_ = std::max(infoPlayer_->frameRebirth_, 0);
 	}
 
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
@@ -378,7 +379,7 @@ void StgPlayerSpellObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIn
 	}
 	}
 	life_ -= damage;
-	life_ = max(life_, 0);
+	life_ = std::max(life_, 0.0);
 }
 
 

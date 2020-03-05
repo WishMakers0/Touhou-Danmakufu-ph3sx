@@ -5,8 +5,6 @@
 
 #include "GstdUtility.hpp"
 
-#include "PtrUtil.hpp"
-
 #include "File.hpp"
 #include "Thread.hpp"
 #include "RandProvider.hpp"

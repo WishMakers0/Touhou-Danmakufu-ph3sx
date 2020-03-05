@@ -206,7 +206,7 @@ void StgSystemController::RenderScriptObject() {
 		int countRender = 0;
 		if (scene == StgSystemInformation::SCENE_STG && stageController_ != nullptr) {
 			auto objectManagerStage = stageController_->GetMainObjectManager();
-			countRender = max(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
+			countRender = std::max(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
 
 			ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
 			bReplay = infoStage->IsReplay();
@@ -214,7 +214,7 @@ void StgSystemController::RenderScriptObject() {
 
 		if (infoSystem_->IsPackageMode()) {
 			auto objectManagerPackage = packageController_->GetMainObjectManager();
-			countRender = max(objectManagerPackage->GetRenderBucketCapacity() - 1, countRender);
+			countRender = std::max(objectManagerPackage->GetRenderBucketCapacity() - 1, countRender);
 		}
 
 		int invalidPriMin = infoSystem_->GetInvaridRenderPriorityMin();
@@ -611,8 +611,10 @@ void StgSystemController::_ControlScene() {
 					objectCount += objectManager->GetAliveObjectCount();
 			}
 		}
-		logger->SetInfo(4, L"Task count", StringUtility::Format(L"%d", taskCount));
-		logger->SetInfo(5, L"Object count", StringUtility::Format(L"%d", objectCount));
+		if (logger->IsWindowVisible()) {
+			logger->SetInfo(4, L"Task count", StringUtility::Format(L"%d", taskCount));
+			logger->SetInfo(5, L"Object count", StringUtility::Format(L"%d", objectCount));
+		}
 	}
 }
 void StgSystemController::StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData) {

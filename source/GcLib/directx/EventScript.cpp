@@ -1520,7 +1520,7 @@ void EventTextWindow::Render() {
 			break;
 		lineStart--;
 	}
-	textInfo->SetValidStartLine(max(lineStart, 1));
+	textInfo->SetValidStartLine(std::max(lineStart, 1));
 	textInfo->SetValidEndLine(lineEnd);
 	dxText_->Render(textInfo);
 }
@@ -1547,7 +1547,7 @@ void EventNameWindow::Work() {
 	DxWindow::Work();
 	int alpha = GetAlpha();
 	if (text_->GetText().size() == 0) {
-		alpha = max(0, alpha - 8);
+		alpha = std::max(0, alpha - 8);
 	}
 	else alpha = 255;
 	SetAlpha(alpha);
@@ -1603,10 +1603,10 @@ void EventLogWindow::Work() {
 	bool bChange = false;
 	int mouseZ = input->GetMouseMoveZ();
 	if (mouseZ > 0)
-		pos_ = min(count - 1, pos_ + 1);
+		pos_ = std::min(count - 1, pos_ + 1);
 	else if (mouseZ < 0) {
 		if (pos_ == posMin_ || count == 0)bChange = true;
-		else pos_ = max(posMin_, pos_ - 1);
+		else pos_ = std::max(posMin_, pos_ - 1);
 	}
 
 	if (input->GetMouseState(DI_MOUSE_RIGHT) == KEY_PULL)bChange = true;
@@ -1690,7 +1690,7 @@ void EventLogWindow::ResetPosition() {
 		posMin_++;
 	}
 
-	posMin_ = min(posMin_ - 1, countInfo - 1);
+	posMin_ = std::min(posMin_ - 1, countInfo - 1);
 	pos_ = posMin_;
 }
 /**********************************************************

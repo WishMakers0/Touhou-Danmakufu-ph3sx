@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "DxWindow.hpp"
 #include "DirectGraphics.hpp"
 #include "DirectInput.hpp"
@@ -360,7 +361,7 @@ void DxWindow::_RenderFrame() {
 	graphics->SetBlendMode(typeRenderFrame_);
 	int alphaWindow = GetAbsoluteAlpha();
 	int alphaSprite = ColorAccess::GetColorA(spriteFrame_->GetVertex(0)->diffuse_color);
-	int alpha = min(255, alphaWindow * alphaSprite / 255);
+	int alpha = std::min(255, alphaWindow * alphaSprite / 255);
 	RECT rcDest = GetAbsoluteWindowRect();
 	RECT_D drcDest = GetRectD(rcDest);
 	spriteFrame_->SetDestinationRect(drcDest);
@@ -429,7 +430,7 @@ void DxLabel::SetText(std::wstring str) {
 		int height = rect.bottom - rect.top;
 		text_ = new DxText();
 		text_->SetHorizontalAlignment(DxText::ALIGNMENT_CENTER);
-		text_->SetFontSize(min(width, height));
+		text_->SetFontSize(std::min(width, height));
 		text_->SetPosition(rect.top, rect.bottom);
 	}
 	text_->SetText(str);
@@ -541,7 +542,7 @@ void DxMessageBox::UpdateWindowRect() {
 	for (iButton = 0; iButton < listButton_.size(); iButton++) {
 		RECT rect = listButton_[iButton]->GetWindowRect();
 		totalButtonWidth += rect.right - rect.left + margin;
-		buttonHeight = max(buttonHeight, rect.bottom - rect.top);
+		buttonHeight = std::max((LONG)buttonHeight, rect.bottom - rect.top);
 	}
 
 	int leftButton = wndWidth / 2 - totalButtonWidth / 2;

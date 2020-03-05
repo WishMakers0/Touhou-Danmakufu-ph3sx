@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "Script.hpp"
 #include "GstdUtility.hpp"
 
@@ -24,9 +25,6 @@ namespace std {
 #endif
 
 using namespace gstd;
-
-#undef min
-#undef max
 
 std::string gstd::to_mbcs(std::wstring const& s) {
 	std::string result = StringUtility::ConvertWideToMulti(s);

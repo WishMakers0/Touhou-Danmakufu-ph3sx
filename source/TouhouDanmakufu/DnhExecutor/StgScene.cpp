@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgScene.hpp"
 #include "System.hpp"
 

@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "DnhGcLibImpl.hpp"
 #include "DnhCommon.hpp"
 
@@ -43,22 +44,6 @@ std::wstring EPathProperty::GetCommonDataPath(std::wstring scriptPath, std::wstr
 	std::wstring dirSave = PathProperty::GetFileDirectory(scriptPath) + L"data/";
 	std::wstring nameMain = PathProperty::GetFileNameWithoutExtension(scriptPath);
 	std::wstring path = dirSave + nameMain + StringUtility::Format(L"_common_%s.dat", area.c_str());
-	return path;
-}
-std::wstring EPathProperty::ExtendRelativeToFull(std::wstring dir, std::wstring path) {
-	path = StringUtility::ReplaceAll(path, L"\\", L"/");
-	if (path.size() >= 2) {
-		if (path[0] == L'.' && path[1] == L'/') {
-			path = path.substr(2);
-			path = dir + path;
-		}
-	}
-
-	std::wstring drive = PathProperty::GetDriveName(path);
-	if (drive.size() == 0) {
-		path = GetModuleDirectory() + path;
-	}
-
 	return path;
 }
 

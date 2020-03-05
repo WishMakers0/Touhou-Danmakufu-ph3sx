@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "Window.hpp"
 
 using namespace gstd;

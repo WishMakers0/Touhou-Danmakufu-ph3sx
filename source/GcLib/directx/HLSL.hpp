@@ -201,6 +201,7 @@ namespace directx {
 		IDirect3DVertexDeclaration9* GetVertexDeclarationTLX() { return declarationTLX_; }
 		IDirect3DVertexDeclaration9* GetVertexDeclarationLX() { return declarationLX_; }
 		IDirect3DVertexDeclaration9* GetVertexDeclarationNX() { return declarationNX_; }
+		IDirect3DVertexDeclaration9* GetVertexDeclarationBNX() { return declarationBNX_; }
 
 		D3DXMATRIX* GetArrayMatrix() { return arrayMatrix; }
 	private:
@@ -210,6 +211,7 @@ namespace directx {
 		IDirect3DVertexDeclaration9* declarationTLX_;
 		IDirect3DVertexDeclaration9* declarationLX_;
 		IDirect3DVertexDeclaration9* declarationNX_;
+		IDirect3DVertexDeclaration9* declarationBNX_;
 
 		D3DXMATRIX arrayMatrix[MAX_MATRIX];
 	};
