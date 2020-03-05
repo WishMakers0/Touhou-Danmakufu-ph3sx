@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgItem.hpp"
 #include "StgSystem.hpp"
 #include "StgStageScript.hpp"
@@ -28,6 +29,8 @@ StgItemManager::StgItemManager(StgStageController* stageController) {
 	bDefaultBonusItemEnable_ = true;
 	bAllItemToPlayer_ = false;
 
+	listObj_.reserve(ITEM_MAX);
+
 	vertexBuffer_ = nullptr;
 	_SetVertexBuffer(256 * 256);
 
@@ -38,23 +41,11 @@ StgItemManager::StgItemManager(StgStageController* stageController) {
 	}
 }
 StgItemManager::~StgItemManager() {
-	if (vertexBuffer_) {
-		vertexBuffer_->Release();
-		vertexBuffer_ = nullptr;
-	}
+	ptr_release(vertexBuffer_);
 
-	if (listSpriteItem_) {
-		delete listSpriteItem_;
-		listSpriteItem_ = nullptr;
-	}
-	if (listSpriteDigit_) {
-		delete listSpriteDigit_;
-		listSpriteDigit_ = nullptr;
-	}
-	if (listItemData_) {
-		delete listItemData_;
-		listItemData_ = nullptr;
-	}
+	ptr_delete(listSpriteItem_);
+	ptr_delete(listSpriteDigit_);
+	ptr_delete(listItemData_);
 }
 void StgItemManager::Work() {
 	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
@@ -64,7 +55,7 @@ void StgItemManager::Work() {
 	pr *= pr;
 	int pAutoItemCollectY = objPlayer->GetAutoItemCollectY();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync >::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgItemObject>::unsync >::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ) {
 		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
 		if (obj->IsDeleted()) {
@@ -166,7 +157,7 @@ void StgItemManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
 		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())continue;
@@ -229,14 +220,11 @@ void StgItemManager::Render(int targetPriority) {
 	if (bEnableFog)
 		graphics->SetFogEnable(true);
 }
-void StgItemManager::_SetVertexBuffer(int size) {
+void StgItemManager::_SetVertexBuffer(size_t size) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
 
-	if (vertexBuffer_) {
-		vertexBuffer_->Release();
-		vertexBuffer_ = nullptr;
-	}
+	ptr_release(vertexBuffer_);
 
 	vertexBufferSize_ = size;
 
@@ -249,10 +237,13 @@ void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgItemObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
+	std::vector<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+
+#pragma omp parallel for
+	for (int iObj = 0; iObj < GetItemCount(); ++iObj) {
+		ref_count_ptr<StgItemObject>::unsync obj = *(itr + iObj);
+
+		if (obj->IsDeleted()) continue;
 
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
@@ -310,16 +301,14 @@ StgItemDataList::StgItemDataList() {
 }
 StgItemDataList::~StgItemDataList() {
 	for (std::vector<StgItemRenderer*>& renderList : listRenderer_) {
-		for (StgItemRenderer* renderer : renderList) {
-			delete renderer;
-		}
+		for (StgItemRenderer* renderer : renderList)
+			ptr_delete(renderer);
 		renderList.clear();
 	}
 	listRenderer_.clear();
 
-	for (StgItemData* itemData : listData_) {
-		delete itemData;
-	}
+	for (StgItemData* itemData : listData_)
+		ptr_delete(itemData);
 	listData_.clear();
 }
 bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
@@ -595,9 +584,8 @@ StgItemRenderer::StgItemRenderer() {
 StgItemRenderer::~StgItemRenderer() {
 
 }
-int StgItemRenderer::GetVertexCount() {
-	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+size_t StgItemRenderer::GetVertexCount() {
+	size_t res = std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
 	return res;
 }
 void StgItemRenderer::Render(StgItemManager* manager) {
@@ -632,7 +620,7 @@ void StgItemRenderer::Render(StgItemManager* manager) {
 		effect->Begin(&cPass, 0);
 		for (UINT iPass = 0; iPass < cPass; ++iPass) {
 			effect->BeginPass(iPass);
-			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, countRenderVertex_ / 3);
 			effect->EndPass();
 		}
 		effect->End();
@@ -831,7 +819,7 @@ void StgItemObject::_NotifyEventToPlayerScript(std::vector<float>& listValue) {
 	ref_count_ptr<StgPlayerObject>::unsync player = stageController_->GetPlayerObject();
 	StgStagePlayerScript* scriptPlayer = player->GetPlayerScript();
 	std::vector<gstd::value> listScriptValue;
-	for (int iVal = 0; iVal < listValue.size(); iVal++) {
+	for (size_t iVal = 0; iVal < listValue.size(); iVal++) {
 		listScriptValue.push_back(scriptPlayer->CreateRealValue(listValue[iVal]));
 	}
 
@@ -843,7 +831,7 @@ void StgItemObject::_NotifyEventToItemScript(std::vector<float>& listValue) {
 	int64_t idItemScript = stageScriptManager->GetItemScriptID();
 	if (idItemScript != StgControlScriptManager::ID_INVALID) {
 		ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetScript(idItemScript);
-		if (scriptItem != NULL) {
+		if (scriptItem) {
 			std::vector<gstd::value> listScriptValue;
 			for (int iVal = 0; iVal < listValue.size(); iVal++) {
 				listScriptValue.push_back(scriptItem->CreateRealValue(listValue[iVal]));
@@ -868,14 +856,12 @@ int StgItemObject::GetMoveType() {
 	int res = StgMovePattern_Item::MOVE_NONE;
 
 	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
-	if (move != nullptr)
-		res = move->GetItemMoveType();
+	if (move) res = move->GetItemMoveType();
 	return res;
 }
 void StgItemObject::SetMoveType(int type) {
 	auto move = std::dynamic_pointer_cast<StgMovePattern_Item>(pattern_);
-	if (move != nullptr)
-		move->SetItemMoveType(type);
+	if (move) move->SetItemMoveType(type);
 }
 
 
@@ -1021,7 +1007,7 @@ StgItemObject_User::StgItemObject_User(StgStageController* stageController) : St
 void StgItemObject_User::SetImageID(int id) {
 	idImage_ = id;
 	StgItemData* data = _GetItemData();
-	if (data != NULL) {
+	if (data) {
 		typeItem_ = data->GetItemType();
 	}
 }
@@ -1030,14 +1016,14 @@ StgItemData* StgItemObject_User::_GetItemData() {
 	StgItemManager* itemManager = stageController_->GetItemManager();
 	StgItemDataList* dataList = itemManager->GetItemDataList();
 
-	if (dataList != nullptr) {
+	if (dataList) {
 		res = dataList->GetData(idImage_);
 	}
 
 	return res;
 }
 void StgItemObject_User::_SetVertexPosition(VERTEX_TLX& vertex, float x, float y, float z, float w) {
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex.position.x = x + bias;
 	vertex.position.y = y + bias;
 	vertex.position.z = z;
@@ -1129,6 +1115,7 @@ void StgItemObject_User::RenderOnItemManager() {
 	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 	int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 	int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 	for (int iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
@@ -1188,7 +1175,7 @@ void StgMovePattern_Item::Move() {
 	else if (typeMove_ == MOVE_TOPOSITION_A) {
 		double dx = posTo_.x - px;
 		double dy = posTo_.y - py;
-		speed_ = sqrt(dx * dx + dy * dy) / 16;
+		speed_ = sqrt(dx * dx + dy * dy) / 16.0;
 
 		double angle = atan2(dy, dx);
 		angDirection_ = angle;
@@ -1199,8 +1186,8 @@ void StgMovePattern_Item::Move() {
 		}
 	}
 	else if (typeMove_ == MOVE_DOWN) {
-		speed_ += 3.0f / 60.0f;
-		if (speed_ > 2.5f) speed_ = 2.5f;
+		speed_ += 3.0 / 60.0;
+		if (speed_ > 2.5) speed_ = 2.5;
 		angDirection_ = Math::DegreeToRadian(90);
 	}
 	else if (typeMove_ == MOVE_SCORE) {
@@ -1219,6 +1206,6 @@ void StgMovePattern_Item::Move() {
 		target_->SetPositionY(py);
 	}
 
-	frame_++;
+	++frame_;
 }
 

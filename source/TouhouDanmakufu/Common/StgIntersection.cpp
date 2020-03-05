@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgIntersection.hpp"
 #include "StgShot.hpp"
 #include "StgPlayer.hpp"
@@ -12,9 +13,11 @@ StgIntersectionManager::StgIntersectionManager() {
 	int screenWidth = graphics->GetScreenWidth();
 	int screenHeight = graphics->GetScreenWidth();
 
+	omp_init_lock(&lock_);
+
 	//_CreatePool(2);
 	listSpace_.resize(3);
-	for (int iSpace = 0; iSpace < listSpace_.size(); iSpace++) {
+	for (size_t iSpace = 0; iSpace < listSpace_.size(); iSpace++) {
 		StgIntersectionSpace* space = new StgIntersectionSpace();
 		space->Initialize(-100, -100, screenWidth + 100, screenHeight + 100);
 		listSpace_[iSpace] = space;
@@ -22,31 +25,32 @@ StgIntersectionManager::StgIntersectionManager() {
 }
 StgIntersectionManager::~StgIntersectionManager() {
 	for (auto& itr : listSpace_) {
-		if (itr) {
-			delete itr;
-			itr = nullptr;
-		}
+		ptr_delete(itr);
 	}
 	listSpace_.clear();
+
+	omp_destroy_lock(&lock_);
 }
 void StgIntersectionManager::Work() {
 	listEnemyTargetPoint_ = listEnemyTargetPointNext_;
 	listEnemyTargetPointNext_.clear();
 
-	//Prevent issues where some small hitboxes would randomly get skipped by forcing a thread lock.
-	lock_.Enter();
-
-	int totalCheck = 0;
-	int totalTarget = 0;
+	size_t totalCheck = 0;
+	size_t totalTarget = 0;
 	std::vector<StgIntersectionSpace*>::iterator itr = listSpace_.begin();
 	for (; itr != listSpace_.end(); itr++) {
 		StgIntersectionSpace* space = *itr;
-		StgIntersectionCheckList* listCheck = space->CreateIntersectionCheckList(totalTarget);
-		int countCheck = listCheck->GetCheckCount();
+		StgIntersectionCheckList* listCheck = space->CreateIntersectionCheckList(this, totalTarget);
+
+		size_t countCheck = listCheck->GetCheckCount();
+
+//#pragma omp parallel for
 		for (int iCheck = 0; iCheck < countCheck; iCheck++) {
 			//Getは1回しか使用できません
 			StgIntersectionTarget::ptr targetA = listCheck->GetTargetA(iCheck);
 			StgIntersectionTarget::ptr targetB = listCheck->GetTargetB(iCheck);
+
+			if (targetA == nullptr || targetB == nullptr) continue;
 
 			bool bIntersected = IsIntersected(targetA, targetB);
 			if (!bIntersected) continue;
@@ -55,23 +59,27 @@ void StgIntersectionManager::Work() {
 			ref_count_weak_ptr<StgIntersectionObject>::unsync objA = targetA->GetObject();
 			ref_count_weak_ptr<StgIntersectionObject>::unsync objB = targetB->GetObject();
 
-			if (objA != NULL) {
-				objA->Intersect(targetA, targetB);
-				objA->SetIntersected();
-				if (objB != NULL) objA->AddIntersectedId(objB->GetDxScriptObjectID());
-			}
-			if (objB != NULL) {
-				objB->Intersect(targetB, targetA);
-				objB->SetIntersected();
-				if (objA != NULL) objB->AddIntersectedId(objA->GetDxScriptObjectID());
+			{
+				//omp_set_lock(&lock_);
+
+				if (objA) {
+					objA->Intersect(targetA, targetB);
+					objA->SetIntersected();
+					if (objB) objA->AddIntersectedId(objB->GetDxScriptObjectID());
+				}
+				if (objB) {
+					objB->Intersect(targetB, targetA);
+					objB->SetIntersected();
+					if (objA) objB->AddIntersectedId(objA->GetDxScriptObjectID());
+				}
+
+				//omp_unset_lock(&lock_);
 			}
 		}
 
 		totalCheck += countCheck;
 		space->ClearTarget();
 	}
-
-	lock_.Leave();
 
 	//_ArrangePool();
 
@@ -112,12 +120,12 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 		bool bEraseShot = false;
 		if (type == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
 			StgShotObject* shot = (StgShotObject*)target->GetObject().GetPointer();
-			if (shot != NULL)
+			if (shot)
 				bEraseShot = shot->IsEraseShot();
 		}
 		else if (type == StgIntersectionTarget::TYPE_PLAYER_SPELL) {
 			StgPlayerSpellObject* spell = (StgPlayerSpellObject*)target->GetObject().GetPointer();
-			if (spell != NULL)
+			if (spell)
 				bEraseShot = spell->IsEraseShot();
 		}
 
@@ -133,10 +141,10 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 		listSpace_[SPACE_PLAYERSOHT_ENEMY]->RegistTargetB(target);
 
 		StgIntersectionTarget_Circle::ptr circle = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
-		if (circle != NULL) {
+		if (circle) {
 			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
 				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
-			if (objEnemy != NULL) {
+			if (objEnemy) {
 				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
@@ -168,10 +176,10 @@ void StgIntersectionManager::AddEnemyTargetToShot(StgIntersectionTarget::ptr tar
 		listSpace_[SPACE_PLAYERSOHT_ENEMY]->RegistTargetB(target);
 
 		StgIntersectionTarget_Circle::ptr circle = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
-		if (circle != NULL) {
+		if (circle) {
 			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
 				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
-			if (objEnemy != NULL) {
+			if (objEnemy) {
 				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
@@ -284,10 +292,7 @@ StgIntersectionSpace::StgIntersectionSpace() {
 	listCheck_ = new StgIntersectionCheckList();
 }
 StgIntersectionSpace::~StgIntersectionSpace() {
-	if (listCheck_) {
-		delete listCheck_;
-		listCheck_ = nullptr;
-	}
+	ptr_delete(listCheck_);
 }
 bool StgIntersectionSpace::Initialize(int left, int top, int right, int bottom) {
 	listCell_.resize(2);
@@ -319,24 +324,54 @@ void StgIntersectionSpace::ClearTarget() {
 	listCell_[0].clear();
 	listCell_[1].clear();
 }
-StgIntersectionCheckList* StgIntersectionSpace::CreateIntersectionCheckList(int& total) {
+StgIntersectionCheckList* StgIntersectionSpace::CreateIntersectionCheckList(StgIntersectionManager* manager, size_t& total) {
 	StgIntersectionCheckList* res = listCheck_;
 	res->Clear();
 
-	total += _WriteIntersectionCheckList(res);
+	total += _WriteIntersectionCheckList(manager, res);
 
 	return res;
 }
-int StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionCheckList*& listCheck)
+size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager* manager, StgIntersectionCheckList*& listCheck)
 //	std::vector<std::vector<StgIntersectionTarget*>> &listStack) 
 {
-	int count = 0;
+	std::atomic<size_t> count{0};
 
 	std::vector<StgIntersectionTarget::ptr>& listTargetA = listCell_[0];
 	std::vector<StgIntersectionTarget::ptr>& listTargetB = listCell_[1];
+	auto itrA = listTargetA.begin();
+	auto itrB = listTargetB.begin();
 
-	for (StgIntersectionTarget::ptr& targetA : listTargetA) {
+	omp_lock_t* ompLock = manager->GetLock();
+
+	/*
+	ParallelAscent(listTargetA.size(), [&](size_t iTargetA) {
+		StgIntersectionTarget::ptr& targetA = *(itrA + iTargetA);
+
 		for (StgIntersectionTarget::ptr& targetB : listTargetB) {
+			RECT& rc1 = targetA->GetIntersectionSpaceRect();
+			RECT& rc2 = targetB->GetIntersectionSpaceRect();
+
+			++count;
+
+			bool bIntersectX = (rc1.left >= rc2.right && rc2.left >= rc1.right)
+				|| (rc1.left <= rc2.right && rc2.left <= rc1.right);
+			if (!bIntersectX) return;
+			bool bIntersectY = (rc1.bottom >= rc2.top && rc2.bottom >= rc1.top)
+				|| (rc1.bottom <= rc2.top && rc2.bottom <= rc1.top);
+			if (!bIntersectY) return;
+
+			listCheck->Add(targetA, targetB);
+		}
+	}
+	*/
+#pragma omp parallel for
+	for (int iA = 0; iA < listTargetA.size(); ++iA) {
+		StgIntersectionTarget::ptr targetA = listTargetA[iA];
+
+		for (int iB = 0; iB < listTargetB.size(); ++iB) {
+			StgIntersectionTarget::ptr targetB = listTargetB[iB];
+
 			RECT& rc1 = targetA->GetIntersectionSpaceRect();
 			RECT& rc2 = targetB->GetIntersectionSpaceRect();
 
@@ -349,14 +384,18 @@ int StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionCheckList*&
 				|| (rc1.bottom <= rc2.top && rc2.bottom <= rc1.top);
 			if (!bIntersectY) continue;
 
-			listCheck->Add(targetA, targetB);
+			{
+				omp_set_lock(ompLock);
+				listCheck->Add(targetA, targetB);
+				omp_unset_lock(ompLock);
+			}
 		}
 	}
 
 	return count;
 
 	//I have no idea what all these below were meant to do, but removing them resulted in 
-	//both no unfortunate issues and faster performance.
+	//	both no unfortunate issues and faster performance.
 
 	/*
 	std::vector<std::vector<StgIntersectionTarget*>>& listCell = listCell_[indexSpace];
@@ -463,8 +502,8 @@ unsigned short StgIntersectionSpace::_Get2DMortonNumber(unsigned short x, unsign
 }
 unsigned int  StgIntersectionSpace::_GetPointElem(float pos_x, float pos_y) {
 	// 座標→線形4分木要素番号変換関数
-	float val1 = max(pos_x - spaceLeft_, 0);
-	float val2 = max(pos_y - spaceTop_, 0);
+	float val1 = std::max(pos_x - spaceLeft_, 0.0);
+	float val2 = std::max(pos_y - spaceTop_, 0.0);
 	return _Get2DMortonNumber(
 		(unsigned short)(val1 / unitWidth_), (unsigned short)(val2 / unitHeight_));
 }
@@ -472,10 +511,8 @@ unsigned int  StgIntersectionSpace::_GetPointElem(float pos_x, float pos_y) {
 
 //StgIntersectionObject
 void StgIntersectionObject::ClearIntersectionRelativeTarget() {
-	for (int iTarget = 0; iTarget < listRelativeTarget_.size(); ++iTarget) {
-		StgIntersectionTarget::ptr target = listRelativeTarget_[iTarget];
-		target->SetObject(nullptr);
-	}
+	for (auto itr = listRelativeTarget_.begin(); itr != listRelativeTarget_.end(); ++itr)
+		(*itr)->SetObject(nullptr);
 	listRelativeTarget_.clear();
 }
 void StgIntersectionObject::AddIntersectionRelativeTarget(StgIntersectionTarget::ptr target) {
@@ -483,24 +520,26 @@ void StgIntersectionObject::AddIntersectionRelativeTarget(StgIntersectionTarget:
 	int shape = target->GetShape();
 	if (shape == StgIntersectionTarget::SHAPE_CIRCLE) {
 		StgIntersectionTarget_Circle::ptr tTarget = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
-		if (tTarget != nullptr)
+		if (tTarget)
 			listOrgCircle_.push_back(tTarget->GetCircle());
 	}
 	else if (shape == StgIntersectionTarget::SHAPE_LINE) {
 		StgIntersectionTarget_Line::ptr tTarget = std::dynamic_pointer_cast<StgIntersectionTarget_Line>(target);
-		if (tTarget != nullptr)
+		if (tTarget)
 			listOrgLine_.push_back(tTarget->GetLine());
 	}
 }
 void StgIntersectionObject::UpdateIntersectionRelativeTarget(int posX, int posY, double angle) {
-	int iCircle = 0;
-	int iLine = 0;
-	for (int iTarget = 0; iTarget < listRelativeTarget_.size(); ++iTarget) {
-		StgIntersectionTarget::ptr target = listRelativeTarget_[iTarget];
+	size_t iCircle = 0;
+	size_t iLine = 0;
+
+	for (auto itr = listRelativeTarget_.begin(); itr != listRelativeTarget_.end(); ++itr) {
+		StgIntersectionTarget::ptr target = *itr;
+
 		int shape = target->GetShape();
 		if (shape == StgIntersectionTarget::SHAPE_CIRCLE) {
 			StgIntersectionTarget_Circle::ptr tTarget = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
-			if (tTarget != nullptr) {
+			if (tTarget) {
 				DxCircle org = listOrgCircle_[iCircle];
 				int px = org.GetX() + posX;
 				int py = org.GetY() + posY;
@@ -519,18 +558,14 @@ void StgIntersectionObject::UpdateIntersectionRelativeTarget(int posX, int posY,
 	}
 }
 void StgIntersectionObject::RegistIntersectionRelativeTarget(StgIntersectionManager* manager) {
-	for (int iTarget = 0; iTarget < listRelativeTarget_.size(); ++iTarget) {
-		StgIntersectionTarget::ptr target = listRelativeTarget_[iTarget];
-		manager->AddTarget(target);
-	}
+	for (auto itr = listRelativeTarget_.begin(); itr != listRelativeTarget_.end(); ++itr)
+		manager->AddTarget(*itr);
 }
 int StgIntersectionObject::GetDxScriptObjectID() {
 	int res = DxScript::ID_INVALID;
 	StgEnemyObject* objEnemy = dynamic_cast<StgEnemyObject*>(this);
-	if (objEnemy != NULL) {
+	if (objEnemy)
 		res = objEnemy->GetObjectID();
-	}
-
 	return res;
 }
 
@@ -542,9 +577,8 @@ StgIntersectionTarget::StgIntersectionTarget() {
 	ZeroMemory(&intersectionSpace_, sizeof(RECT));
 }
 void StgIntersectionTarget::ClearObjectIntersectedIdList() {
-	if (obj_ != NULL) {
+	if (obj_)
 		obj_->ClearIntersectedIdList();
-	}
 }
 std::wstring StgIntersectionTarget::GetInfoAsString() {
 	std::wstring res;

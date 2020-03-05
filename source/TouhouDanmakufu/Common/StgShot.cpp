@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgShot.hpp"
 #include "StgSystem.hpp"
 #include "StgIntersection.hpp"
@@ -13,6 +14,8 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 
 	listPlayerShotData_ = new StgShotDataList();
 	listEnemyShotData_ = new StgShotDataList();
+
+	listObj_.reserve(SHOT_MAX);
 
 	vertexBuffer_ = nullptr;
 	_SetVertexBuffer(256 * 256);
@@ -37,8 +40,6 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 		HRESULT hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
 			&renderTexture_, nullptr);
 		if (FAILED(hr)) {
-#pragma push_macro("max")
-#undef max
 			size_t sqSize = std::max(width, height);
 			width = sqSize;
 			height = sqSize;
@@ -49,7 +50,6 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 				sprintf_s(str, "Error %08x: Unable to create the shot layer render target.", hr);
 				throw gstd::wexception(std::string(str));
 			}	
-#pragma pop_macro("max")
 		}
 		renderTexture_->GetSurfaceLevel(0, &renderSurface_);
 
@@ -66,7 +66,7 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 }
 StgShotManager::~StgShotManager() {
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj != nullptr) {
@@ -74,18 +74,9 @@ StgShotManager::~StgShotManager() {
 		}
 	}
 
-	if (vertexBuffer_) {
-		vertexBuffer_->Release();
-		vertexBuffer_ = nullptr;
-	}
-	if (listPlayerShotData_) {
-		delete listPlayerShotData_;
-		listPlayerShotData_ = nullptr;
-	}
-	if (listEnemyShotData_) {
-		delete listEnemyShotData_;
-		listEnemyShotData_ = nullptr;
-	}
+	ptr_release(vertexBuffer_);
+	ptr_delete(listPlayerShotData_);
+	ptr_delete(listEnemyShotData_);
 	/*
 	if (renderTexture_) {
 		renderTexture_->Release();
@@ -98,7 +89,7 @@ StgShotManager::~StgShotManager() {
 	*/
 }
 void StgShotManager::Work() {
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj->IsDeleted()) {
@@ -108,7 +99,7 @@ void StgShotManager::Work() {
 		else if (!obj->IsActive()) {
 			itr = listObj_.erase(itr);
 		}
-		else itr++;
+		else ++itr;
 	}
 }
 void StgShotManager::Render(int targetPriority) {
@@ -135,7 +126,7 @@ void StgShotManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())continue;
@@ -233,14 +224,11 @@ void StgShotManager::Render(int targetPriority) {
 	if (bEnableFog)
 		graphics->SetFogEnable(true);
 }
-void StgShotManager::_SetVertexBuffer(int size) {
+void StgShotManager::_SetVertexBuffer(size_t size) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
 
-	if (vertexBuffer_) {
-		vertexBuffer_->Release();
-		vertexBuffer_ = nullptr;
-	}
+	ptr_release(vertexBuffer_);
 
 	vertexBufferSize_ = size;
 
@@ -249,14 +237,27 @@ void StgShotManager::_SetVertexBuffer(int size) {
 }
 
 void StgShotManager::RegistIntersectionTarget() {
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
+	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+
+//#pragma omp parallel for
+	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+
+//#pragma omp critical(RegistIntersectionTarget)
 		if (!obj->IsDeleted() && obj->IsActive()) {
 			obj->ClearIntersectedIdList();
 			obj->RegistIntersectionTarget();
 		}
 	}
+	/*
+	ParallelAscent(GetShotCountAll(), [&](size_t iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+		if (!obj->IsDeleted() && obj->IsActive()) {
+			obj->ClearIntersectedIdList();
+			obj->RegistIntersectionTarget();
+		}
+	});
+	*/
 }
 
 bool StgShotManager::LoadPlayerShotData(std::wstring path, bool bReload) {
@@ -277,19 +278,44 @@ RECT StgShotManager::GetShotAutoDeleteClipRect() {
 	return rcClip;
 }
 
-void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOnwer, int cx, int cy, double radius) {
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, int cx, int cy, double radius) {
+	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
 	double rd = radius * radius;
 
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
+#pragma omp parallel for
+	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
-		if (typeOnwer != StgShotObject::OWNER_NULL &&
-			obj->GetOwnerType() != typeOnwer)continue;
+		if (obj->IsDeleted()) continue;
+		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
+		if (typeDelete == DEL_TYPE_SHOT && (obj->GetLife() == StgShotObject::LIFE_SPELL_REGIST)) continue;
 
-		if (typeDelete == DEL_TYPE_SHOT && obj->GetLife() == StgShotObject::LIFE_SPELL_REGIST)continue;
+		double sx = cx - obj->GetPositionX();
+		double sy = cy - obj->GetPositionY();
+
+		double tr = sx * sx + sy * sy;
+
+#pragma omp critical(GetShotIdInCircle)
+		if (tr <= rd) {
+			if (typeTo == TO_TYPE_IMMEDIATE) {
+				obj->DeleteImmediate();
+			}
+			else if (typeTo == TO_TYPE_FADE) {
+				obj->SetFadeDelete();
+			}
+			else if (typeTo == TO_TYPE_ITEM) {
+				obj->ConvertToItem(false);
+			}
+		}
+	}
+	/*
+	ParallelAscent(GetShotCountAll(), [&](size_t iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+
+		if (obj->IsDeleted()) return;
+		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) return;
+		if (typeDelete == DEL_TYPE_SHOT && (obj->GetLife() == StgShotObject::LIFE_SPELL_REGIST)) return;
 
 		double sx = cx - obj->GetPositionX();
 		double sy = cy - obj->GetPositionY();
@@ -307,22 +333,22 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOnwer, i
 				obj->ConvertToItem(false);
 			}
 		}
-
-	}
+	});
+	*/
 }
 
-std::vector<int> StgShotManager::GetShotIdInCircle(int typeOnwer, int cx, int cy, int radius) {
+std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy, int radius) {
 	std::vector<int> res;
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
 	double rd = radius * radius;
 
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
+#pragma omp parallel for
+	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
-		if (typeOnwer != StgShotObject::OWNER_NULL &&
-			obj->GetOwnerType() != typeOnwer)continue;
+		if (obj->IsDeleted()) continue;
+		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
 
 		double sx = cx - obj->GetPositionX();
 		double sy = cy - obj->GetPositionY();
@@ -331,23 +357,28 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOnwer, int cx, int cy
 
 		if (tr <= rd) {
 			int id = obj->GetObjectID();
+
+#pragma omp critical(GetShotIdInCircle)
 			res.push_back(id);
 		}
 	}
+
 	return res;
 }
-int StgShotManager::GetShotCount(int typeOnwer) {
-	int res = 0;
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
+size_t StgShotManager::GetShotCount(int typeOwner) {
+	std::atomic_uint res{0};
+	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
-		if (typeOnwer != StgShotObject::OWNER_NULL &&
-			obj->GetOwnerType() != typeOnwer)continue;
+#pragma omp parallel for
+	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
-		res++;
+		if (obj->IsDeleted()) continue;
+		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
+
+		++res;
 	}
+
 	return res;
 }
 
@@ -356,10 +387,13 @@ void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
+	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+
+#pragma omp parallel for
+	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
+		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+
+		if (obj->IsDeleted()) continue;
 
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
@@ -400,16 +434,14 @@ StgShotDataList::StgShotDataList() {
 }
 StgShotDataList::~StgShotDataList() {
 	for (std::vector<StgShotRenderer*>& renderList : listRenderer_) {
-		for (StgShotRenderer* renderer : renderList) {
-			delete renderer;
-		}
+		for (StgShotRenderer* renderer : renderList)
+			ptr_delete(renderer);
 		renderList.clear();
 	}
 	listRenderer_.clear();
 
-	for (StgShotData* shotData : listData_) {
-		delete shotData;
-	}
+	for (StgShotData* shotData : listData_)
+		ptr_delete(shotData);
 	listData_.clear();
 }
 bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
@@ -668,10 +700,10 @@ void StgShotDataList::_ScanShot(std::vector<StgShotData*>& listData, Scanner& sc
 				RECT& rect = data->listAnime_[0].rcSrc_;
 				int rx = abs(rect.right - rect.left);
 				int ry = abs(rect.bottom - rect.top);
-				int r = min(rx, ry);
+				int r = std::min(rx, ry);
 				r = r / 3 - 3;
 			}
-			DxCircle circle(0, 0, max(r, 2));
+			DxCircle circle(0, 0, std::max(r, 2));
 			data->listCol_ = circle;
 		}
 		if (listData.size() <= id)
@@ -810,9 +842,8 @@ StgShotRenderer::StgShotRenderer() {
 StgShotRenderer::~StgShotRenderer() {
 
 }
-int StgShotRenderer::GetVertexCount() {
-	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+size_t StgShotRenderer::GetVertexCount() {
+	size_t res = std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
 	return res;
 }
 void StgShotRenderer::Render(StgShotManager* manager) {
@@ -847,7 +878,7 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 		effect->Begin(&cPass, 0);
 		for (UINT iPass = 0; iPass < cPass; ++iPass) {
 			effect->BeginPass(iPass);
-			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (int)(countRenderVertex_ / 3));
+			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, countRenderVertex_ / 3U);
 			effect->EndPass();
 		}
 		effect->End();
@@ -987,7 +1018,7 @@ void StgShotObject::_DeleteInAutoDeleteFrame() {
 		objectManager->DeleteObject(idObject_);
 		return;
 	}
-	frameAutoDelete_ = max(0, frameAutoDelete_ - 1);
+	frameAutoDelete_ = std::max(0, frameAutoDelete_ - 1);
 }
 void StgShotObject::_SendDeleteEvent(int bit) {
 	if (typeOwner_ != OWNER_ENEMY)return;
@@ -1092,7 +1123,7 @@ ref_count_ptr<StgShotObject>::unsync StgShotObject::GetOwnObject() {
 	return ref_count_ptr<StgShotObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
 }
 void StgShotObject::_SetVertexPosition(VERTEX_TLX& vertex, float x, float y, float z, float w) {
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex.position.x = x + bias;
 	vertex.position.y = y + bias;
 	vertex.position.z = z;
@@ -1161,12 +1192,14 @@ ref_count_ptr<StgShotObject::ReserveShotList::ListElement>::unsync StgShotObject
 }
 void StgShotObject::ReserveShotList::AddData(int frame, int idShot, int radius, int angle) {
 	ref_count_ptr<ListElement>::unsync list;
-	if (mapData_.find(frame) == mapData_.end()) {
+
+	auto itr = mapData_.find(frame);
+	if (itr == mapData_.end()) {
 		list = new ListElement();
 		mapData_[frame] = list;
 	}
 	else {
-		list = mapData_[frame];
+		list = itr->second;
 	}
 
 	ReserveShotListData data;
@@ -1215,7 +1248,7 @@ void StgNormalShotObject::Work() {
 		_AddReservedShotWork();
 	}
 
-	delay_ = max(delay_ - 1, 0);
+	delay_ = std::max(delay_ - 1, 0);
 	frameWork_++;
 
 	angle_.z += angularVelocity_;
@@ -1446,6 +1479,7 @@ void StgNormalShotObject::RenderOnShotManager() {
 	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 	int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 	int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 	for (int iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
@@ -1509,7 +1543,7 @@ void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	}
 
 	if (life_ != LIFE_SPELL_REGIST)
-		life_ = max(life_ - damage, 0);
+		life_ = std::max(life_ - damage, 0.0);
 }
 void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
@@ -1654,7 +1688,7 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 	}
 	if (life_ != LIFE_SPELL_REGIST) {
 		life_ -= damage;
-		life_ = max(life_, 0);
+		life_ = std::max(life_, 0.0);
 	}
 }
 
@@ -1678,7 +1712,7 @@ void StgLooseLaserObject::Work() {
 	}
 
 	--delay_;
-	delay_ = max(delay_, 0);
+	delay_ = std::max(delay_, 0);
 	frameWork_++;
 
 	if (frameFadeDelete_ >= 0) {
@@ -1865,6 +1899,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 	int destY[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 	int destX[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 	for (int iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
@@ -1959,9 +1994,9 @@ void StgStraightLaserObject::Work() {
 	}
 
 	--delay_;
-	delay_ = max(delay_, 0);	
+	delay_ = std::max(delay_, 0);
 	if (delay_ <= 0 && bLaserExpand_)
-		scaleX_ = min(1.0, scaleX_ + 0.1);
+		scaleX_ = std::min(1.0, scaleX_ + 0.1);
 
 	frameWork_++;
 
@@ -2124,6 +2159,7 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 		for (int iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
@@ -2173,6 +2209,7 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 		for (int iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
@@ -2258,7 +2295,7 @@ void StgCurveLaserObject::Work() {
 	}
 
 	--delay_;
-	delay_ = max(delay_, 0);
+	delay_ = std::max(delay_, 0);
 	frameWork_++;
 
 	if (frameFadeDelete_ >= 0) {
@@ -2410,7 +2447,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 	StgShotRenderer* renderer = nullptr;
 
-	if ((delay_ > 0) && (listPosition_.size() <= length_)) {
+	if ((delay_ > 0) /*&& (listPosition_.size() <= length_)*/) {
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
 			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
@@ -2437,6 +2474,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
 		for (int iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
@@ -2498,7 +2536,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 				thisAlpha -= dAlpha;
 			else if (iPos < countRect / 2)
 				thisAlpha = iPos * 256 / (countRect / 2) + (255 - tipDecrement_ * 255.);
-			thisAlpha = max(0, thisAlpha);
+			thisAlpha = std::max(0.0, thisAlpha);
 
 			D3DCOLOR thisColor = color_;
 			if (bValidAlpha) {

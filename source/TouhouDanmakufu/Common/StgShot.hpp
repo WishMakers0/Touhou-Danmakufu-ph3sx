@@ -35,11 +35,14 @@ public:
 		BIT_EV_DELETE_COUNT,
 	};
 
+	enum {
+		SHOT_MAX = 8192,
+	};
 protected:
 	StgStageController* stageController_;
 	StgShotDataList* listPlayerShotData_;
 	StgShotDataList* listEnemyShotData_;
-	std::list<ref_count_ptr<StgShotObject>::unsync> listObj_;
+	std::vector<ref_count_ptr<StgShotObject>::unsync> listObj_;
 
 	std::bitset<BIT_EV_DELETE_COUNT> listDeleteEventEnable_;
 
@@ -69,8 +72,8 @@ public:
 
 	void DeleteInCircle(int typeDelete, int typeTo, int typeOnwer, int cx, int cy, double radius);
 	std::vector<int> GetShotIdInCircle(int typeOnwer, int cx, int cy, int radius);
-	int GetShotCount(int typeOnwer);
-	int GetShotCountAll() { return listObj_.size(); }
+	size_t GetShotCount(int typeOnwer);
+	size_t GetShotCountAll() { return listObj_.size(); }
 
 	void GetValidRenderPriorityList(std::vector<PriListBool>& list);
 
@@ -79,7 +82,7 @@ public:
 
 	size_t GetVertexBufferSize() { return vertexBufferSize_; }
 	IDirect3DVertexBuffer9* GetVertexBuffer() { return vertexBuffer_; }
-	void _SetVertexBuffer(int size);
+	void _SetVertexBuffer(size_t size);
 };
 
 /**********************************************************
@@ -175,18 +178,18 @@ public:
 class StgShotRenderer : public RenderObjectTLX {
 	friend class StgShotManager;
 
-	int countMaxVertex_;
-	int countRenderVertex_;
+	size_t countMaxVertex_;
+	size_t countRenderVertex_;
 	void* tmp;
 public:
 	StgShotRenderer();
 	~StgShotRenderer();
-	virtual int GetVertexCount();
+	virtual size_t GetVertexCount();
 	virtual void Render(StgShotManager* manager);
 	void AddVertex(VERTEX_TLX& vertex);
 	void AddSquareVertex(VERTEX_TLX* listVertex);
 
-	virtual void SetVertexCount(int count) {
+	virtual void SetVertexCount(size_t count) {
 		vertex_.SetSize(count * strideVertexStreamZero_);
 	}
 };
@@ -335,7 +338,7 @@ public:
 	};
 private:
 	int frame_;
-	std::unordered_map<int, ref_count_ptr<ListElement>::unsync > mapData_;
+	std::unordered_map<int, ref_count_ptr<ListElement>::unsync> mapData_;
 public:
 	ReserveShotList() { frame_ = 0; }
 	virtual ~ReserveShotList() {}

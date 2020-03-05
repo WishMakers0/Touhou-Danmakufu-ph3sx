@@ -22,7 +22,7 @@ class StgItemManager {
 	SpriteList2D* listSpriteDigit_;
 	StgItemDataList* listItemData_;
 
-	std::list<ref_count_ptr<StgItemObject>::unsync> listObj_;
+	std::vector<ref_count_ptr<StgItemObject>::unsync> listObj_;
 	std::set<int> listItemTypeToPlayer_;
 	std::list<DxCircle> listCircleToPlayer_;
 	bool bAllItemToPlayer_;
@@ -35,13 +35,17 @@ class StgItemManager {
 	ID3DXEffect* effectLayer_;
 	D3DXHANDLE handleEffectWorld_;
 public:
+	enum {
+		ITEM_MAX = 16384,
+	};
+
 	StgItemManager(StgStageController* stageController);
 	virtual ~StgItemManager();
 	void Work();
 	void Render(int targetPriority);
 
 	void AddItem(ref_count_ptr<StgItemObject>::unsync obj) { listObj_.push_back(obj); }
-	int GetItemCount() { return listObj_.size(); }
+	size_t GetItemCount() { return listObj_.size(); }
 
 	SpriteList2D* GetItemRenderer() { return listSpriteItem_; }
 	SpriteList2D* GetDigitRenderer() { return listSpriteDigit_; }
@@ -62,7 +66,7 @@ public:
 
 	size_t GetVertexBufferSize() { return vertexBufferSize_; }
 	IDirect3DVertexBuffer9* GetVertexBuffer() { return vertexBuffer_; }
-	void _SetVertexBuffer(int size);
+	void _SetVertexBuffer(size_t size);
 };
 
 /**********************************************************
@@ -136,18 +140,18 @@ public:
 //StgItemRenderer
 **********************************************************/
 class StgItemRenderer : public RenderObjectTLX {
-	int countRenderVertex_;
-	int countMaxVertex_;
+	size_t countRenderVertex_;
+	size_t countMaxVertex_;
 	void* tmp;
 public:
 	StgItemRenderer();
 	~StgItemRenderer();
-	virtual int GetVertexCount();
+	virtual size_t GetVertexCount();
 	virtual void Render(StgItemManager* manager);
 	void AddVertex(VERTEX_TLX& vertex);
 	void AddSquareVertex(VERTEX_TLX* listVertex);
 
-	virtual void SetVertexCount(int count) {
+	virtual void SetVertexCount(size_t count) {
 		vertex_.SetSize(count * strideVertexStreamZero_);
 	}
 };

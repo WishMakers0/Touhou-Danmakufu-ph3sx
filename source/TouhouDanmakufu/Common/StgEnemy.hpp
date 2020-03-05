@@ -60,7 +60,7 @@ public:
 	ref_count_ptr<StgEnemyObject>::unsync GetOwnObject();
 	double GetLife() { return life_; }
 	void SetLife(double life) { life_ = life; }
-	void AddLife(double inc) { life_ += inc; life_ = max(life_, 0); }
+	void AddLife(double inc) { life_ += inc; life_ = std::max(life_, 0.0); }
 	void SetDamageRate(double rateShot, double rateSpell) { rateDamageShot_ = rateShot; rateDamageSpell_ = rateSpell; }
 	double GetShotDamageRate() { return rateDamageShot_; }
 	double GetSpellDamageRate() { return rateDamageSpell_; }

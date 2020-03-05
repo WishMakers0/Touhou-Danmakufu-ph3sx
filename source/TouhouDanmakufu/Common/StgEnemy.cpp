@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgEnemy.hpp"
 #include "StgSystem.hpp"
 
@@ -105,7 +106,7 @@ void StgEnemyObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 			damage = damage * rateDamageSpell_ / 100;
 		}
 	}
-	life_ = max(life_ - damage, 0);
+	life_ = std::max(life_ - damage, 0.0);
 }
 void StgEnemyObject::RegistIntersectionTarget() {
 	_AddRelativeIntersection();
@@ -383,7 +384,7 @@ void StgEnemyBossSceneObject::LoadAllScriptInThread() {
 }
 int StgEnemyBossSceneObject::GetRemainStepCount() {
 	int res = listData_.size() - dataStep_ - 1;
-	res = max(res, 0);
+	res = std::max(res, 0);
 	return res;
 }
 int StgEnemyBossSceneObject::GetActiveStepLifeCount() {
@@ -393,22 +394,28 @@ int StgEnemyBossSceneObject::GetActiveStepLifeCount() {
 double StgEnemyBossSceneObject::GetActiveStepTotalMaxLife() {
 	if (dataStep_ >= listData_.size())return 0;
 
-	double res = 0;
+	std::atomic<double> res = 0;
+
+#pragma omp parallel for
 	for (int iData = 0; iData < listData_[dataStep_].size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 		std::vector<double>& listLife = data->GetLifeList();
 		for (int iLife = 0; iLife < listLife.size(); iLife++)
-			res += listLife[iLife];
+			res = res + listLife[iLife];
 	}
+
 	return res;
 }
 double StgEnemyBossSceneObject::GetActiveStepTotalLife() {
 	if (dataStep_ >= listData_.size())return 0;
 
-	double res = 0;
+	std::atomic<double> res = 0;
+
+#pragma omp parallel for
 	for (int iData = dataIndex_; iData < listData_[dataStep_].size(); iData++) {
-		res += GetActiveStepLife(iData);
+		res = res + GetActiveStepLife(iData);
 	}
+
 	return res;
 }
 double StgEnemyBossSceneObject::GetActiveStepLife(int index) {
@@ -433,10 +440,12 @@ double StgEnemyBossSceneObject::GetActiveStepLife(int index) {
 }
 std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList() {
 	std::vector<double> res;
-	int count = GetActiveStepLifeCount();
-	double total = GetActiveStepTotalMaxLife();
-	double rate = 0;
-	for (int iData = 0; iData < count; iData++) {
+	res.resize(GetActiveStepLifeCount());
+
+	const double total = GetActiveStepTotalMaxLife();
+
+#pragma omp parallel for
+	for (int iData = 0; iData < res.size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 
 		double life = 0;
@@ -444,9 +453,10 @@ std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList() {
 		for (int iLife = 0; iLife < listLife.size(); iLife++) {
 			life += listLife[iLife];
 		}
-		rate += life / total;
-		res.push_back(rate);
+
+		res[iData] = life / total;
 	}
+
 	return res;
 }
 void StgEnemyBossSceneObject::AddPlayerShootDownCount() {

@@ -69,23 +69,23 @@ public:
 
 	virtual void SetIntersectionSpace() {
 		DirectGraphics* graphics = DirectGraphics::GetBase();
-		int screenWidth = graphics->GetScreenWidth();
-		int screenHeight = graphics->GetScreenWidth();
+		LONG screenWidth = graphics->GetScreenWidth();
+		LONG screenHeight = graphics->GetScreenWidth();
 
 		double x = circle_.GetX();
 		double y = circle_.GetY();
 		double r = circle_.GetR();
 
 		intersectionSpace_ = { (int)(x - r), (int)(y - r), (int)(x + r), (int)(y + r) };
-		intersectionSpace_.left = max(intersectionSpace_.left, 0);
-		intersectionSpace_.left = min(intersectionSpace_.left, screenWidth);
-		intersectionSpace_.top = max(intersectionSpace_.top, 0);
-		intersectionSpace_.top = min(intersectionSpace_.top, screenHeight);
+		intersectionSpace_.left = std::max(intersectionSpace_.left, 0L);
+		intersectionSpace_.left = std::min(intersectionSpace_.left, screenWidth);
+		intersectionSpace_.top = std::max(intersectionSpace_.top, 0L);
+		intersectionSpace_.top = std::min(intersectionSpace_.top, screenHeight);
 
-		intersectionSpace_.right = max(intersectionSpace_.right, 0);
-		intersectionSpace_.right = min(intersectionSpace_.right, screenWidth);
-		intersectionSpace_.bottom = max(intersectionSpace_.bottom, 0);
-		intersectionSpace_.bottom = min(intersectionSpace_.bottom, screenHeight);
+		intersectionSpace_.right = std::max(intersectionSpace_.right, 0L);
+		intersectionSpace_.right = std::min(intersectionSpace_.right, screenWidth);
+		intersectionSpace_.bottom = std::max(intersectionSpace_.bottom, 0L);
+		intersectionSpace_.bottom = std::min(intersectionSpace_.bottom, screenHeight);
 	}
 
 	DxCircle& GetCircle() { return circle_; }
@@ -127,17 +127,17 @@ public:
 		y2 += width;
 
 		DirectGraphics* graphics = DirectGraphics::GetBase();
-		int screenWidth = graphics->GetScreenWidth();
-		int screenHeight = graphics->GetScreenWidth();
-		x1 = min(x1, screenWidth);
-		x1 = max(x1, 0);
-		x2 = min(x2, screenWidth);
-		x2 = max(x2, 0);
+		double screenWidth = graphics->GetScreenWidth();
+		double screenHeight = graphics->GetScreenWidth();
+		x1 = std::min(x1, screenWidth);
+		x1 = std::max(x1, 0.0);
+		x2 = std::min(x2, screenWidth);
+		x2 = std::max(x2, 0.0);
 
-		y1 = min(y1, screenHeight);
-		y1 = max(y1, 0);
-		y2 = min(y2, screenHeight);
-		y2 = max(y2, 0);
+		y1 = std::min(y1, screenHeight);
+		y1 = std::max(y1, 0.0);
+		y2 = std::min(y2, screenHeight);
+		y2 = std::max(y2, 0.0);
 
 		//RECT rect = {x1 - width, y1 - width, x2 + width, y2 + width};
 		intersectionSpace_ = { (int)x1, (int)y1, (int)x2, (int)y2 };
@@ -168,7 +168,7 @@ private:
 	std::vector<StgIntersectionTargetPoint> listEnemyTargetPoint_;
 	std::vector<StgIntersectionTargetPoint> listEnemyTargetPointNext_;
 
-	gstd::CriticalSection lock_;
+	omp_lock_t lock_;
 public:
 	StgIntersectionManager();
 	virtual ~StgIntersectionManager();
@@ -182,6 +182,8 @@ public:
 	//void CheckDeletedObject(std::string funcName);
 
 	static bool IsIntersected(StgIntersectionTarget::ptr& target1, StgIntersectionTarget::ptr& target2);
+
+	omp_lock_t* GetLock() { return &lock_; }
 };
 
 /**********************************************************
@@ -243,7 +245,7 @@ protected:
 
 	StgIntersectionCheckList* listCheck_;
 
-	int _WriteIntersectionCheckList(StgIntersectionCheckList*& listCheck);
+	size_t _WriteIntersectionCheckList(StgIntersectionManager* manager, StgIntersectionCheckList*& listCheck);
 //		std::vector<std::vector<StgIntersectionTarget*>> &listStack);
 public:
 	StgIntersectionSpace();
@@ -253,11 +255,11 @@ public:
 	bool RegistTargetA(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_A, target); }
 	bool RegistTargetB(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_B, target); }
 	void ClearTarget();
-	StgIntersectionCheckList* CreateIntersectionCheckList(int& total);
+	StgIntersectionCheckList* CreateIntersectionCheckList(StgIntersectionManager* manager, size_t& total);
 };
 
 class StgIntersectionCheckList {
-	int count_;
+	size_t count_;
 	//std::vector<StgIntersectionTarget*> listTargetA_;
 	//std::vector<StgIntersectionTarget*> listTargetB_;
 	std::vector<std::pair<StgIntersectionTarget::ptr, StgIntersectionTarget::ptr>> listTargetPair_;
@@ -266,7 +268,7 @@ public:
 	virtual ~StgIntersectionCheckList() {}
 
 	void Clear() { count_ = 0; }
-	int GetCheckCount() { return count_; }
+	size_t GetCheckCount() { return count_; }
 	void Add(StgIntersectionTarget::ptr& targetA, StgIntersectionTarget::ptr& targetB) {
 		std::pair<StgIntersectionTarget::ptr, StgIntersectionTarget::ptr> pair = { targetA, targetB };
 		if (listTargetPair_.size() <= count_) {
@@ -275,7 +277,7 @@ public:
 		else {
 			listTargetPair_[count_] = pair;
 		}
-		count_++;
+		++count_;
 	}
 	StgIntersectionTarget::ptr GetTargetA(int index) {
 		std::pair<StgIntersectionTarget::ptr, StgIntersectionTarget::ptr> pair = listTargetPair_[index];
@@ -292,7 +294,7 @@ public:
 class StgIntersectionObject {
 protected:
 	bool bIntersected_;//è’ìÀîªíË
-	int intersectedCount_;
+	size_t intersectedCount_;
 	std::vector<StgIntersectionTarget::ptr> listRelativeTarget_;
 	std::vector<DxCircle> listOrgCircle_;
 	std::vector<DxWidthLine> listOrgLine_;
@@ -312,7 +314,7 @@ public:
 
 	void ClearIntersectionRelativeTarget();
 	void AddIntersectionRelativeTarget(StgIntersectionTarget::ptr target);
-	StgIntersectionTarget::ptr GetIntersectionRelativeTarget(int index) { return listRelativeTarget_[index]; }
+	StgIntersectionTarget::ptr GetIntersectionRelativeTarget(size_t index) { return listRelativeTarget_[index]; }
 
 	void UpdateIntersectionRelativeTarget(int posX, int posY, double angle);
 	void RegistIntersectionRelativeTarget(StgIntersectionManager* manager);
