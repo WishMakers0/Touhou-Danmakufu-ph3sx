@@ -138,7 +138,7 @@ namespace directx {
 		bool flgUseVertexBufferMode_;
 
 		D3DPRIMITIVETYPE typePrimitive_;//
-		int strideVertexStreamZero_;//1頂点のサイズ
+		size_t strideVertexStreamZero_;//1頂点のサイズ
 		gstd::ByteBuffer vertex_;//頂点
 		std::vector<uint16_t> vertexIndices_;
 		std::vector<gstd::ref_count_ptr<Texture> > texture_;//テクスチャ
@@ -149,11 +149,6 @@ namespace directx {
 		D3DTEXTUREFILTERTYPE filterMip_;
 		D3DCULL modeCulling_;
 
-		//シェーダ用
-		IDirect3DVertexDeclaration9* pVertexDecl_;
-		IDirect3DVertexBuffer9* pVertexBuffer_;
-		IDirect3DIndexBuffer9* pIndexBuffer_;
-
 		D3DXVECTOR3 position_;//移動先座標
 		D3DXVECTOR3 angle_;//回転角度
 		D3DXVECTOR3 scale_;//拡大率
@@ -163,22 +158,21 @@ namespace directx {
 
 		bool disableMatrixTransform_;
 
-		virtual void _ReleaseVertexBuffer();
-		virtual void _RestoreVertexBuffer();
-		virtual void _CreateVertexDeclaration() {}
-
-		void _SetTextureStageCount(int count) { texture_.resize(count); for (int i = 0; i < count; i++)texture_[i] = NULL; }
+		void _SetTextureStageCount(size_t count) { 
+			texture_.resize(count); 
+			for (size_t i = 0; i < count; i++)
+				texture_[i] = nullptr; 
+		}
 	public:
 		RenderObject();
 		virtual ~RenderObject();
 		virtual void Render() = 0;
-		virtual void InitializeVertexBuffer() {}
 		virtual void CalculateWeightCenter() {}
 		D3DXVECTOR3 GetWeightCenter() { return posWeightCenter_; }
 		gstd::ref_count_ptr<Texture> GetTexture(int pos = 0) { return texture_[pos]; }
 
-		int _GetPrimitiveCount();
-		int _GetPrimitiveCount(int count);
+		size_t _GetPrimitiveCount();
+		size_t _GetPrimitiveCount(size_t count);
 
 		void SetRalativeMatrix(D3DXMATRIX mat) { matRelative_ = mat; }
 
@@ -200,14 +194,13 @@ namespace directx {
 		//頂点設定
 		void SetPrimitiveType(D3DPRIMITIVETYPE type) { typePrimitive_ = type; }
 		D3DPRIMITIVETYPE GetPrimitiveType() { return typePrimitive_; }
-		virtual void SetVertexCount(int count) { 
-			count = min(count, 65536);
-			vertex_.SetSize(count * strideVertexStreamZero_); 
-			ZeroMemory(vertex_.GetPointer(), vertex_.GetSize()); 
+		virtual void SetVertexCount(size_t count) {
+			count = std::min(count, 65536U);
+			vertex_.SetSize(count * strideVertexStreamZero_);
+			ZeroMemory(vertex_.GetPointer(), vertex_.size());
 		}
-		virtual int GetVertexCount() { return vertex_.GetSize() / strideVertexStreamZero_; }
-		void SetVertexIndicies(std::vector<uint16_t>& indecies) { vertexIndices_ = indecies; }
-		gstd::ByteBuffer* GetVertexPointer() { return &vertex_; }
+		virtual size_t GetVertexCount() { return vertex_.size() / strideVertexStreamZero_; }
+		void SetVertexIndicies(std::vector<uint16_t>& indices) { vertexIndices_ = indices; }
 
 		//描画用設定
 		void SetPosition(D3DXVECTOR3& pos) { position_ = pos; }
@@ -247,25 +240,23 @@ namespace directx {
 	protected:
 		bool bPermitCamera_;
 		gstd::ByteBuffer vertCopy_;
-
-		virtual void _CreateVertexDeclaration();
 	public:
 		RenderObjectTLX();
 		~RenderObjectTLX();
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 		virtual void Render(D3DXMATRIX& matTransform);
-		virtual void SetVertexCount(int count);
+		virtual void SetVertexCount(size_t count);
 
 		//頂点設定
-		VERTEX_TLX* GetVertex(int index);
-		void SetVertex(int index, VERTEX_TLX& vertex);
-		void SetVertexPosition(int index, float x, float y, float z = 1.0f, float w = 1.0f);
-		void SetVertexUV(int index, float u, float v);
-		void SetVertexColor(int index, D3DCOLOR color);
-		void SetVertexColorARGB(int index, int a, int r, int g, int b);
-		void SetVertexAlpha(int index, int alpha);
-		void SetVertexColorRGB(int index, int r, int g, int b);
+		VERTEX_TLX* GetVertex(size_t index);
+		void SetVertex(size_t index, VERTEX_TLX& vertex);
+		void SetVertexPosition(size_t index, float x, float y, float z = 1.0f, float w = 1.0f);
+		void SetVertexUV(size_t index, float u, float v);
+		void SetVertexColor(size_t index, D3DCOLOR color);
+		void SetVertexColorARGB(size_t index, int a, int r, int g, int b);
+		void SetVertexAlpha(size_t index, int alpha);
+		void SetVertexColorRGB(size_t index, int r, int g, int b);
 		void SetColorRGB(D3DCOLOR color);
 		void SetAlpha(int alpha);
 
@@ -280,24 +271,22 @@ namespace directx {
 	//3Dエフェクト用
 	**********************************************************/
 	class RenderObjectLX : public RenderObject {
-	protected:
-		virtual void _CreateVertexDeclaration();
 	public:
 		RenderObjectLX();
 		~RenderObjectLX();
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
-		virtual void SetVertexCount(int count);
+		virtual void SetVertexCount(size_t count);
 
 		//頂点設定
-		VERTEX_LX* GetVertex(int index);
-		void SetVertex(int index, VERTEX_LX& vertex);
-		void SetVertexPosition(int index, float x, float y, float z);
-		void SetVertexUV(int index, float u, float v);
-		void SetVertexColor(int index, D3DCOLOR color);
-		void SetVertexColorARGB(int index, int a, int r, int g, int b);
-		void SetVertexAlpha(int index, int alpha);
-		void SetVertexColorRGB(int index, int r, int g, int b);
+		VERTEX_LX* GetVertex(size_t index);
+		void SetVertex(size_t index, VERTEX_LX& vertex);
+		void SetVertexPosition(size_t index, float x, float y, float z);
+		void SetVertexUV(size_t index, float u, float v);
+		void SetVertexColor(size_t index, D3DCOLOR color);
+		void SetVertexColorARGB(size_t index, int a, int r, int g, int b);
+		void SetVertexAlpha(size_t index, int alpha);
+		void SetVertexColorRGB(size_t index, int r, int g, int b);
 		void SetColorRGB(D3DCOLOR color);
 		void SetAlpha(int alpha);
 	};
@@ -309,24 +298,20 @@ namespace directx {
 	class RenderObjectNX : public RenderObject {
 	protected:
 		D3DCOLOR color_;
-		virtual void _CreateVertexDeclaration();
+
+		IDirect3DVertexBuffer9* pVertexBuffer_;
+		IDirect3DIndexBuffer9* pIndexBuffer_;
 	public:
 		RenderObjectNX();
 		~RenderObjectNX();
 		virtual void Render();
 
-		virtual void SetVertexCount(int count) {
-			if (count > 65536) return;
-			vertex_.SetSize(count * strideVertexStreamZero_); 
-			ZeroMemory(vertex_.GetPointer(), vertex_.GetSize());
-		}
-
 		//頂点設定
-		VERTEX_NX* GetVertex(int index);
-		void SetVertex(int index, VERTEX_NX& vertex);
-		void SetVertexPosition(int index, float x, float y, float z);
-		void SetVertexUV(int index, float u, float v);
-		void SetVertexNormal(int index, float x, float y, float z);
+		VERTEX_NX* GetVertex(size_t index);
+		void SetVertex(size_t index, VERTEX_NX& vertex);
+		void SetVertexPosition(size_t index, float x, float y, float z);
+		void SetVertexUV(size_t index, float u, float v);
+		void SetVertexNormal(size_t index, float x, float y, float z);
 		void SetColor(D3DCOLOR color) { color_ = color; }
 	};
 
@@ -337,24 +322,21 @@ namespace directx {
 	//テクスチャ有り
 	**********************************************************/
 	class RenderObjectBNX : public RenderObject {
-	public:
-		struct Vertex {
-			D3DXVECTOR3 position;
-			D3DXVECTOR4 blendRate;
-			D3DXVECTOR4 blendIndex;
-			D3DXVECTOR3 normal;
-			D3DXVECTOR2 texcoord;
-		};
 	protected:
 		gstd::ref_count_ptr<Matrices> matrix_;
+
 		D3DCOLOR color_;
 		D3DMATERIAL9 materialBNX_;
-		virtual void _CreateVertexDeclaration();
+
+		IDirect3DVertexBuffer9* pVertexBuffer_;
+		IDirect3DIndexBuffer9* pIndexBuffer_;
+
 		virtual void _CopyVertexBufferOnInitialize() = 0;
 	public:
 		RenderObjectBNX();
 		~RenderObjectBNX();
-		virtual void InitializeVertexBuffer();
+
+		void InitializeVertexBuffer();
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 
@@ -390,12 +372,12 @@ namespace directx {
 		virtual void CalculateWeightCenter();
 
 		//頂点設定
-		VERTEX_B2NX* GetVertex(int index);
-		void SetVertex(int index, VERTEX_B2NX& vertex);
-		void SetVertexPosition(int index, float x, float y, float z);
-		void SetVertexUV(int index, float u, float v);
-		void SetVertexBlend(int index, int pos, BYTE indexBlend, float rate);
-		void SetVertexNormal(int index, float x, float y, float z);
+		VERTEX_B2NX* GetVertex(size_t index);
+		void SetVertex(size_t index, VERTEX_B2NX& vertex);
+		void SetVertexPosition(size_t index, float x, float y, float z);
+		void SetVertexUV(size_t index, float u, float v);
+		void SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate);
+		void SetVertexNormal(size_t index, float x, float y, float z);
 	};
 
 	class RenderObjectB2NXBlock : public RenderObjectBNXBlock {
@@ -421,12 +403,12 @@ namespace directx {
 		virtual void CalculateWeightCenter();
 
 		//頂点設定
-		VERTEX_B4NX* GetVertex(int index);
-		void SetVertex(int index, VERTEX_B4NX& vertex);
-		void SetVertexPosition(int index, float x, float y, float z);
-		void SetVertexUV(int index, float u, float v);
-		void SetVertexBlend(int index, int pos, BYTE indexBlend, float rate);
-		void SetVertexNormal(int index, float x, float y, float z);
+		VERTEX_B4NX* GetVertex(size_t index);
+		void SetVertex(size_t index, VERTEX_B4NX& vertex);
+		void SetVertexPosition(size_t index, float x, float y, float z);
+		void SetVertexUV(size_t index, float u, float v);
+		void SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate);
+		void SetVertexNormal(size_t index, float x, float y, float z);
 	};
 
 	class RenderObjectB4NXBlock : public RenderObjectBNXBlock {
@@ -467,7 +449,7 @@ namespace directx {
 		void _AddVertex(VERTEX_TLX& vertex);
 	public:
 		SpriteList2D();
-		virtual int GetVertexCount();
+		virtual size_t GetVertexCount();
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 		void ClearVertexCount() { countRenderVertex_ = 0; bCloseVertexList_ = false; }

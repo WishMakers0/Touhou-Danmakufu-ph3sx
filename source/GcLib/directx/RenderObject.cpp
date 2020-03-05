@@ -13,7 +13,6 @@
 using namespace gstd;
 using namespace directx;
 
-
 /**********************************************************
 //RenderBlock
 **********************************************************/
@@ -164,9 +163,6 @@ RenderObject::RenderObject() {
 	posWeightCenter_ = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	D3DXMatrixIdentity(&matRelative_);
 
-	pVertexDecl_ = nullptr;
-	pVertexBuffer_ = nullptr;
-	pIndexBuffer_ = nullptr;
 	bCoordinate2D_ = false;
 
 	flgUseVertexBufferMode_ = true;
@@ -180,26 +176,15 @@ RenderObject::RenderObject() {
 	disableMatrixTransform_ = false;
 }
 RenderObject::~RenderObject() {
-	_ReleaseVertexBuffer();
 }
-void RenderObject::_ReleaseVertexBuffer() {
-	if (pIndexBuffer_ != nullptr)pIndexBuffer_->Release();
-	if (pVertexBuffer_ != nullptr)pVertexBuffer_->Release();
-	if (pVertexDecl_ != nullptr)pVertexDecl_->Release();
-	pVertexDecl_ = nullptr;
-	pVertexBuffer_ = nullptr;
-	pIndexBuffer_ = nullptr;
-}
-void RenderObject::_RestoreVertexBuffer() {
-	InitializeVertexBuffer();
-}
-int RenderObject::_GetPrimitiveCount() {
+size_t RenderObject::_GetPrimitiveCount() {
 	return _GetPrimitiveCount(GetVertexCount());
 }
-int RenderObject::_GetPrimitiveCount(int count) {
-	int res = 0;
-	if (vertexIndices_.size() != 0)
+size_t RenderObject::_GetPrimitiveCount(size_t count) {
+	size_t res = 0;
+	if (vertexIndices_.size() > 0)
 		count = vertexIndices_.size();
+
 	switch (typePrimitive_) {
 	case D3DPT_POINTLIST://ポイントリスト
 		res = count;
@@ -588,7 +573,7 @@ void RenderObject::SetCoordinate2dDeviceMatrix() {
 	device->SetTransform(D3DTS_VIEW, &viewMat);
 }
 void RenderObject::SetTexture(Texture* texture, int stage) {
-	if (texture == NULL)
+	if (texture == nullptr)
 		texture_[stage] = nullptr;
 	else {
 		if (stage >= texture_.size())return;
@@ -596,7 +581,7 @@ void RenderObject::SetTexture(Texture* texture, int stage) {
 	}
 }
 void RenderObject::SetTexture(ref_count_ptr<Texture> texture, int stage) {
-	if (texture == NULL)
+	if (texture == nullptr)
 		texture_[stage] = nullptr;
 	else {
 		if (stage >= texture_.size())return;
@@ -615,20 +600,6 @@ RenderObjectTLX::RenderObjectTLX() {
 }
 RenderObjectTLX::~RenderObjectTLX() {
 
-}
-void RenderObjectTLX::_CreateVertexDeclaration() {
-	if (pVertexDecl_ != nullptr)return;
-
-	//D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] =
-	{
-		{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
-		{ 0, 16, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-		{ 0, 20, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
 }
 void RenderObjectTLX::Render() {
 	RenderObjectTLX::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
@@ -664,35 +635,14 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 
 	device->SetFVF(VERTEX_TLX::fvf);
 
-	bool bCamera = camera->IsEnable() && bPermitCamera_;
 	{
-		vertCopy_.Copy(vertex_);
+		vertCopy_ = vertex_;
+
 		size_t countVertex = GetVertexCount();
 
-		/*
+#pragma omp parallel for if(flgUseVertexBufferMode_)
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
-			int pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
-			D3DXVECTOR4* vPos = &vert->position;
-
-			vPos->x *= scale_.x;
-			vPos->y *= scale_.y;
-			vPos->z *= scale_.z;
-			DxMath::RotatePosFromXYZFactor(*vPos,
-				(angle_.x == 0.0f) ? nullptr : &angX,
-				(angle_.y == 0.0f) ? nullptr : &angY,
-				(angle_.z == 0.0f) ? nullptr : &angZ);
-			vPos->x += position_.x;
-			vPos->y += position_.y;
-			vPos->z += position_.z;
-
-			if (bCamera)
-				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &camera->GetMatrix());
-		}
-		*/
-
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
-			int pos = iVert * strideVertexStreamZero_;
+			size_t pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
 			D3DXVECTOR4* vPos = &vert->position;
 
@@ -762,22 +712,22 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 		}
 	}
 }
-void RenderObjectTLX::SetVertexCount(int count) {
+void RenderObjectTLX::SetVertexCount(size_t count) {
 	RenderObject::SetVertexCount(count);
 	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
 	SetAlpha(255);
 }
-VERTEX_TLX* RenderObjectTLX::GetVertex(int index) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return nullptr;
+VERTEX_TLX* RenderObjectTLX::GetVertex(size_t index) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size()) return nullptr;
 	return (VERTEX_TLX*)vertex_.GetPointer(pos);
 }
-void RenderObjectTLX::SetVertex(int index, VERTEX_TLX& vertex) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return;
+void RenderObjectTLX::SetVertex(size_t index, VERTEX_TLX& vertex) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size()) return;
 	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
 }
-void RenderObjectTLX::SetVertexPosition(int index, float x, float y, float z, float w) {
+void RenderObjectTLX::SetVertexPosition(size_t index, float x, float y, float z, float w) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
@@ -787,29 +737,29 @@ void RenderObjectTLX::SetVertexPosition(int index, float x, float y, float z, fl
 	vertex->position.z = z;
 	vertex->position.w = w;
 }
-void RenderObjectTLX::SetVertexUV(int index, float u, float v) {
+void RenderObjectTLX::SetVertexUV(size_t index, float u, float v) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->texcoord.x = u;
 	vertex->texcoord.y = v;
 }
-void RenderObjectTLX::SetVertexColor(int index, D3DCOLOR color) {
+void RenderObjectTLX::SetVertexColor(size_t index, D3DCOLOR color) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->diffuse_color = color;
 }
-void RenderObjectTLX::SetVertexColorARGB(int index, int a, int r, int g, int b) {
+void RenderObjectTLX::SetVertexColorARGB(size_t index, int a, int r, int g, int b) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
 }
-void RenderObjectTLX::SetVertexAlpha(int index, int alpha) {
+void RenderObjectTLX::SetVertexAlpha(size_t index, int alpha) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	D3DCOLOR& color = vertex->diffuse_color;
 	color = ColorAccess::SetColorA(color, alpha);
 }
-void RenderObjectTLX::SetVertexColorRGB(int index, int r, int g, int b) {
+void RenderObjectTLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
 	VERTEX_TLX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	D3DCOLOR& color = vertex->diffuse_color;
@@ -821,12 +771,12 @@ void RenderObjectTLX::SetColorRGB(D3DCOLOR color) {
 	int r = ColorAccess::GetColorR(color);
 	int g = ColorAccess::GetColorG(color);
 	int b = ColorAccess::GetColorB(color);
-	for (int iVert = 0; iVert < vertex_.GetSize(); ++iVert) {
+	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
 		SetVertexColorRGB(iVert, r, g, b);
 	}
 }
 void RenderObjectTLX::SetAlpha(int alpha) {
-	for (int iVert = 0; iVert < vertex_.GetSize(); ++iVert) {
+	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
 		SetVertexAlpha(iVert, alpha);
 	}
 }
@@ -840,20 +790,6 @@ RenderObjectLX::RenderObjectLX() {
 	strideVertexStreamZero_ = sizeof(VERTEX_LX);
 }
 RenderObjectLX::~RenderObjectLX() {
-}
-void RenderObjectLX::_CreateVertexDeclaration() {
-	if (pVertexDecl_ != nullptr)return;
-
-	//D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] =
-	{
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-		{ 0, 16, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
 }
 /*
 void RenderObjectLX::Render() {
@@ -1061,53 +997,53 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		device->SetIndices(nullptr);
 	}
 }
-void RenderObjectLX::SetVertexCount(int count) {
+void RenderObjectLX::SetVertexCount(size_t count) {
 	RenderObject::SetVertexCount(count);
 	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
 	SetAlpha(255);
 }
-VERTEX_LX* RenderObjectLX::GetVertex(int index) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return nullptr;
+VERTEX_LX* RenderObjectLX::GetVertex(size_t index) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return nullptr;
 	return (VERTEX_LX*)vertex_.GetPointer(pos);
 }
-void RenderObjectLX::SetVertex(int index, VERTEX_LX& vertex) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return;
+void RenderObjectLX::SetVertex(size_t index, VERTEX_LX& vertex) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return;
 	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
 }
-void RenderObjectLX::SetVertexPosition(int index, float x, float y, float z) {
+void RenderObjectLX::SetVertexPosition(size_t index, float x, float y, float z) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex->position.x = x + bias;
 	vertex->position.y = y + bias;
 	vertex->position.z = z;
 }
-void RenderObjectLX::SetVertexUV(int index, float u, float v) {
+void RenderObjectLX::SetVertexUV(size_t index, float u, float v) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->texcoord.x = u;
 	vertex->texcoord.y = v;
 }
-void RenderObjectLX::SetVertexColor(int index, D3DCOLOR color) {
+void RenderObjectLX::SetVertexColor(size_t index, D3DCOLOR color) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->diffuse_color = color;
 }
-void RenderObjectLX::SetVertexColorARGB(int index, int a, int r, int g, int b) {
+void RenderObjectLX::SetVertexColorARGB(size_t index, int a, int r, int g, int b) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
 }
-void RenderObjectLX::SetVertexAlpha(int index, int alpha) {
+void RenderObjectLX::SetVertexAlpha(size_t index, int alpha) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	D3DCOLOR& color = vertex->diffuse_color;
 	color = ColorAccess::SetColorA(color, alpha);
 }
-void RenderObjectLX::SetVertexColorRGB(int index, int r, int g, int b) {
+void RenderObjectLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
 	VERTEX_LX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	D3DCOLOR& color = vertex->diffuse_color;
@@ -1119,12 +1055,12 @@ void RenderObjectLX::SetColorRGB(D3DCOLOR color) {
 	int r = ColorAccess::GetColorR(color);
 	int g = ColorAccess::GetColorG(color);
 	int b = ColorAccess::GetColorB(color);
-	for (int iVert = 0; iVert < vertex_.GetSize(); ++iVert) {
+	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
 		SetVertexColorRGB(iVert, r, g, b);
 	}
 }
 void RenderObjectLX::SetAlpha(int alpha) {
-	for (int iVert = 0; iVert < vertex_.GetSize(); ++iVert) {
+	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
 		SetVertexAlpha(iVert, alpha);
 	}
 }
@@ -1136,23 +1072,13 @@ RenderObjectNX::RenderObjectNX() {
 	strideVertexStreamZero_ = sizeof(VERTEX_NX);
 
 	color_ = 0xffffffff;
+
+	pVertexBuffer_ = nullptr;
+	pIndexBuffer_ = nullptr;
 }
 RenderObjectNX::~RenderObjectNX() {
-
-}
-void RenderObjectNX::_CreateVertexDeclaration() {
-	if (pVertexDecl_ != nullptr)return;
-
-	//D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] =
-	{
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
-		{ 0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
+	ptr_release(pVertexBuffer_);
+	ptr_release(pIndexBuffer_);
 }
 void RenderObjectNX::Render() {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
@@ -1211,32 +1137,32 @@ void RenderObjectNX::Render() {
 		}
 	}
 }
-VERTEX_NX* RenderObjectNX::GetVertex(int index) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return nullptr;
+VERTEX_NX* RenderObjectNX::GetVertex(size_t index) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return nullptr;
 	return (VERTEX_NX*)vertex_.GetPointer(pos);
 }
-void RenderObjectNX::SetVertex(int index, VERTEX_NX& vertex) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return;
+void RenderObjectNX::SetVertex(size_t index, VERTEX_NX& vertex) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return;
 	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
 }
-void RenderObjectNX::SetVertexPosition(int index, float x, float y, float z) {
+void RenderObjectNX::SetVertexPosition(size_t index, float x, float y, float z) {
 	VERTEX_NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex->position.x = x + bias;
 	vertex->position.y = y + bias;
 	vertex->position.z = z;
 }
-void RenderObjectNX::SetVertexUV(int index, float u, float v) {
+void RenderObjectNX::SetVertexUV(size_t index, float u, float v) {
 	VERTEX_NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->texcoord.x = u;
 	vertex->texcoord.y = v;
 }
-void RenderObjectNX::SetVertexNormal(int index, float x, float y, float z) {
+void RenderObjectNX::SetVertexNormal(size_t index, float x, float y, float z) {
 	VERTEX_NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->normal.x = x;
@@ -1251,37 +1177,27 @@ RenderObjectBNX::RenderObjectBNX() {
 	_SetTextureStageCount(1);
 	color_ = D3DCOLOR_ARGB(255, 255, 255, 255);
 
-	_CreateVertexDeclaration();
 	materialBNX_.Diffuse.a = 1.0f; materialBNX_.Diffuse.r = 1.0f; materialBNX_.Diffuse.g = 1.0f; materialBNX_.Diffuse.b = 1.0f;
 	materialBNX_.Ambient.a = 1.0f; materialBNX_.Ambient.r = 1.0f; materialBNX_.Ambient.g = 1.0f; materialBNX_.Ambient.b = 1.0f;
 	materialBNX_.Specular.a = 1.0f; materialBNX_.Specular.r = 1.0f; materialBNX_.Specular.g = 1.0f; materialBNX_.Specular.b = 1.0f;
 	materialBNX_.Emissive.a = 1.0f; materialBNX_.Emissive.r = 1.0f; materialBNX_.Emissive.g = 1.0f; materialBNX_.Emissive.b = 1.0f;
-}
-RenderObjectBNX::~RenderObjectBNX() {}
-void RenderObjectBNX::_CreateVertexDeclaration() {
-	if (pVertexDecl_ != nullptr)return;
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] =
-	{
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDWEIGHT, 0 },
-		{ 0, 28, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDINDICES, 0 },
-		{ 0, 44, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
-		{ 0, 56, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
 
+	pVertexBuffer_ = nullptr;
+	pIndexBuffer_ = nullptr;
+}
+RenderObjectBNX::~RenderObjectBNX() {
+	ptr_release(pVertexBuffer_);
+	ptr_release(pIndexBuffer_);
 }
 void RenderObjectBNX::InitializeVertexBuffer() {
 	int countVertex = GetVertexCount();
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	device->CreateVertexBuffer(countVertex * sizeof(Vertex), 0, 0, D3DPOOL_MANAGED, &pVertexBuffer_, nullptr);
+	device->CreateVertexBuffer(countVertex * sizeof(VERTEX_BNX), 0, 0, D3DPOOL_MANAGED, &pVertexBuffer_, nullptr);
 
 	//コピー
 	_CopyVertexBufferOnInitialize();
 
-	int countIndex = vertexIndices_.size();
+	size_t countIndex = vertexIndices_.size();
 	if (countIndex != 0) {
 		device->CreateIndexBuffer(sizeof(short) * countIndex,
 			D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_MANAGED, &pIndexBuffer_, nullptr);
@@ -1338,10 +1254,8 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
 		}
 		else {
-			device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-				GetVertexCount(), _GetPrimitiveCount(),
-				&vertexIndices_[0], D3DFMT_INDEX16,
-				vertex_.GetPointer(), strideVertexStreamZero_);
+			device->DrawIndexedPrimitiveUP(typePrimitive_, 0, GetVertexCount(), _GetPrimitiveCount(),
+				&vertexIndices_[0], D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
 		}
 
 		device->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
@@ -1364,15 +1278,15 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			D3DLIGHT9 light;
 			device->GetLight(0, &light);
 			D3DCOLORVALUE diffuse = materialBNX_.Diffuse;
-			diffuse.r = min(diffuse.r + light.Diffuse.r, 1.0f);
-			diffuse.g = min(diffuse.g + light.Diffuse.g, 1.0f);
-			diffuse.b = min(diffuse.b + light.Diffuse.b, 1.0f);
+			diffuse.r = std::min(diffuse.r + light.Diffuse.r, 1.0f);
+			diffuse.g = std::min(diffuse.g + light.Diffuse.g, 1.0f);
+			diffuse.b = std::min(diffuse.b + light.Diffuse.b, 1.0f);
 			diffuse = ColorAccess::SetColor(diffuse, color_);
 
 			D3DCOLORVALUE ambient = materialBNX_.Ambient;
-			ambient.r = min(ambient.r + light.Ambient.r, 1.0f);
-			ambient.g = min(ambient.g + light.Ambient.g, 1.0f);
-			ambient.b = min(ambient.b + light.Ambient.b, 1.0f);
+			ambient.r = std::min(ambient.r + light.Ambient.r, 1.0f);
+			ambient.g = std::min(ambient.g + light.Ambient.g, 1.0f);
+			ambient.b = std::min(ambient.b + light.Ambient.b, 1.0f);
 			ambient = ColorAccess::SetColor(ambient, color_);
 
 			{
@@ -1401,11 +1315,11 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			shader->SetMatrixArray(shader->GetParameterBySemantic(nullptr, "WORLDMATRIXARRAY"),
 				reinterpret_cast<const D3DXMATRIX*>(&listMatrix[0]), sizeMatrix);
 
-			device->SetVertexDeclaration(pVertexDecl_);
-			device->SetStreamSource(0, pVertexBuffer_, 0, sizeof(Vertex));
+			device->SetVertexDeclaration(shaderManager->GetVertexDeclarationBNX());
+			device->SetStreamSource(0, pVertexBuffer_, 0, sizeof(VERTEX_BNX));
 
 			UINT cPass = 1;
-			unsigned int numPass = shader->Begin(&cPass, 0);
+			shader->Begin(&cPass, 0);
 			for (UINT i = 0; i < cPass; ++i) {
 				shader->BeginPass(i);
 				if (vertexIndices_.size() == 0) {
@@ -1425,7 +1339,6 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 		else {
 			Logger::WriteTop(StringUtility::Format("Shader error. [%s]", "DEFAULT"));
 		}
-
 
 		device->SetVertexDeclaration(nullptr);
 		device->SetIndices(nullptr);
@@ -1448,21 +1361,21 @@ RenderObjectB2NX::~RenderObjectB2NX() {
 
 }
 void RenderObjectB2NX::_CopyVertexBufferOnInitialize() {
-	int countVertex = GetVertexCount();
-	Vertex* bufVertex;
+	size_t countVertex = GetVertexCount();
+	VERTEX_BNX* bufVertex;
 	HRESULT hrLockVertex = pVertexBuffer_->Lock(0, 0, reinterpret_cast<void**>(&bufVertex), D3DLOCK_NOSYSLOCK);
 	if (!FAILED(hrLockVertex)) {
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
-			Vertex* dest = &bufVertex[iVert];
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
+			VERTEX_BNX* dest = &bufVertex[iVert];
 			VERTEX_B2NX* src = GetVertex(iVert);
-			ZeroMemory(dest, sizeof(Vertex));
+			ZeroMemory(dest, sizeof(VERTEX_BNX));
 
 			dest->position = src->position;
 			dest->normal = src->normal;
 			dest->texcoord = src->texcoord;
 
-			for (int iBlend = 0; iBlend < 2; ++iBlend) {
-				int indexBlend = BitAccess::GetByte(src->blendIndex, iBlend * 8);
+			for (size_t iBlend = 0; iBlend < 2; ++iBlend) {
+				size_t indexBlend = BitAccess::GetByte(src->blendIndex, iBlend * 8);
 				dest->blendIndex[iBlend] = indexBlend;
 			}
 
@@ -1478,7 +1391,7 @@ void RenderObjectB2NX::CalculateWeightCenter() {
 	double yTotal = 0;
 	double zTotal = 0;
 	int countVert = GetVertexCount();
-	for (int iVert = 0; iVert < countVert; ++iVert) {
+	for (size_t iVert = 0; iVert < countVert; ++iVert) {
 		VERTEX_B2NX* vertex = GetVertex(iVert);
 		xTotal += vertex->position.x;
 		yTotal += vertex->position.y;
@@ -1491,38 +1404,38 @@ void RenderObjectB2NX::CalculateWeightCenter() {
 	posWeightCenter_.y = (float)yTotal;
 	posWeightCenter_.z = (float)zTotal;
 }
-VERTEX_B2NX* RenderObjectB2NX::GetVertex(int index) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return nullptr;
+VERTEX_B2NX* RenderObjectB2NX::GetVertex(size_t index) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return nullptr;
 	return (VERTEX_B2NX*)vertex_.GetPointer(pos);
 }
-void RenderObjectB2NX::SetVertex(int index, VERTEX_B2NX& vertex) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return;
+void RenderObjectB2NX::SetVertex(size_t index, VERTEX_B2NX& vertex) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return;
 	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
 }
-void RenderObjectB2NX::SetVertexPosition(int index, float x, float y, float z) {
+void RenderObjectB2NX::SetVertexPosition(size_t index, float x, float y, float z) {
 	VERTEX_B2NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 	vertex->position.x = x + bias;
 	vertex->position.y = y + bias;
 	vertex->position.z = z;
 }
-void RenderObjectB2NX::SetVertexUV(int index, float u, float v) {
+void RenderObjectB2NX::SetVertexUV(size_t index, float u, float v) {
 	VERTEX_B2NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->texcoord.x = u;
 	vertex->texcoord.y = v;
 }
-void RenderObjectB2NX::SetVertexBlend(int index, int pos, BYTE indexBlend, float rate) {
+void RenderObjectB2NX::SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate) {
 	VERTEX_B2NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
 	if (pos == 0)vertex->blendRate = rate;
 }
-void RenderObjectB2NX::SetVertexNormal(int index, float x, float y, float z) {
+void RenderObjectB2NX::SetVertexNormal(size_t index, float x, float y, float z) {
 	VERTEX_B2NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->normal.x = x;
@@ -1549,21 +1462,21 @@ RenderObjectB4NX::~RenderObjectB4NX() {
 
 }
 void RenderObjectB4NX::_CopyVertexBufferOnInitialize() {
-	int countVertex = GetVertexCount();
-	Vertex* bufVertex;
+	size_t countVertex = GetVertexCount();
+	VERTEX_BNX* bufVertex;
 	HRESULT hrLockVertex = pVertexBuffer_->Lock(0, 0, reinterpret_cast<void**>(&bufVertex), D3DLOCK_NOSYSLOCK);
 	if (!FAILED(hrLockVertex)) {
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
-			Vertex* dest = &bufVertex[iVert];
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
+			VERTEX_BNX* dest = &bufVertex[iVert];
 			VERTEX_B4NX* src = GetVertex(iVert);
-			ZeroMemory(dest, sizeof(Vertex));
+			ZeroMemory(dest, sizeof(VERTEX_BNX));
 
 			dest->position = src->position;
 			dest->normal = src->normal;
 			dest->texcoord = src->texcoord;
 
-			for (int iBlend = 0; iBlend < 4; ++iBlend) {
-				int indexBlend = BitAccess::GetByte(src->blendIndex, iBlend * 8);
+			for (size_t iBlend = 0; iBlend < 4; ++iBlend) {
+				size_t indexBlend = BitAccess::GetByte(src->blendIndex, iBlend * 8);
 				dest->blendIndex[iBlend] = indexBlend;
 			}
 
@@ -1583,8 +1496,8 @@ void RenderObjectB4NX::CalculateWeightCenter() {
 	double xTotal = 0;
 	double yTotal = 0;
 	double zTotal = 0;
-	int countVert = GetVertexCount();
-	for (int iVert = 0; iVert < countVert; ++iVert) {
+	size_t countVert = GetVertexCount();
+	for (size_t iVert = 0; iVert < countVert; ++iVert) {
 		VERTEX_B4NX* vertex = GetVertex(iVert);
 		xTotal += vertex->position.x;
 		yTotal += vertex->position.y;
@@ -1597,17 +1510,17 @@ void RenderObjectB4NX::CalculateWeightCenter() {
 	posWeightCenter_.y = (float)yTotal;
 	posWeightCenter_.z = (float)zTotal;
 }
-VERTEX_B4NX* RenderObjectB4NX::GetVertex(int index) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return nullptr;
+VERTEX_B4NX* RenderObjectB4NX::GetVertex(size_t index) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return nullptr;
 	return (VERTEX_B4NX*)vertex_.GetPointer(pos);
 }
-void RenderObjectB4NX::SetVertex(int index, VERTEX_B4NX& vertex) {
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())return;
+void RenderObjectB4NX::SetVertex(size_t index, VERTEX_B4NX& vertex) {
+	size_t pos = index * strideVertexStreamZero_;
+	if (pos >= vertex_.size())return;
 	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
 }
-void RenderObjectB4NX::SetVertexPosition(int index, float x, float y, float z) {
+void RenderObjectB4NX::SetVertexPosition(size_t index, float x, float y, float z) {
 	VERTEX_B4NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 
@@ -1616,19 +1529,19 @@ void RenderObjectB4NX::SetVertexPosition(int index, float x, float y, float z) {
 	vertex->position.y = y + bias;
 	vertex->position.z = z;
 }
-void RenderObjectB4NX::SetVertexUV(int index, float u, float v) {
+void RenderObjectB4NX::SetVertexUV(size_t index, float u, float v) {
 	VERTEX_B4NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->texcoord.x = u;
 	vertex->texcoord.y = v;
 }
-void RenderObjectB4NX::SetVertexBlend(int index, int pos, BYTE indexBlend, float rate) {
+void RenderObjectB4NX::SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate) {
 	VERTEX_B4NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
 	if (pos <= 2)vertex->blendRate[pos] = rate;
 }
-void RenderObjectB4NX::SetVertexNormal(int index, float x, float y, float z) {
+void RenderObjectB4NX::SetVertexNormal(size_t index, float x, float y, float z) {
 	VERTEX_B4NX* vertex = GetVertex(index);
 	if (vertex == nullptr)return;
 	vertex->normal.x = x;
@@ -1661,9 +1574,11 @@ Sprite2D::~Sprite2D() {
 void Sprite2D::Copy(Sprite2D* src) {
 	typePrimitive_ = src->typePrimitive_;
 	strideVertexStreamZero_ = src->strideVertexStreamZero_;
-	vertex_.Copy(src->vertex_);
+
+	vertex_ = src->vertex_;
 	vertexIndices_ = src->vertexIndices_;
-	for (int iTex = 0; iTex < texture_.size(); ++iTex) {
+
+	for (size_t iTex = 0; iTex < texture_.size(); ++iTex) {
 		texture_[iTex] = src->texture_[iTex];
 	}
 
@@ -1715,7 +1630,7 @@ void Sprite2D::SetVertex(RECT_D &rcSrc, RECT_D &rcDest, D3DCOLOR color) {
 	SetAlpha(ColorAccess::GetColorA(color));
 }
 RECT_D Sprite2D::GetDestinationRect() {
-	float bias = -0.5f;
+	constexpr float bias = -0.5f;
 
 	RECT_D rect;
 	VERTEX_TLX* vertexLeftTop = GetVertex(0);
@@ -1747,10 +1662,10 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
 	IDirect3DDevice9* device = graphics->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture != NULL)
+	if (texture != nullptr)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
-		device->SetTexture(0, NULL);
+		device->SetTexture(0, nullptr);
 
 	device->SetSamplerState(0, D3DSAMP_MINFILTER, filterMin_);
 	device->SetSamplerState(0, D3DSAMP_MAGFILTER, filterMag_);
@@ -1760,7 +1675,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 
 	bool bCamera = camera->IsEnable() && bPermitCamera_;
 	{
-		vertCopy_.Copy(vertex_);
+		vertCopy_ = vertex_;
 		size_t countVertex = GetVertexCount();
 
 		/*
@@ -1787,29 +1702,21 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 		}
 		*/
 
-		if (bCloseVertexList_) {
-			D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
+		D3DXMATRIX matWorld;
+		if (bCloseVertexList_)
+			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
 				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
 
-			size_t countVertex = GetVertexCount();
-			for (int iVert = 0; iVert < countVertex; ++iVert) {
-				int pos = iVert * strideVertexStreamZero_;
-				VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
-				D3DXVECTOR4* vPos = &vert->position;
+#pragma omp parallel for
+		for (int iVert = 0; iVert < countVertex; ++iVert) {
+			size_t pos = iVert * strideVertexStreamZero_;
+			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
+			D3DXVECTOR4* vPos = &vert->position;
 
+			if (bCloseVertexList_)
 				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
-			}
-		}
-		else {
-			size_t countVertex = GetVertexCount();
-			for (int iVert = 0; iVert < countVertex; ++iVert) {
-				int pos = iVert * strideVertexStreamZero_;
-				VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
-				D3DXVECTOR4* vPos = &vert->position;
-
-				if (bCamera)
-					D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &camera->GetMatrix());
-			}
+			else if (bCamera)
+				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &camera->GetMatrix());
 		}
 
 		{
@@ -1894,19 +1801,16 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 		if (autoClearVertexList_ && (countVertex >= 6)) ClearVertexCount();
 	}
 }
-int SpriteList2D::GetVertexCount() {
-	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+size_t SpriteList2D::GetVertexCount() {
+	size_t res = std::min((size_t)countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
 	return res;
 }
 void SpriteList2D::_AddVertex(VERTEX_TLX& vertex) {
-	int count = vertex_.GetSize() / strideVertexStreamZero_;
+	size_t count = vertex_.size() / strideVertexStreamZero_;
 	if (countRenderVertex_ >= count) {
 		//リサイズ
-		int newCount = max(10, count * 1.5);
-		ByteBuffer buffer(vertex_);
-		SetVertexCount(newCount);
-		memcpy(vertex_.GetPointer(), buffer.GetPointer(), buffer.GetSize());
+		size_t newCount = std::max(10U, (size_t)(count * 1.5));
+		vertex_.SetSize(newCount * strideVertexStreamZero_);
 	}
 	SetVertex(countRenderVertex_, vertex);
 	++countRenderVertex_;
@@ -1933,7 +1837,9 @@ void SpriteList2D::AddVertex(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 	float srcX[] = { (float)rcSrc_.left, (float)rcSrc_.right, (float)rcSrc_.left, (float)rcSrc_.right };
 	float srcY[] = { (float)rcSrc_.top, (float)rcSrc_.top, (float)rcSrc_.bottom, (float)rcSrc_.bottom };
 	int destX[] = { (int)rcDest_.left, (int)rcDest_.right, (int)rcDest_.left, (int)rcDest_.right };
-	int destY[] = { (int)rcDest_.top,(int)rcDest_.top, (int)rcDest_.bottom, (int)rcDest_.bottom };
+	int destY[] = { (int)rcDest_.top, (int)rcDest_.top, (int)rcDest_.bottom, (int)rcDest_.bottom };
+
+#pragma omp parallel for
 	for (int iVert = 0; iVert < 4; ++iVert) {
 		VERTEX_TLX vt;
 		vt.texcoord.x = srcX[iVert] / width;
@@ -1941,7 +1847,7 @@ void SpriteList2D::AddVertex(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 
 		D3DXVECTOR4 vPos;
 
-		float bias = -0.5f;
+		constexpr float bias = -0.5f;
 		vPos.x = destX[iVert] + bias;
 		vPos.y = destY[iVert] + bias;
 		vPos.z = 1.0f;
@@ -2044,10 +1950,8 @@ void Sprite3D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 				device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
 			}
 			else {
-				device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-					GetVertexCount(), _GetPrimitiveCount(),
-					&vertexIndices_[0], D3DFMT_INDEX16,
-					vertex_.GetPointer(), strideVertexStreamZero_);
+				device->DrawIndexedPrimitiveUP(typePrimitive_, 0, GetVertexCount(), _GetPrimitiveCount(),
+					&vertexIndices_[0], D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
 			}
 
 			if (effect != nullptr) effect->EndPass();
@@ -2133,23 +2037,23 @@ void TrajectoryObject3D::Render() {
 	TrajectoryObject3D::Render(D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0), D3DXVECTOR2(1, 0));
 }
 void TrajectoryObject3D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
-	int size = listData_.size() * 2;
+	size_t size = listData_.size() * 2;
 	SetVertexCount(size);
 
 	int width = 1;
 	gstd::ref_count_ptr<Texture> texture = texture_[0];
-	if (texture != NULL) {
+	if (texture != nullptr) {
 		width = texture->GetWidth();
 	}
 
 	float dWidth = 1.0 / width / listData_.size();
-	int iData = 0;
+	size_t iData = 0;
 	std::list<Data>::iterator itr;
 	for (itr = listData_.begin(); itr != listData_.end(); ++itr, ++iData) {
 		Data data = (*itr);
 		int alpha = data.alpha;
-		for (int iPos = 0; iPos < 2; ++iPos) {
-			int index = iData * 2 + iPos;
+		for (size_t iPos = 0; iPos < 2; ++iPos) {
+			size_t index = iData * 2 + iPos;
 			D3DXVECTOR3& pos = iPos == 0 ? data.pos1 : data.pos2;
 			float u = dWidth * iData;
 			float v = iPos == 0 ? 0 : 1;
@@ -2185,10 +2089,10 @@ void TrajectoryObject3D::AddPoint(D3DXMATRIX mat) {
 	else {
 		float cDiff = 1.0 / (countComplement_);
 		float diffAlpha = diffAlpha_ / countComplement_;
-		for (int iCount = 0; iCount < countComplement_ - 1; ++iCount) {
+		for (size_t iCount = 0; iCount < countComplement_ - 1; ++iCount) {
 			Data cData;
 			float flame = cDiff * (iCount + 1);
-			for (int iPos = 0; iPos < 2; ++iPos) {
+			for (size_t iPos = 0; iPos < 2; ++iPos) {
 				D3DXVECTOR3& outPos = iPos == 0 ? cData.pos1 : cData.pos2;
 				D3DXVECTOR3& cPos = iPos == 0 ? data.pos1 : data.pos2;
 				D3DXVECTOR3& lPos1 = iPos == 0 ? dataLast1_.pos1 : dataLast1_.pos2;
@@ -2332,8 +2236,10 @@ gstd::ref_count_ptr<DxMeshData> DxMeshManager::_GetMeshData(std::wstring name) {
 	gstd::ref_count_ptr<DxMeshData> res = nullptr;
 	{
 		Lock lock(lock_);
-		if (IsDataExists(name)) {
-			res = mapMeshData_[name];
+
+		auto itr = mapMeshData_.find(name);
+		if (itr != mapMeshData_.end()) {
+			res = itr->second;
 		}
 	}
 	return res;
@@ -2341,8 +2247,10 @@ gstd::ref_count_ptr<DxMeshData> DxMeshManager::_GetMeshData(std::wstring name) {
 void DxMeshManager::_ReleaseMeshData(std::wstring name) {
 	{
 		Lock lock(lock_);
-		if (IsDataExists(name)) {
-			mapMeshData_.erase(name);
+
+		auto itr = mapMeshData_.find(name);
+		if (itr != mapMeshData_.end()) {
+			mapMeshData_.erase(itr);
 			Logger::WriteTop(StringUtility::Format("DxMeshManager: Mesh released. [%s]", name.c_str()));
 		}
 	}
@@ -2374,18 +2282,23 @@ gstd::ref_count_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::wstri
 	gstd::ref_count_ptr<DxMesh> res;
 	{
 		Lock lock(lock_);
-		bool bExist = mapMesh_.find(path) != mapMesh_.end();
-		if (bExist) {
-			res = mapMesh_[path];
+
+		auto itrMesh = mapMesh_.find(path);
+		if (itrMesh != mapMesh_.end()) {
+			res = itrMesh->second;
 		}
 		else {
 			if (type == MESH_ELFREINA)res = new ElfreinaMesh();
 			else if (type == MESH_METASEQUOIA)res = new MetasequoiaMesh();
-			if (!IsDataExists(path)) {
+
+			auto itrData = mapMeshData_.find(path);
+			if (itrData == mapMeshData_.end()) {
 				ref_count_ptr<DxMeshData> data = nullptr;
 				if (type == MESH_ELFREINA)data = new ElfreinaMeshData();
 				else if (type == MESH_METASEQUOIA)data = new MetasequoiaMeshData();
-				mapMeshData_[path] = data;
+
+				itrData = mapMeshData_.insert(std::pair<std::wstring, ref_count_ptr<DxMeshData>>(path, data)).first;
+
 				data->manager_ = this;
 				data->name_ = path;
 				data->bLoad_ = false;
@@ -2395,7 +2308,7 @@ gstd::ref_count_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::wstri
 				FileManager::GetBase()->AddLoadThreadEvent(event);
 			}
 
-			res->data_ = mapMeshData_[path];
+			res->data_ = itrData->second;
 		}
 	}
 	return res;
