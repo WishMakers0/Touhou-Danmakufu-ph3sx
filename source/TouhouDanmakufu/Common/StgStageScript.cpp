@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgStageScript.hpp"
 #include "StgSystem.hpp"
 #include "StgPlayer.hpp"
@@ -1451,7 +1452,7 @@ gstd::value StgStageScript::Func_CreateShotA1(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
@@ -1483,7 +1484,7 @@ gstd::value StgStageScript::Func_CreateShotA2(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
@@ -1522,7 +1523,7 @@ gstd::value StgStageScript::Func_CreateShotOA1(gstd::script_machine* machine, in
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	int tId = (int)argv[0].as_real();
@@ -1560,7 +1561,7 @@ gstd::value StgStageScript::Func_CreateShotB1(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
@@ -1596,7 +1597,7 @@ gstd::value StgStageScript::Func_CreateShotB2(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
@@ -1640,7 +1641,7 @@ gstd::value StgStageScript::Func_CreateShotOB1(gstd::script_machine* machine, in
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	int tId = (int)argv[0].as_real();
@@ -1683,7 +1684,7 @@ gstd::value StgStageScript::Func_CreateLooseLaserA1(gstd::script_machine* machin
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgLooseLaserObject>::unsync obj = new StgLooseLaserObject(stageController);
@@ -1720,7 +1721,7 @@ gstd::value StgStageScript::Func_CreateStraightLaserA1(gstd::script_machine* mac
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgStraightLaserObject>::unsync obj = new StgStraightLaserObject(stageController);
@@ -1755,7 +1756,7 @@ gstd::value StgStageScript::Func_CreateCurveLaserA1(gstd::script_machine* machin
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	ref_count_ptr<StgCurveLaserObject>::unsync obj = new StgCurveLaserObject(stageController);
@@ -2026,6 +2027,9 @@ gstd::value StgStageScript::Func_CreateItemA1(gstd::script_machine* machine, int
 	StgStageController* stageController = script->stageController_;
 	StgItemManager* itemManager = stageController->GetItemManager();
 
+	if (stageController->GetItemManager()->GetItemCount() >= StgItemManager::ITEM_MAX)
+		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
+
 	int type = (int)argv[0].as_real();
 	ref_count_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
 	int id = script->AddObject(obj);
@@ -2047,6 +2051,9 @@ gstd::value StgStageScript::Func_CreateItemA2(gstd::script_machine* machine, int
 	StgStageController* stageController = script->stageController_;
 	StgItemManager* itemManager = stageController->GetItemManager();
 
+	if (stageController->GetItemManager()->GetItemCount() >= StgItemManager::ITEM_MAX)
+		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
+
 	int type = (int)argv[0].as_real();
 	ref_count_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
 	int id = script->AddObject(obj);
@@ -2067,6 +2074,9 @@ gstd::value StgStageScript::Func_CreateItemU1(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	StgItemManager* itemManager = stageController->GetItemManager();
+
+	if (stageController->GetItemManager()->GetItemCount() >= StgItemManager::ITEM_MAX)
+		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	int type = StgItemObject::ITEM_USER;
 	ref_count_ptr<StgItemObject_User>::unsync obj =
@@ -2094,6 +2104,9 @@ gstd::value StgStageScript::Func_CreateItemU2(gstd::script_machine* machine, int
 	StgStageController* stageController = script->stageController_;
 	StgItemManager* itemManager = stageController->GetItemManager();
 
+	if (stageController->GetItemManager()->GetItemCount() >= StgItemManager::ITEM_MAX)
+		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
+
 	int type = StgItemObject::ITEM_USER;
 	ref_count_ptr<StgItemObject_User>::unsync obj =
 		ref_count_ptr<StgItemObject_User>::unsync::DownCast(itemManager->CreateItem(type));
@@ -2118,6 +2131,9 @@ gstd::value StgStageScript::Func_CreateItemScore(gstd::script_machine* machine, 
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	StgItemManager* itemManager = stageController->GetItemManager();
+
+	if (stageController->GetItemManager()->GetItemCount() >= StgItemManager::ITEM_MAX)
+		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	double score = argv[0].as_real();
 	int posX = (int)argv[1].as_real();
@@ -3205,7 +3221,8 @@ gstd::value StgStageScript::Func_ObjShot_Create(gstd::script_machine* machine, i
 	int typeOwner = script->GetScriptType() == TYPE_PLAYER ?
 		StgShotObject::OWNER_PLAYER : StgShotObject::OWNER_ENEMY;
 
-	if (stageController->GetShotManager()->GetShotCountAll() >= 8192 && typeOwner != StgShotObject::OWNER_PLAYER)
+	if (stageController->GetShotManager()->GetShotCountAll() >= StgShotManager::SHOT_MAX && 
+		typeOwner != StgShotObject::OWNER_PLAYER)
 		return value(machine->get_engine()->get_real_type(), (double)StgControlScript::ID_INVALID);
 
 	TypeObject type = (TypeObject)((int)argv[0].as_real());
@@ -3697,8 +3714,8 @@ gstd::value StgStageScript::Func_ObjLaser_SetInvalidLength(gstd::script_machine*
 	float start = (float)argv[1].as_real();
 	float end = (float)argv[2].as_real();
 
-	start = max(min(start, 1.0f), 0.0f);
-	end = max(min(end, 1.0f), 0.0f);
+	start = std::max(std::min(start, 1.0f), 0.0f);
+	end = std::max(std::min(end, 1.0f), 0.0f);
 
 	obj->SetInvalidLength(start, end);
 
@@ -3791,8 +3808,8 @@ gstd::value StgStageScript::Func_ObjCrLaser_SetTipDecrement(gstd::script_machine
 	if (obj == nullptr)return value();
 
 	double dec = argv[1].as_real();
-	dec = min(dec, 1);
-	dec = max(dec, 0);
+	dec = std::min(dec, 1.0);
+	dec = std::max(dec, 0.0);
 	obj->SetTipDecrement(dec);
 
 	return value();

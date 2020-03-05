@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgStageController.hpp"
 #include "StgSystem.hpp"
 
@@ -512,11 +513,11 @@ int PseudoSlowInformation::GetFps() {
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
 		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = min(fps, data->GetFps());
+		fps = std::min(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
 		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = min(fps, data->GetFps());
+		fps = std::min(fps, data->GetFps());
 	}
 	return fps;
 }
@@ -530,11 +531,11 @@ void PseudoSlowInformation::Next() {
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
 		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = min(fps, data->GetFps());
+		fps = std::min(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
 		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = min(fps, data->GetFps());
+		fps = std::min(fps, data->GetFps());
 	}
 
 	bool bValid = false;
@@ -552,8 +553,8 @@ void PseudoSlowInformation::Next() {
 	mapValid_[target] = bValid;
 }
 void PseudoSlowInformation::AddSlow(int fps, int owner, int target) {
-	fps = max(1, fps);
-	fps = min(STANDARD_FPS, fps);
+	fps = std::max(1, fps);
+	fps = std::min(STANDARD_FPS, fps);
 	ref_count_ptr<SlowData> data = new SlowData();
 	data->SetFps(fps);
 	switch (owner) {
