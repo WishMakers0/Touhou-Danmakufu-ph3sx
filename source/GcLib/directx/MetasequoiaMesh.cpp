@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "MetasequoiaMesh.hpp"
 #include "DxUtility.hpp"
 #include "DirectGraphics.hpp"
@@ -45,21 +46,21 @@ bool MetasequoiaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileRea
 		res = true;
 	}
 	catch (gstd::wexception& e) {
-		Logger::WriteTop(StringUtility::Format(L"MetasequoiaMeshData読み込み失敗 %s %d", e.what(), scanner.GetCurrentLine()));
+		Logger::WriteTop(StringUtility::Format(L"MetasequoiaMeshData parsing error. %s %d", e.what(), scanner.GetCurrentLine()));
 		res = false;
 	}
 	return res;
 }
 void MetasequoiaMeshData::_ReadMaterial(gstd::Scanner& scanner) {
-	int countMaterial = scanner.Next().GetInteger();
+	size_t countMaterial = scanner.Next().GetInteger();
 	materialList_.resize(countMaterial);
-	for (int iMat = 0; iMat < countMaterial; iMat++) {
+	for (size_t iMat = 0; iMat < countMaterial; iMat++) {
 		materialList_[iMat] = new Material();
 	}
 	scanner.CheckType(scanner.Next(), Token::TK_OPENC);
 	scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 
-	int posMat = 0;
+	size_t posMat = 0;
 	Material* mat = materialList_[posMat];
 	D3DCOLORVALUE color;
 	ZeroMemory(&color, sizeof(D3DCOLORVALUE));
@@ -128,7 +129,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 	scanner.CheckType(scanner.Next(), Token::TK_OPENC);
 	scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 
-	std::map<int, std::list<MetasequoiaMeshData::Object::Face*> > mapFace;
+	std::map<size_t, std::list<MetasequoiaMeshData::Object::Face*> > mapFace;
 
 	while (true) {
 		gstd::Token& tok = scanner.Next();
@@ -138,11 +139,11 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 			obj.bVisible_ = scanner.Next().GetInteger() == 15;
 		}
 		else if (tok.GetElement() == L"vertex") {
-			int count = scanner.Next().GetInteger();
+			size_t count = scanner.Next().GetInteger();
 			obj.vertices_.resize(count);
 			scanner.CheckType(scanner.Next(), Token::TK_OPENC);
 			scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
-			for (int iVert = 0; iVert < count; iVert++) {
+			for (size_t iVert = 0; iVert < count; iVert++) {
 				obj.vertices_[iVert].x = scanner.Next().GetReal();
 				obj.vertices_[iVert].y = scanner.Next().GetReal();
 				obj.vertices_[iVert].z = -scanner.Next().GetReal();
@@ -152,13 +153,13 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 			scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 		}
 		else if (tok.GetElement() == L"face") {
-			int countFace = scanner.Next().GetInteger();
+			size_t countFace = scanner.Next().GetInteger();
 			obj.faces_.resize(countFace);
 			scanner.CheckType(scanner.Next(), Token::TK_OPENC);
 			scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 
-			for (int iFace = 0; iFace < countFace; iFace++) {
-				int countVert = scanner.Next().GetInteger();
+			for (size_t iFace = 0; iFace < countFace; iFace++) {
+				size_t countVert = scanner.Next().GetInteger();
 				obj.faces_[iFace].vertices_.resize(countVert);
 				MetasequoiaMeshData::Object::Face* face = &obj.faces_[iFace];
 				while (true) {
@@ -177,7 +178,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 					}
 					else if (tok.GetElement() == L"UV") {
 						scanner.CheckType(scanner.Next(), Token::TK_OPENP);
-						for (int iVert = 0; iVert < countVert; iVert++) {
+						for (size_t iVert = 0; iVert < countVert; iVert++) {
 							face->vertices_[iVert].tcoord_.x = scanner.Next().GetReal();
 							face->vertices_[iVert].tcoord_.y = scanner.Next().GetReal();
 						}
@@ -208,9 +209,9 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 
 	//マテリアルごとに仕分けてオブジェクトを作成
 	size_t iMapFace = 0U;
-	std::map<int, std::list<MetasequoiaMeshData::Object::Face*> >::iterator itrMap;
+	std::map<size_t, std::list<MetasequoiaMeshData::Object::Face*> >::iterator itrMap;
 	for (itrMap = mapFace.begin(); itrMap != mapFace.end(); itrMap++, iMapFace++) {
-		int indexMaterial = itrMap->first;
+		size_t indexMaterial = itrMap->first;
 		std::list<MetasequoiaMeshData::Object::Face*>& listFace = itrMap->second;
 
 		MetasequoiaMeshData::RenderObject* render = new MetasequoiaMeshData::RenderObject();
@@ -218,7 +219,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 		if (indexMaterial >= 0)
 			render->material_ = materialList_[indexMaterial];
 
-		int countVert = 0;
+		size_t countVert = 0;
 		std::list<MetasequoiaMeshData::Object::Face*>::iterator itrFace;
 		for (itrFace = listFace.begin(); itrFace != listFace.end(); itrFace++) {
 			MetasequoiaMeshData::Object::Face* face = *itrFace;
@@ -230,11 +231,11 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 
 		render->SetVertexCount(countVert);
 
-		int posVert = 0;
+		size_t posVert = 0;
 		for (itrFace = listFace.begin(); itrFace != listFace.end(); itrFace++) {
 			MetasequoiaMeshData::Object::Face* face = *itrFace;
 			if (face->vertices_.size() == 3) {
-				int indexVert[3] =
+				size_t indexVert[3] =
 				{
 					face->vertices_[0].indexVertex_,
 					face->vertices_[1].indexVertex_,
@@ -247,9 +248,9 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 					)
 				);
 
-				for (int iVert = 0; iVert < 3; iVert++) {
-					int mqoVertexIndex = indexVert[iVert];
-					int nxVertexIndex = posVert + iVert;
+				for (size_t iVert = 0; iVert < 3; iVert++) {
+					size_t mqoVertexIndex = indexVert[iVert];
+					size_t nxVertexIndex = posVert + iVert;
 					VERTEX_NX* vert = render->GetVertex(nxVertexIndex);
 					vert->position = obj.vertices_[mqoVertexIndex];
 					vert->texcoord = face->vertices_[iVert].tcoord_;
@@ -258,7 +259,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 				posVert += 3;
 			}
 			else if (face->vertices_.size() == 4) {
-				int indexVert[4] =
+				size_t indexVert[4] =
 				{
 					face->vertices_[0].indexVertex_,
 					face->vertices_[1].indexVertex_,
@@ -280,16 +281,16 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 					)
 				};
 
-				for (int iVert = 0; iVert < 6; iVert++) {
-					int nxVertexIndex = posVert + iVert;
+				for (size_t iVert = 0; iVert < 6; iVert++) {
+					size_t nxVertexIndex = posVert + iVert;
 					VERTEX_NX* vert = render->GetVertex(nxVertexIndex);
 
-					int indexFace = iVert;
+					size_t indexFace = iVert;
 					if (iVert == 3)indexFace = 2;
 					else if (iVert == 4)indexFace = 3;
 					else if (iVert == 5)indexFace = 0;
 
-					int mqoVertexIndex = indexVert[indexFace];
+					size_t mqoVertexIndex = indexVert[indexFace];
 					vert->position = obj.vertices_[mqoVertexIndex];
 					vert->texcoord = face->vertices_[indexFace].tcoord_;
 					vert->normal = iVert < 3 ? normals[0] : normals[1];
@@ -299,13 +300,13 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 			}
 		}
 
-		int countNormalData = listNormalData.size();
-		for (int iData = 0; iData < countNormalData; iData++) {
+		size_t countNormalData = listNormalData.size();
+		for (size_t iData = 0; iData < countNormalData; iData++) {
 			ref_count_ptr<NormalData> normalData = listNormalData[iData];
 			if (normalData != NULL) {
-				int countVertexIndex = normalData->listIndex_.size();
-				for (int iVert = 0; iVert < countVertexIndex; iVert++) {
-					int nvVertexIndex = normalData->listIndex_[iVert];
+				size_t countVertexIndex = normalData->listIndex_.size();
+				for (size_t iVert = 0; iVert < countVertexIndex; iVert++) {
+					size_t nvVertexIndex = normalData->listIndex_[iVert];
 					VERTEX_NX* vert = render->GetVertex(nvVertexIndex);
 					vert->normal = normalData->normal_;
 				}

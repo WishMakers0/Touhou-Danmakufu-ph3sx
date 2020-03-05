@@ -17,7 +17,7 @@ namespace directx {
 		class RenderObject;
 
 		struct NormalData {
-			std::vector<int> listIndex_;
+			std::vector<uint16_t> listIndex_;
 			D3DXVECTOR3 normal_;
 			virtual ~NormalData() {}
 		};
@@ -56,10 +56,10 @@ namespace directx {
 		struct Face {
 			//面の頂点
 			struct Vertex {
-				long indexVertex_;//頂点のインデックス
+				size_t indexVertex_;//頂点のインデックス
 				D3DXVECTOR2 tcoord_;//テクスチャの座標
 			};
-			long indexMaterial_;//マテリアルのインデックス
+			size_t indexMaterial_;//マテリアルのインデックス
 			std::vector<Vertex> vertices_;//面の頂点
 			Face() { indexMaterial_ = -1; }
 		};
