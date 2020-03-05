@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "ScriptClient.hpp"
 #include "File.hpp"
 #include "Logger.hpp"
@@ -70,10 +71,19 @@ function const commonFunction[] =
 	{ "asin", ScriptClientBase::Func_Asin, 1 },
 	{ "atan", ScriptClientBase::Func_Atan, 1 },
 	{ "atan2", ScriptClientBase::Func_Atan2, 2 },
+	{ "racos", ScriptClientBase::Func_RAcos, 1 },
+	{ "rasin", ScriptClientBase::Func_RAsin, 1 },
+	{ "ratan", ScriptClientBase::Func_RAtan, 1 },
+	{ "ratan2", ScriptClientBase::Func_RAtan2, 2 },
 	{ "exp", ScriptClientBase::Func_Exp, 1 },
 	{ "rand", ScriptClientBase::Func_Rand, 2 },
 	{ "prand", ScriptClientBase::Func_RandEff, 2 },
 	{ "sqrt", ScriptClientBase::Func_Sqrt, 1 },
+
+	{ "ToDegrees", ScriptClientBase::Func_ToDegrees, 1 },
+	{ "ToRadians", ScriptClientBase::Func_ToRadians, 1 },
+	{ "NormalizeAngle", ScriptClientBase::Func_NormalizeAngle, 1 },
+	{ "NormalizeAngleR", ScriptClientBase::Func_RNormalizeAngle, 1 },
 
 	{ "Interpolate_Linear", ScriptClientBase::Func_Interpolate_Linear, 3 },
 	{ "Interpolate_Smooth", ScriptClientBase::Func_Interpolate_Smooth, 3 },
@@ -267,7 +277,7 @@ std::wstring ScriptClientBase::_GetErrorLineSource(int line) {
 		count++;
 	}
 
-	int size = max(count - 1, 0);
+	int size = std::max(count - 1, 0);
 	std::wstring res;
 	if (encoding == Encoding::UTF16LE) {
 		wchar_t* wbufS = (wchar_t*)sbuf;
@@ -969,6 +979,18 @@ value ScriptClientBase::Func_Atan(script_machine* machine, int argc, const value
 value ScriptClientBase::Func_Atan2(script_machine* machine, int argc, const value* argv) {
 	return value(machine->get_engine()->get_real_type(), (double)Math::RadianToDegree(atan2(argv[0].as_real(), argv[1].as_real())));
 }
+value ScriptClientBase::Func_RAcos(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), acos(argv[0].as_real()));
+}
+value ScriptClientBase::Func_RAsin(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), asin(argv[0].as_real()));
+}
+value ScriptClientBase::Func_RAtan(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), atan(argv[0].as_real()));
+}
+value ScriptClientBase::Func_RAtan2(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), atan2(argv[0].as_real(), argv[1].as_real()));
+}
 
 value ScriptClientBase::Func_Exp(script_machine* machine, int argc, const value* argv) {
 	return value(machine->get_engine()->get_real_type(), exp(argv[0].as_real()));
@@ -1253,6 +1275,20 @@ value ScriptClientBase::Func_SplitString(script_machine* machine, int argc, cons
 
 	gstd::value res = script->CreateStringArrayValue(list);
 	return res;
+}
+value ScriptClientBase::Func_ToDegrees(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), Math::RadianToDegree(argv[0].as_real()));
+}
+value ScriptClientBase::Func_ToRadians(script_machine* machine, int argc, const value* argv) {
+	return value(machine->get_engine()->get_real_type(), Math::DegreeToRadian(argv[0].as_real()));
+}
+value ScriptClientBase::Func_NormalizeAngle(script_machine* machine, int argc, const value* argv) {
+	double ang = argv[0].as_real();
+	return value(machine->get_engine()->get_real_type(), Math::NormalizeAngleDeg(ang));
+}
+value ScriptClientBase::Func_RNormalizeAngle(script_machine* machine, int argc, const value* argv) {
+	double ang = argv[0].as_real();
+	return value(machine->get_engine()->get_real_type(), Math::NormalizeAngleRad(ang));
 }
 
 //共通関数：パス関連

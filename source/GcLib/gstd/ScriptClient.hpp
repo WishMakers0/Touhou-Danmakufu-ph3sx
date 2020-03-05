@@ -166,7 +166,6 @@ namespace gstd {
 		static value Func_Sin(script_machine* machine, int argc, const value* argv);
 		static value Func_Tan(script_machine* machine, int argc, const value* argv);
 		static value Func_SinCos(script_machine* machine, int argc, const value* argv);
-
 		static value Func_RCos(script_machine* machine, int argc, const value* argv);
 		static value Func_RSin(script_machine* machine, int argc, const value* argv);
 		static value Func_RTan(script_machine* machine, int argc, const value* argv);
@@ -176,12 +175,21 @@ namespace gstd {
 		static value Func_Asin(script_machine* machine, int argc, const value* argv);
 		static value Func_Atan(script_machine* machine, int argc, const value* argv);
 		static value Func_Atan2(script_machine* machine, int argc, const value* argv);
+		static value Func_RAcos(script_machine* machine, int argc, const value* argv);
+		static value Func_RAsin(script_machine* machine, int argc, const value* argv);
+		static value Func_RAtan(script_machine* machine, int argc, const value* argv);
+		static value Func_RAtan2(script_machine* machine, int argc, const value* argv);
 
 		static value Func_Exp(script_machine* machine, int argc, const value* argv);
 
 		static value Func_Rand(script_machine* machine, int argc, const value* argv);
 		static value Func_RandEff(script_machine* machine, int argc, const value* argv);
 		static value Func_Sqrt(script_machine* machine, int argc, const value* argv);
+
+		static value Func_ToDegrees(script_machine* machine, int argc, const value* argv);
+		static value Func_ToRadians(script_machine* machine, int argc, const value* argv);
+		static value Func_NormalizeAngle(script_machine* machine, int argc, const value* argv);
+		static value Func_RNormalizeAngle(script_machine* machine, int argc, const value* argv);
 
 		static value Func_Interpolate_Linear(script_machine* machine, int argc, const value* argv);
 		static value Func_Interpolate_Smooth(script_machine* machine, int argc, const value* argv);
