@@ -10,6 +10,13 @@ class StgShotDataList;
 class StgShotData;
 class StgShotRenderer;
 class StgShotObject;
+
+struct StgShotRendererAddData {
+	StgShotRenderer* pRenderer;
+	std::vector<VERTEX_TLX> listVert;
+};
+using ListVertexShot = std::vector<StgShotRendererAddData>;
+
 /**********************************************************
 //StgShotManager
 **********************************************************/
@@ -53,6 +60,8 @@ protected:
 
 	ID3DXEffect* effectLayer_;
 	D3DXHANDLE handleEffectWorld_;
+
+	std::vector<ListVertexShot> listShotVertices_;
 public:
 	StgShotManager(StgStageController* stageController);
 	virtual ~StgShotManager();
@@ -264,7 +273,7 @@ public:
 	virtual void Work();
 	virtual void Render() {}//一括で描画するためオブジェクト管理での描画はしない
 	virtual void Activate() {}
-	virtual void RenderOnShotManager() {}
+	virtual void RenderOnShotManager(ListVertexShot& resVert) {}
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
 	virtual void ClearShotObject() { ClearIntersectionRelativeTarget(); }
 	virtual void RegistIntersectionTarget() = 0;
@@ -359,7 +368,7 @@ public:
 	StgNormalShotObject(StgStageController* stageController);
 	virtual ~StgNormalShotObject();
 	virtual void Work();
-	virtual void RenderOnShotManager();
+	virtual void RenderOnShotManager(ListVertexShot& resVert);
 	virtual void ClearShotObject();
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
 
@@ -412,7 +421,7 @@ protected:
 public:
 	StgLooseLaserObject(StgStageController* stageController);
 	virtual void Work();
-	virtual void RenderOnShotManager();
+	virtual void RenderOnShotManager(ListVertexShot& resVert);
 
 	virtual void RegistIntersectionTarget();
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
@@ -438,7 +447,7 @@ protected:
 public:
 	StgStraightLaserObject(StgStageController* stageController);
 	virtual void Work();
-	virtual void RenderOnShotManager();
+	virtual void RenderOnShotManager(ListVertexShot& resVert);
 	virtual void RegistIntersectionTarget();
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 
@@ -474,7 +483,7 @@ protected:
 public:
 	StgCurveLaserObject(StgStageController* stageController);
 	virtual void Work();
-	virtual void RenderOnShotManager();
+	virtual void RenderOnShotManager(ListVertexShot& resVert);
 	virtual void RegistIntersectionTarget();
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 	void SetTipDecrement(double dec) { tipDecrement_ = dec; }

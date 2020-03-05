@@ -64,6 +64,8 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
 	effectLayer_ = shaderManager_->GetRender2DShader();
 	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
+
+	listShotVertices_.resize(SHOT_MAX);
 }
 StgShotManager::~StgShotManager() {
 	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
@@ -126,13 +128,37 @@ void StgShotManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
-		if (obj->IsDeleted())continue;
-		if (!obj->IsActive())continue;
-		if (obj->GetRenderPriorityI() != targetPriority)continue;
-		obj->RenderOnShotManager();
+	{
+		std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+
+		size_t countAllShot = GetShotCountAll();
+
+#pragma omp parallel for schedule(dynamic)
+		for (int iObj = 0; iObj < countAllShot; ++iObj) {
+			ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+
+			if (obj->IsDeleted()) continue;
+			if (!obj->IsActive()) continue;
+			if (obj->GetRenderPriorityI() != targetPriority) continue;
+			//obj->RenderOnShotManager();
+
+			ListVertexShot listVerts;
+			obj->RenderOnShotManager(listVerts);
+			listShotVertices_[iObj] = listVerts;
+		}
+
+		size_t iShot = 0;
+		for (auto itrShot = listShotVertices_.begin(); itrShot != listShotVertices_.end(); ++itrShot) {
+			ListVertexShot& listVert = *itrShot;
+			for (auto itrList = listVert.begin(); itrList != listVert.end(); ++itrList) {
+				StgShotRenderer* renderer = itrList->pRenderer;
+				if (renderer) {
+					for (size_t iVert = 0; iVert < itrList->listVert.size(); iVert += 4)
+						renderer->AddSquareVertex(&(itrList->listVert[iVert]));
+				}
+			}
+			if ((++iShot) >= countAllShot) break;
+		}
 	}
 
 	{
@@ -225,6 +251,10 @@ void StgShotManager::Render(int targetPriority) {
 		graphics->SetFogEnable(true);
 }
 void StgShotManager::_SetVertexBuffer(size_t size) {
+	//Maximum size
+	if (vertexBufferSize_ == 150000) return;
+	if (size > 150000) size = 150000;
+
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
 
@@ -1397,7 +1427,7 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 	return res;
 }
 
-void StgNormalShotObject::RenderOnShotManager() {
+void StgNormalShotObject::RenderOnShotManager(ListVertexShot& resVert) {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -1429,6 +1459,8 @@ void StgNormalShotObject::RenderOnShotManager() {
 	}
 
 	if (renderer == nullptr)return;
+
+	resVert.resize(1);
 
 	double scaleX = 1.0;
 	double scaleY = 1.0;
@@ -1497,7 +1529,9 @@ void StgNormalShotObject::RenderOnShotManager() {
 		verts[iVert] = vt;
 	}
 
-	renderer->AddSquareVertex(verts);
+	//renderer->AddSquareVertex(verts);
+
+	resVert[0] = { renderer, std::vector<VERTEX_TLX>(verts, verts + 4) };
 }
 
 void StgNormalShotObject::ClearShotObject() {
@@ -1803,14 +1837,16 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	return res;
 }
 
-void StgLooseLaserObject::RenderOnShotManager() {
+void StgLooseLaserObject::RenderOnShotManager(ListVertexShot& resVert) {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return;
 
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
+
 	StgShotRenderer* renderer = nullptr;
+
 	if (delay_ > 0) {
 		//’x‰„ŽžŠÔ
 		int objDelayBlendType = GetSourceBlendType();
@@ -1832,7 +1868,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 		}
 	}
 
-	if (renderer == nullptr)return;
+	if (renderer == nullptr) return;
 
 	double scaleX = 1.0;
 	double scaleY = 1.0;
@@ -1843,6 +1879,8 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	RECT rcDest;
 
 	D3DCOLOR color;
+
+	resVert.resize(1);
 
 	if (delay_ > 0) {
 		double expa = 0.5f + (double)delay_ / 30.0f * 2;
@@ -1917,7 +1955,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 		verts[iVert] = vt;
 	}
 
-	renderer->AddSquareVertex(verts);
+	resVert[0] = { renderer, std::vector<VERTEX_TLX>(verts, verts + 4) };
 }
 void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
@@ -2106,7 +2144,7 @@ void StgStraightLaserObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsy
 	obj->Activate();
 	objectManager->ActivateObject(obj->GetObjectID(), true);
 }
-void StgStraightLaserObject::RenderOnShotManager() {
+void StgStraightLaserObject::RenderOnShotManager(ListVertexShot& resVert) {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
@@ -2114,17 +2152,41 @@ void StgStraightLaserObject::RenderOnShotManager() {
 
 	int objBlendType = GetBlendType();
 	int shotBlendType = objBlendType;
+
+	bool hasDelay = bUseSouce_ && frameFadeDelete_ < 0;
+
+	StgShotRenderer* rendererShot = nullptr;
+	StgShotRenderer* rendererDelay = nullptr;
 	{
-		StgShotRenderer* renderer = nullptr;
 		if (objBlendType == DirectGraphics::MODE_BLEND_NONE) {
-			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
+			rendererShot = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
 			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 		}
 		else {
-			renderer = shotData->GetRenderer(objBlendType);
+			rendererShot = shotData->GetRenderer(objBlendType);
 		}
-		if (renderer == nullptr)return;
+	}
+	if (hasDelay) {
+		int objSourceBlendType = GetSourceBlendType();
+		int sourceBlendType = shotBlendType;
+		if (objSourceBlendType == DirectGraphics::MODE_BLEND_NONE) {
+			rendererDelay = shotData->GetRenderer(sourceBlendType);
+		}
+		else {
+			rendererDelay = shotData->GetRenderer(objSourceBlendType);
+			sourceBlendType = objSourceBlendType;
+		}
+	}
 
+	if (rendererShot != nullptr && rendererDelay != nullptr)
+		resVert.resize(2);
+	else if (rendererShot == nullptr && rendererDelay == nullptr)
+		return;
+	else
+		resVert.resize(1);
+
+	size_t indexRender = 0;
+	if (rendererShot) {
 		RECT rcSrc;
 		RECT rcDest;
 		D3DCOLOR color;
@@ -2178,22 +2240,9 @@ void StgStraightLaserObject::RenderOnShotManager() {
 			verts[iVert] = vt;
 		}
 
-		renderer->AddSquareVertex(verts);
+		resVert[indexRender++] = { rendererShot, std::vector<VERTEX_TLX>(verts, verts + 4) };
 	}
-
-	if (bUseSouce_ && frameFadeDelete_ < 0) {	//Delay cloud
-		StgShotRenderer* renderer = nullptr;
-		int objSourceBlendType = GetSourceBlendType();
-		int sourceBlendType = shotBlendType;
-		if (objSourceBlendType == DirectGraphics::MODE_BLEND_NONE) {
-			renderer = shotData->GetRenderer(sourceBlendType);
-		}
-		else {
-			renderer = shotData->GetRenderer(objSourceBlendType);
-			sourceBlendType = objSourceBlendType;
-		}
-		if (renderer == nullptr)return;
-
+	if (rendererDelay) {	//Delay cloud
 		RECT rcSrc;
 		RECT rcDest;
 		D3DCOLOR color;
@@ -2227,9 +2276,8 @@ void StgStraightLaserObject::RenderOnShotManager() {
 			verts[iVert] = vt;
 		}
 
-		renderer->AddSquareVertex(verts);
+		resVert[indexRender++] = { rendererDelay, std::vector<VERTEX_TLX>(verts, verts + 4) };
 	}
-
 }
 void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	StgItemManager* itemManager = stageController_->GetItemManager();
@@ -2438,79 +2486,56 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 	return res;
 }
 
-void StgCurveLaserObject::RenderOnShotManager() {
+void StgCurveLaserObject::RenderOnShotManager(ListVertexShot& resVert) {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return;
 
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
-	StgShotRenderer* renderer = nullptr;
 
-	if ((delay_ > 0) /*&& (listPosition_.size() <= length_)*/) {
-		int objDelayBlendType = GetSourceBlendType();
-		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
-			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
-			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
-		}
-		else {
-			renderer = shotData->GetRenderer(objDelayBlendType);
-		}
-		if (renderer == nullptr)return;
+	bool hasDelay = delay_ > 0;
 
-		RECT rcSrc = shotData->GetDelayRect();
-		RECT rcDest = shotData->GetDelayDest();
-
-		double expa = 0.5f + (double)delay_ / 30.0f * 2;
-		if (expa > 3.5)expa = 3.5;
-
-		double sX = listPosition_.back().pos.x;
-		double sY = listPosition_.back().pos.y;
-
-		D3DCOLOR color = shotData->GetDelayColor();
-
-		VERTEX_TLX verts[4];
-		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
-		for (int iVert = 0; iVert < 4; iVert++) {
-			VERTEX_TLX vt;
-
-			_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-			_SetVertexPosition(vt, destX[iVert], destY[iVert]);
-			_SetVertexColorARGB(vt, color);
-
-			double px = vt.position.x * expa;
-			double py = vt.position.y * expa;
-			vt.position.x = (px * c_ - py * s_) + sX;
-			vt.position.y = (px * s_ + py * c_) + sY;
-			vt.position.z = position_.z;
-
-			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
-			verts[iVert] = vt;
-		}
-
-		renderer->AddSquareVertex(verts);
-	}
+	StgShotRenderer* rendererShot = nullptr;
+	StgShotRenderer* rendererDelay = nullptr;
 	{
 		int objBlendType = GetBlendType();
-		int shotBlendType = objBlendType;
+		shotBlendType = objBlendType;
 		if (objBlendType == DirectGraphics::MODE_BLEND_NONE) {
-			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
+			rendererShot = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
 			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 		}
 		else {
-			renderer = shotData->GetRenderer(objBlendType);
+			rendererShot = shotData->GetRenderer(objBlendType);
 		}
-		if (renderer == nullptr)return;
+	}
+	if (hasDelay) {
+		int objDelayBlendType = GetSourceBlendType();
+		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
+			rendererDelay = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
+			shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
+		}
+		else {
+			rendererDelay = shotData->GetRenderer(objDelayBlendType);
+		}
+	}
 
-		//---------------------------------------------------
+	size_t countPos = listPosition_.size();
+	size_t countRect = countPos - 1U;
 
-		size_t countPos = listPosition_.size();
-		size_t countRect = countPos - 1U;
+	{
+		size_t countVertList = 0;
 
+		if (rendererDelay) ++countVertList;
+		if (rendererShot) countVertList += countRect;
+
+		if (countVertList == 0) return;
+
+		resVert.resize(countVertList);
+	}
+
+	size_t indexRender = 0;
+	if (rendererShot) {
 		double baseAlpha = shotData->GetAlpha() / 255.0;
 		if (frameFadeDelete_ >= 0)
 			baseAlpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE;
@@ -2567,11 +2592,49 @@ void StgCurveLaserObject::RenderOnShotManager() {
 				memcpy(verts, oldVerts, sizeof(VERTEX_TLX) * 2U);
 			memcpy(oldVerts, &verts[2], sizeof(VERTEX_TLX) * 2U);
 
-			renderer->AddSquareVertex(verts);
+			//renderer->AddSquareVertex(verts);
+			resVert[indexRender++] = { rendererShot, std::vector<VERTEX_TLX>(verts, verts + 4) };
 
 			rectV += rcInc;
 			++itr;
 		}
+	}
+	if (rendererDelay) {
+		RECT rcSrc = shotData->GetDelayRect();
+		RECT rcDest = shotData->GetDelayDest();
+
+		double expa = 0.5f + (double)delay_ / 30.0f * 2;
+		if (expa > 3.5)expa = 3.5;
+
+		double sX = listPosition_.back().pos.x;
+		double sY = listPosition_.back().pos.y;
+
+		D3DCOLOR color = shotData->GetDelayColor();
+
+		VERTEX_TLX verts[4];
+		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
+		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
+		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
+		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+//#pragma omp parallel for
+		for (int iVert = 0; iVert < 4; iVert++) {
+			VERTEX_TLX vt;
+
+			_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
+			_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+			_SetVertexColorARGB(vt, color);
+
+			double px = vt.position.x * expa;
+			double py = vt.position.y * expa;
+			vt.position.x = (px * c_ - py * s_) + sX;
+			vt.position.y = (px * s_ + py * c_) + sY;
+			vt.position.z = position_.z;
+
+			//D3DXVec3TransformCoord((D3DXVECTOR3*)&vt.position, (D3DXVECTOR3*)&vt.position, &mat);
+			verts[iVert] = vt;
+		}
+
+		resVert[indexRender++] = { rendererDelay, std::vector<VERTEX_TLX>(verts, verts + 4) };
 	}
 }
 void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
