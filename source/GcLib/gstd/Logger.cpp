@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "Logger.hpp"
 
 using namespace gstd;
@@ -12,7 +13,7 @@ Logger::Logger() {
 }
 Logger::~Logger() {
 	listLogger_.clear();
-	if (top_ == this)top_ = NULL;
+	if (top_ == this) top_ = NULL;
 }
 void Logger::_WriteChild(SYSTEMTIME& time, std::wstring str) {
 	_Write(time, str);
@@ -23,12 +24,21 @@ void Logger::_WriteChild(SYSTEMTIME& time, std::wstring str) {
 }
 
 void Logger::Write(std::string str) {
+	if (WindowLogger::GetParent()) {
+		if (WindowLogger::GetParent()->GetState() != WindowLogger::STATE_RUNNING)
+			return;
+	}
+
 	SYSTEMTIME systemTime;
 	GetLocalTime(&systemTime);
-
 	this->_WriteChild(systemTime, StringUtility::ConvertMultiToWide(str));
 }
 void Logger::Write(std::wstring str) {
+	if (WindowLogger::GetParent()) {
+		if (WindowLogger::GetParent()->GetState() != WindowLogger::STATE_RUNNING)
+			return;
+	}
+
 	SYSTEMTIME systemTime;
 	GetLocalTime(&systemTime);
 	this->_WriteChild(systemTime, str);
@@ -92,15 +102,18 @@ void FileLogger::_Write(SYSTEMTIME& time, std::wstring str) {
 
 	{
 		Lock lock(lock_);
-		std::wstring strTime =
-			StringUtility::Format(L"%.4d/%.2d/%.2d %.2d:%.2d:%.2d.%.3d ", time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
+		std::wstring strTime = StringUtility::Format(
+			//L"%.4d/%.2d/%.2d "
+			L"%.2d:%.2d:%.2d.%.3d ", 
+			//time.wYear, time.wMonth, time.wDay, 
+			time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
 
 		File file(path_);
 		if (!file.Open(File::WRITE))return;
 
 		std::wstring out = strTime;
 		out += str;
-		out += L"\r\n";
+		out += L"\n";
 
 		int pos = file.GetSize();
 		file.Seek(pos);
@@ -121,10 +134,13 @@ void FileLogger::_Write(SYSTEMTIME& time, std::wstring str) {
 /**********************************************************
 //WindowLogger
 **********************************************************/
+WindowLogger* WindowLogger::loggerParentGlobal_ = nullptr;
 WindowLogger::WindowLogger() {
-
+	windowState_ = STATE_INITIALIZING;
 }
 WindowLogger::~WindowLogger() {
+	windowState_ = STATE_CLOSED;
+
 	threadInfoCollect_ = NULL;
 	wndInfoPanel_ = NULL;
 	wndLogPanel_ = NULL;
@@ -141,6 +157,8 @@ bool WindowLogger::Initialize(bool bEnable) {
 	bEnable_ = bEnable;
 	if (!bEnable)return true;
 
+	loggerParentGlobal_ = this;
+
 	threadWindow_ = new WindowThread(this);
 	threadWindow_->Start();
 
@@ -155,6 +173,8 @@ bool WindowLogger::Initialize(bool bEnable) {
 	//InfoPanel
 	wndInfoPanel_ = new InfoPanel();
 	this->AddPanel(wndInfoPanel_, L"Info");
+
+	windowState_ = STATE_RUNNING;
 
 	return true;
 }
@@ -275,16 +295,18 @@ void WindowLogger::_Run() {
 	}
 }
 void WindowLogger::_Write(SYSTEMTIME& systemTime, std::wstring str) {
-	if (hWnd_ == NULL)return;
+	if (hWnd_ == NULL) return;
 
 	wchar_t timeStr[256];
-	swprintf(timeStr, L"%.4d/%.2d/%.2d %.2d:%.2d:%.2d.%.3d ",
-		systemTime.wYear, systemTime.wMonth, systemTime.wDay,
+	swprintf(timeStr, 
+		//L"%.4d/%.2d/%.2d " 
+		L"%.2d:%.2d:%.2d.%.3d ",
+		//systemTime.wYear, systemTime.wMonth, systemTime.wDay,
 		systemTime.wHour, systemTime.wMinute, systemTime.wSecond, systemTime.wMilliseconds);
 
 	std::wstring out = timeStr;
 	out += str;
-	out += L"\r\n";
+	out += L"\n";
 	{
 		Lock lock(lock_);
 		wndLogPanel_->AddText(out);
@@ -295,12 +317,16 @@ LRESULT WindowLogger::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	case WM_DESTROY:
 	{
 		::PostQuitMessage(0);
+		windowState_ = STATE_CLOSED;
+		//wndLogPanel_->ClearText();
 		return FALSE;
 	}
 	case WM_CLOSE:
 	{
 		SaveState();
 		::ShowWindow(hWnd, SW_HIDE);
+		windowState_ = STATE_CLOSED;
+		wndLogPanel_->ClearText();
 		return FALSE;
 	}
 	case WM_SIZE:
@@ -320,7 +346,7 @@ LRESULT WindowLogger::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	}
 	case WM_NOTIFY:
 	{
-		switch (((NMHDR *)lParam)->code) {
+		switch (((NMHDR*)lParam)->code) {
 		case TCN_SELCHANGE:
 			wndTab_->ShowPage();
 			return FALSE;
@@ -330,6 +356,7 @@ LRESULT WindowLogger::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	case WM_ENDLOGGER:
 	{
 		::DestroyWindow(hWnd);
+		windowState_ = STATE_CLOSED;
 		break;
 	}
 	case WM_ADDPANEL:
@@ -366,12 +393,12 @@ LRESULT WindowLogger::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 
 void WindowLogger::SetInfo(int row, std::wstring textInfo, std::wstring textData) {
-	if (hWnd_ == NULL)return;
+	if (hWnd_ == NULL) return;
 	wndInfoPanel_->SetInfo(row, textInfo, textData);
 }
 
 bool WindowLogger::AddPanel(ref_count_ptr<Panel> panel, std::wstring name) {
-	if (hWnd_ == NULL)return false;
+	if (hWnd_ == NULL) return false;
 
 	AddPanelEvent event;
 	event.name = name;
@@ -389,7 +416,8 @@ bool WindowLogger::AddPanel(ref_count_ptr<Panel> panel, std::wstring name) {
 	return true;
 }
 void WindowLogger::ShowLogWindow() {
-	if (!bEnable_)return;
+	if (!bEnable_) return;
+	windowState_ = STATE_RUNNING;
 	ShowWindow(hWnd_, SW_SHOW);
 }
 void WindowLogger::InsertOpenCommandInSystemMenu(HWND hWnd) {
@@ -403,7 +431,7 @@ void WindowLogger::InsertOpenCommandInSystemMenu(HWND hWnd) {
 	mii.fMask = MIIM_ID | MIIM_TYPE;
 	mii.fType = MFT_STRING;
 	mii.wID = MENU_ID_OPEN;
-	mii.dwTypeData = L"ログウィンドウ表示";
+	mii.dwTypeData = L"Show LogWindow";
 
 	InsertMenuItem(hMenu, 0, 1, &mii);
 }
@@ -449,13 +477,18 @@ void WindowLogger::LogPanel::AddText(std::wstring text) {
 		//最大文字数を超えたら50%削除
 		std::wstring text = wndEdit_.GetText();
 		text = text.erase(0, text.size() / 2);
-		text += L"\r\n";
+		text += L"\n";
 		wndEdit_.SetText(text);
 
 		pos = GetWindowTextLength(hEdit);
 	}
 	::SendMessage(hEdit, EM_SETSEL, pos, pos);
-	::SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)text.c_str());
+	::SendMessage(hEdit, EM_REPLACESEL, FALSE, (LPARAM)text.c_str());
+}
+void WindowLogger::LogPanel::ClearText() {
+	HWND hEdit = wndEdit_.GetWindowHandle();
+	::SendMessage(hEdit, EM_SETSEL, 0, -1);
+	::SendMessage(hEdit, EM_REPLACESEL, FALSE, (LPARAM)(L""));
 }
 //WindowLogger::InfoPanel
 WindowLogger::InfoPanel::InfoPanel() {
@@ -502,7 +535,7 @@ WindowLogger::InfoCollectThread::~InfoCollectThread() {
 void WindowLogger::InfoCollectThread::_Run() {
 	//TODO 無効なステータスバーにメッセージを
 	//     送るとき、固まる可能性あり。
-	infoCpu_ = this->_GetCpuInformation();
+	//infoCpu_ = this->_GetCpuInformation();
 
 	while (this->GetStatus() == RUN) {
 		::Sleep(500);

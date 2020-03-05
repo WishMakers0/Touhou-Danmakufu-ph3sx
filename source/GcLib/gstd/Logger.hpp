@@ -18,7 +18,7 @@ namespace gstd {
 	protected:
 		static Logger* top_;
 		gstd::CriticalSection lock_;
-		std::list<ref_count_ptr<Logger> > listLogger_;//子のロガ
+		std::list<ref_count_ptr<Logger>> listLogger_;//子のロガ
 		virtual void _WriteChild(SYSTEMTIME& time, std::wstring str);
 		virtual void _Write(SYSTEMTIME& time, std::wstring str) = 0;
 	public:
@@ -30,8 +30,8 @@ namespace gstd {
 		virtual void Write(std::wstring str);
 
 		static void SetTop(Logger* logger) { top_ = logger; }
-		static void WriteTop(std::string str) { if (top_ != NULL)top_->Write(str); }
-		static void WriteTop(std::wstring str) { if (top_ != NULL)top_->Write(str); }//トップのロガに出力します
+		static void WriteTop(std::string str) { if (top_) top_->Write(str); }
+		static void WriteTop(std::wstring str) { if (top_) top_->Write(str); }//トップのロガに出力します
 	};
 
 	/**********************************************************
@@ -59,6 +59,7 @@ namespace gstd {
 	//WindowLogger
 	//ログウィンドウ
 	//ウィンドウは別スレッド動作です
+	//Natashi: Only instantiate once.
 	**********************************************************/
 	class WindowLogger : public Logger, public WindowBase {
 	public:
@@ -79,13 +80,22 @@ namespace gstd {
 			STATUS_CPU = 1,
 
 			MENU_ID_OPEN = 1,
+
+			STATE_INITIALIZING = 0,
+			STATE_RUNNING,
+			STATE_CLOSED,
 		};
+
+		static WindowLogger* loggerParentGlobal_;
 	protected:
 		struct AddPanelEvent {
 			std::wstring name;
 			ref_count_ptr<Panel> panel;
 		};
+
 		bool bEnable_;
+		int windowState_;
+
 		ref_count_ptr<WindowThread> threadWindow_;
 		ref_count_ptr<WTabControll> wndTab_;
 		ref_count_ptr<WStatusBar> wndStatus_;
@@ -108,8 +118,12 @@ namespace gstd {
 		void SetInfo(int row, std::wstring textInfo, std::wstring textData);
 		bool AddPanel(ref_count_ptr<Panel> panel, std::wstring name);
 
+		int GetState() { return windowState_; }
+
 		void ShowLogWindow();
 		static void InsertOpenCommandInSystemMenu(HWND hWnd);
+
+		static WindowLogger* GetParent() { return loggerParentGlobal_; }
 	};
 	class WindowLogger::WindowThread : public gstd::Thread, public gstd::InnerClass<WindowLogger> {
 		friend WindowLogger;
@@ -135,6 +149,7 @@ namespace gstd {
 		~LogPanel();
 		virtual void LocateParts();
 		void AddText(std::wstring text);
+		void ClearText();
 	};
 
 	class WindowLogger::InfoPanel : public WindowLogger::Panel {
