@@ -18,7 +18,7 @@ namespace directx {
 	struct VERTEX_TL {
 		//座標3D変換済み、ライティング済み
 		VERTEX_TL() {}
-		VERTEX_TL(D3DXVECTOR4 pos, D3DCOLOR dcol) :position(pos), diffuse_color(dcol) {}
+		VERTEX_TL(D3DXVECTOR4& pos, D3DCOLOR dcol) :position(pos), diffuse_color(dcol) {}
 		D3DXVECTOR4 position;
 		D3DCOLOR diffuse_color;
 		enum { fvf = (D3DFVF_XYZRHW | D3DFVF_DIFFUSE) };
@@ -33,7 +33,7 @@ namespace directx {
 	struct VERTEX_TLX {
 		//座標3D変換済み、ライティング済み、テクスチャ有り
 		VERTEX_TLX() {}
-		VERTEX_TLX(D3DXVECTOR4 pos, D3DCOLOR diffcol, D3DXVECTOR2 tex) :position(pos), diffuse_color(diffcol), texcoord(tex) {}
+		VERTEX_TLX(D3DXVECTOR4& pos, D3DCOLOR diffcol, D3DXVECTOR2& tex) :position(pos), diffuse_color(diffcol), texcoord(tex) {}
 		D3DXVECTOR4 position;
 		D3DCOLOR diffuse_color;
 		D3DXVECTOR2 texcoord;
@@ -48,7 +48,7 @@ namespace directx {
 	struct VERTEX_L {
 		//ライティング済み
 		VERTEX_L() {}
-		VERTEX_L(const D3DXVECTOR3 &pos, const D3DCOLOR& col) :position(pos), diffuse_color(col) {}
+		VERTEX_L(D3DXVECTOR3& pos, D3DCOLOR col) :position(pos), diffuse_color(col) {}
 		D3DXVECTOR3 position;
 		D3DCOLOR diffuse_color;
 		enum { fvf = (D3DFVF_XYZ | D3DFVF_DIFFUSE) };
@@ -63,7 +63,7 @@ namespace directx {
 	struct VERTEX_LX {
 		//ライティング済み、テクスチャ有り
 		VERTEX_LX() {}
-		VERTEX_LX(D3DXVECTOR3 &pos, D3DCOLOR &diffcol, D3DXVECTOR2 tex) :position(pos), diffuse_color(diffcol), texcoord(tex) {}
+		VERTEX_LX(D3DXVECTOR3& pos, D3DCOLOR diffcol, D3DXVECTOR2& tex) :position(pos), diffuse_color(diffcol), texcoord(tex) {}
 		D3DXVECTOR3 position;
 		D3DCOLOR diffuse_color;
 		D3DXVECTOR2 texcoord;
@@ -78,7 +78,7 @@ namespace directx {
 	struct VERTEX_N {
 		//未ライティング
 		VERTEX_N() {}
-		VERTEX_N(D3DXVECTOR3 pos, D3DXVECTOR3 n) :position(pos), normal(n) {}
+		VERTEX_N(D3DXVECTOR3& pos, D3DXVECTOR3& n) :position(pos), normal(n) {}
 		D3DXVECTOR3 position;
 		D3DXVECTOR3 normal;
 		enum { fvf = (D3DFVF_XYZ | D3DFVF_NORMAL) };
@@ -93,7 +93,7 @@ namespace directx {
 	struct VERTEX_NX {
 		//未ライティング、テクスチャ有り
 		VERTEX_NX() {}
-		VERTEX_NX(D3DXVECTOR3 &pos, D3DXVECTOR3 &n, D3DXVECTOR2 &tc) :position(pos), normal(n), texcoord(tc) {}
+		VERTEX_NX(D3DXVECTOR3& pos, D3DXVECTOR3& n, D3DXVECTOR2& tc) :position(pos), normal(n), texcoord(tc) {}
 		D3DXVECTOR3 position;
 		D3DXVECTOR3 normal;
 		D3DXVECTOR2 texcoord;
@@ -109,12 +109,34 @@ namespace directx {
 	};
 	struct VERTEX_NXG {
 		VERTEX_NXG() {}
-		VERTEX_NXG(D3DXVECTOR3 &pos, D3DXVECTOR3 &n, D3DXVECTOR2 &tc) :position(pos), normal(n), texcoord(tc) {}
+		VERTEX_NXG(D3DXVECTOR3& pos, D3DXVECTOR3& n, D3DXVECTOR2& tc) : position(pos), normal(n), texcoord(tc) {}
 		D3DXVECTOR3 position;
 		float blend[3];
 		D3DXVECTOR3 normal;
 		D3DXVECTOR2 texcoord;
 		enum { fvf = (D3DFVF_XYZB3 | D3DFVF_NORMAL | D3DFVF_TEX1) };
+	};
+
+	static const D3DVERTEXELEMENT9 ELEMENTS_BNX[] = {
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 0, 12, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDWEIGHT, 0 },
+		{ 0, 28, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDINDICES, 0 },
+		{ 0, 44, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
+		{ 0, 56, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+		D3DDECL_END()
+	};
+	struct VERTEX_BNX {
+		VERTEX_BNX() {}
+		VERTEX_BNX(D3DXVECTOR3& pos, D3DXVECTOR4& br, D3DXVECTOR4& bi, D3DXVECTOR3& n,
+			D3DXVECTOR2& tc) : position(pos), blendRate(br), blendIndex(bi), normal(n), texcoord(tc) {}
+
+		D3DXVECTOR3 position;
+		D3DXVECTOR4 blendRate;
+		D3DXVECTOR4 blendIndex;
+		D3DXVECTOR3 normal;
+		D3DXVECTOR2 texcoord;
+
+		enum { fvf = (D3DFVF_XYZB4 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1) };
 	};
 
 	static const D3DVERTEXELEMENT9 ELEMENTS_B1NX[] = {
@@ -127,7 +149,7 @@ namespace directx {
 	struct VERTEX_B1NX {
 		//未ライティング、テクスチャ有り、頂点ブレンド1
 		VERTEX_B1NX() {}
-		VERTEX_B1NX(D3DXVECTOR3 &pos, DWORD bi, D3DXVECTOR3 &n, D3DXVECTOR2 &tc) :position(pos), normal(n), texcoord(tc) {
+		VERTEX_B1NX(D3DXVECTOR3& pos, DWORD bi, D3DXVECTOR3& n, D3DXVECTOR2& tc) :position(pos), normal(n), texcoord(tc) {
 			blendIndex = bi;
 		}
 		D3DXVECTOR3 position;
@@ -148,7 +170,9 @@ namespace directx {
 	struct VERTEX_B2NX {
 		//未ライティング、テクスチャ有り、頂点ブレンド2
 		VERTEX_B2NX() {}
-		VERTEX_B2NX(D3DXVECTOR3 &pos, float rate, BYTE index1, BYTE index2, D3DXVECTOR3 &n, D3DXVECTOR2 &tc) :position(pos), normal(n), texcoord(tc) {
+		VERTEX_B2NX(D3DXVECTOR3& pos, float rate, BYTE index1, BYTE index2, 
+			D3DXVECTOR3& n, D3DXVECTOR2& tc) : position(pos), normal(n), texcoord(tc) 
+		{
 			blendRate = rate;
 			gstd::BitAccess::SetByte(blendIndex, 0, index1);
 			gstd::BitAccess::SetByte(blendIndex, 8, index2);
@@ -172,7 +196,9 @@ namespace directx {
 	struct VERTEX_B4NX {
 		//未ライティング、テクスチャ有り、頂点ブレンド4
 		VERTEX_B4NX() {}
-		VERTEX_B4NX(D3DXVECTOR3 &pos, float rate[3], BYTE index[4], D3DXVECTOR3 &n, D3DXVECTOR2 &tc) :position(pos), normal(n), texcoord(tc) {
+		VERTEX_B4NX(D3DXVECTOR3& pos, float rate[3], BYTE index[4], 
+			D3DXVECTOR3& n, D3DXVECTOR2& tc) : position(pos), normal(n), texcoord(tc) 
+		{
 			for (int iRate = 0; iRate < 3; iRate++)
 				blendRate[iRate] = rate[iRate];
 			for (int iIndex = 0; iIndex < 4; iIndex++)

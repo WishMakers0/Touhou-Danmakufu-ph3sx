@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "Shader.hpp"
 #include "HLSL.hpp"
 
@@ -237,6 +238,11 @@ void RenderShaderManager::Initialize() {
 	hr = device->CreateVertexDeclaration(ELEMENTS_NX, &declarationNX_);
 	if (FAILED(hr)) {
 		std::wstring err = L"RenderShaderManager: CreateVertexDeclaration failed. (ELEMENTS_NX)";
+		throw gstd::wexception(err);
+	}
+	hr = device->CreateVertexDeclaration(ELEMENTS_BNX, &declarationBNX_);
+	if (FAILED(hr)) {
+		std::wstring err = L"RenderShaderManager: CreateVertexDeclaration failed. (ELEMENTS_BNX)";
 		throw gstd::wexception(err);
 	}
 

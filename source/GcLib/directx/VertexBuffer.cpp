@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "VertexBuffer.hpp"
 
 namespace directx {
@@ -37,11 +38,8 @@ namespace directx {
 		thisBase_ = this;
 	}
 	void VertexBufferManager::Release() {
-		if (indexBuffer_)
-			indexBuffer_->Release();
-		for (IDirect3DVertexBuffer9* buffer : vertexBuffers_) {
-			if (buffer)
-				buffer->Release();
-		}
+		ptr_release(indexBuffer_);
+		for (IDirect3DVertexBuffer9* buffer : vertexBuffers_)
+			ptr_release(buffer);
 	}
 }
