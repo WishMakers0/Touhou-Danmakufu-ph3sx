@@ -79,6 +79,7 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
+#include <future>
 
 #include <fstream>
 #include <sstream>
@@ -131,6 +132,8 @@
 
 #include <zlib.h>
 
+#include <omp.h>
+
 #if NDEBUG
 #pragma comment (lib, "zlibstatic.lib")
 #else
@@ -154,3 +157,26 @@
 #define __L_DBG_NEW__  ::new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new __L_DBG_NEW__
 #endif
+
+#define __L_STD_FILESYSTEM
+#ifdef __L_STD_FILESYSTEM
+#include <filesystem>
+namespace stdfs = std::filesystem;
+using path_t = stdfs::path;
+#endif
+
+template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
+	if (ptr) delete ptr;
+	ptr = nullptr;
+}
+template<typename T> static constexpr inline void ptr_delete_scalar(T*& ptr) {
+	if (ptr) delete[] ptr;
+	ptr = nullptr;
+}
+template<typename T> static constexpr inline void ptr_release(T*& ptr) {
+	if (ptr) ptr->Release();
+	ptr = nullptr;
+}
+
+#undef min
+#undef max

@@ -358,9 +358,6 @@
     <ClInclude Include="source\GcLib\directx\VertexBuffer.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>

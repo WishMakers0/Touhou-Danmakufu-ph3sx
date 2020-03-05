@@ -30,6 +30,7 @@
     <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -88,6 +89,10 @@
       <ProgramDataBaseFileName>DnhExecutor\Release\th_dnh.pdb</ProgramDataBaseFileName>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <OpenMPSupport>true</OpenMPSupport>
+      <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -139,6 +144,8 @@
       <SDLCheck>false</SDLCheck>
       <SupportJustMyCode>true</SupportJustMyCode>
       <ConformanceMode>false</ConformanceMode>
+      <StringPooling>true</StringPooling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -171,6 +178,9 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\GcLib\directx\DirectGraphics.cpp" />
@@ -205,7 +215,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">DnhExecutor/Debug/DnhExecutor.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">DnhExecutor/Release/DnhExecutor.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">DnhExecutor/Debug/DnhExecutor.pch</PrecompiledHeaderOutputFile>
@@ -265,7 +275,6 @@
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp" />
     <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp" />
     <ClInclude Include="source\GcLib\gstd\Logger.hpp" />
-    <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp" />
     <ClInclude Include="source\GcLib\gstd\RandProvider.hpp" />
     <ClInclude Include="source\GcLib\gstd\Script.hpp" />
     <ClInclude Include="source\GcLib\gstd\ScriptClient.hpp" />
