@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "File.hpp"
 #include "GstdUtility.hpp"
 #include "Logger.hpp"
@@ -11,36 +12,35 @@ using namespace gstd;
 //ByteBuffer
 **********************************************************/
 ByteBuffer::ByteBuffer() {
-	data_ = NULL;
+	data_ = nullptr;
 	Clear();
 }
 ByteBuffer::ByteBuffer(ByteBuffer& buffer) {
-	data_ = NULL;
+	data_ = nullptr;
 	Clear();
 	Copy(buffer);
 }
 ByteBuffer::ByteBuffer(std::stringstream& stream) {
-	data_ = NULL;
+	data_ = nullptr;
 	Clear();
 	Copy(stream);
 }
 ByteBuffer::~ByteBuffer() {
 	Clear();
-	if (data_ != NULL)
-		delete[] data_;
+	ptr_delete_scalar(data_);
 }
-int ByteBuffer::_GetReservedSize() {
+size_t ByteBuffer::_GetReservedSize() {
 	return reserve_;
 }
-void ByteBuffer::_Resize(int size) {
+void ByteBuffer::_Resize(size_t size) {
 	char* oldData = data_;
-	int oldSize = size_;
+	size_t oldSize = size_;
 
 	data_ = new char[size];
 	ZeroMemory(data_, size);
 
 	//元のデータをコピー
-	int sizeCopy = min(size, oldSize);
+	size_t sizeCopy = std::min(size, oldSize);
 	memcpy(data_, oldData, sizeCopy);
 	reserve_ = size;
 	size_ = size;
@@ -49,7 +49,7 @@ void ByteBuffer::_Resize(int size) {
 	delete[] oldData;
 }
 void ByteBuffer::Copy(ByteBuffer& src) {
-	if (data_ != NULL && src.reserve_ != reserve_) {
+	if (data_ != nullptr && src.reserve_ != reserve_) {
 		delete[] data_;
 		data_ = new char[src.reserve_];
 		ZeroMemory(data_, src.reserve_);
@@ -69,7 +69,7 @@ void ByteBuffer::Copy(std::stringstream& src) {
 
 	size_t newReserve = 0x1u << (size_t)ceil(log2f(size));
 
-	if (data_ != NULL) {
+	if (data_ != nullptr) {
 		delete[] data_;
 		data_ = new char[newReserve];
 		ZeroMemory(data_, newReserve);
@@ -82,7 +82,7 @@ void ByteBuffer::Copy(std::stringstream& src) {
 	{
 		size_t count = 0U;
 		do {
-			src.read(data_ + count, 8192);
+			src.read(data_ + count, 2048);
 			count += src.gcount();
 		} while (src.gcount() > 0U);
 
@@ -92,7 +92,7 @@ void ByteBuffer::Copy(std::stringstream& src) {
 	src.seekg(org, std::ios::beg);
 }
 void ByteBuffer::Clear() {
-	if (data_ != NULL)
+	if (data_ != nullptr)
 		delete[] data_;
 
 	data_ = new char[0];
@@ -100,24 +100,24 @@ void ByteBuffer::Clear() {
 	reserve_ = 0;
 	size_ = 0;
 }
-void ByteBuffer::Seek(int pos) {
+void ByteBuffer::Seek(size_t pos) {
 	offset_ = pos;
 	if (offset_ < 0)offset_ = 0;
 	else if (offset_ > size_)offset_ = size_;
 }
-void ByteBuffer::SetSize(int size) {
+void ByteBuffer::SetSize(size_t size) {
 	_Resize(size);
 }
 DWORD ByteBuffer::Write(LPVOID buf, DWORD size) {
 	if (offset_ + size > reserve_) {
-		int sizeNew = (offset_ + size) * 2;
+		size_t sizeNew = (offset_ + size) * 2;
 		_Resize(sizeNew);
 		size_ = 0;//あとで再計算
 	}
 
 	memcpy(&data_[offset_], buf, size);
 	offset_ += size;
-	size_ = max(size_, offset_);
+	size_ = std::max(size_, offset_);
 	return size;
 }
 DWORD ByteBuffer::Read(LPVOID buf, DWORD size) {
@@ -125,28 +125,49 @@ DWORD ByteBuffer::Read(LPVOID buf, DWORD size) {
 	offset_ += size;
 	return size;
 }
-char* ByteBuffer::GetPointer(int offset) {
-	if (offset > size_) {
-		throw gstd::wexception(L"ByteBuffer:インデックスエラー");
-	}
+_NODISCARD char* ByteBuffer::GetPointer(size_t offset) {
+#if _DEBUG
+	if (offset > size_)
+		throw gstd::wexception(L"ByteBuffer: Index out of bounds.");
+#endif
 	return &data_[offset];
+}
+_NODISCARD char& ByteBuffer::operator[](size_t offset) {
+#if _DEBUG
+	if (offset > size_)
+		throw gstd::wexception(L"ByteBuffer: Index out of bounds.");
+#endif
+	return data_[offset];
+}
+ByteBuffer& ByteBuffer::operator=(const ByteBuffer& other) noexcept {
+	if (this != std::addressof(other)) {
+		Clear();
+		Copy(const_cast<ByteBuffer&>(other));
+	}
+	return (*this);
 }
 
 /**********************************************************
 //File
 **********************************************************/
 File::File() {
-	hFile_ = NULL;
+	hFile_ = nullptr;
 	path_ = L"";
 }
 File::File(std::wstring path) {
-	hFile_ = NULL;
+	hFile_ = nullptr;
 	path_ = path;
 }
 File::~File() {
 	Close();
 }
 bool File::CreateDirectory() {
+#ifdef __L_STD_FILESYSTEM
+	stdfs::path dir = stdfs::path(path_).parent_path();
+	if (stdfs::exists(dir)) return true;
+
+	return stdfs::create_directories(dir);
+#else
 	std::wstring dir = PathProperty::GetFileDirectory(path_);
 	if (File::IsExists(dir))return true;
 
@@ -159,12 +180,13 @@ bool File::CreateDirectory() {
 		if (hFile == INVALID_HANDLE_VALUE) {
 			SECURITY_ATTRIBUTES attr;
 			attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-			attr.lpSecurityDescriptor = NULL;
+			attr.lpSecurityDescriptor = nullptr;
 			attr.bInheritHandle = FALSE;
 			::CreateDirectory(tPath.c_str(), &attr);
 		}
 		::FindClose(hFile);
 	}
+#endif
 	return true;
 }
 void File::Delete() {
@@ -172,31 +194,44 @@ void File::Delete() {
 	::DeleteFile(path_.c_str());
 }
 bool File::IsExists() {
-	if (hFile_ != NULL)return true;
+	if (hFile_ != nullptr) return true;
 
 	bool res = IsExists(path_);
 	return res;
 }
 bool File::IsExists(std::wstring path) {
+#ifdef __L_STD_FILESYSTEM
+	path_t _p = path;
+	bool res = stdfs::exists(_p) && (stdfs::status(_p).type() != stdfs::file_type::directory);
+#else
 	bool res = PathFileExists(path.c_str()) == TRUE;
+#endif
 	return res;
 }
 bool File::IsDirectory() {
+	return IsDirectory(path_);
+}
+bool File::IsDirectory(std::wstring path) {
+#ifdef __L_STD_FILESYSTEM
+	path_t _p = path;
+	bool res = stdfs::exists(_p) && stdfs::is_directory(_p);
+#else
 	WIN32_FIND_DATA fData;
-	HANDLE hFile = ::FindFirstFile(path_.c_str(), &fData);
+	HANDLE hFile = ::FindFirstFile(path.c_str(), &fData);
 	bool res = hFile != INVALID_HANDLE_VALUE ? true : false;
 	if (res)res = (FILE_ATTRIBUTE_DIRECTORY & fData.dwFileAttributes) > 0;
 
 	::FindClose(hFile);
+#endif
 	return res;
 }
 int File::GetSize() {
-	if (hFile_ != NULL)return ::GetFileSize(hFile_, NULL);
+	if (hFile_ != nullptr)return ::GetFileSize(hFile_, nullptr);
 
 	int res = 0;
 	WIN32_FIND_DATA fData;
 	HANDLE hFile = ::FindFirstFile(path_.c_str(), &fData);
-	res = hFile != INVALID_HANDLE_VALUE ? ::GetFileSize(hFile, NULL) : 0;
+	res = hFile != INVALID_HANDLE_VALUE ? ::GetFileSize(hFile, nullptr) : 0;
 	::FindClose(hFile);
 	return res;
 }
@@ -205,53 +240,66 @@ bool File::Open() {
 	return this->Open(AccessType::READ);
 }
 bool File::Open(AccessType typeAccess) {
-	if (hFile_ != NULL)this->Close();
+	if (hFile_ != nullptr)this->Close();
 
 	DWORD access = typeAccess == AccessType::READ ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE;
 	hFile_ = ::CreateFile(path_.c_str(), access,
-		FILE_SHARE_READ, NULL, OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL, NULL);
+		FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hFile_ == INVALID_HANDLE_VALUE) {
-		hFile_ = NULL;
+		hFile_ = nullptr;
 		return false;
 	}
 	return true;
 }
 bool File::Create() {
-	if (hFile_ != NULL)this->Close();
+	if (hFile_ != nullptr)this->Close();
 	hFile_ = CreateFile(path_.c_str(), GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ, NULL, CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL, NULL);
+		FILE_SHARE_READ, nullptr, CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hFile_ == INVALID_HANDLE_VALUE) {
-		hFile_ = NULL;
+		hFile_ = nullptr;
 		return false;
 	}
 	return true;
 }
 void File::Close() {
-	if (hFile_ != NULL)CloseHandle(hFile_);
-	hFile_ = NULL;
+	if (hFile_ != nullptr)CloseHandle(hFile_);
+	hFile_ = nullptr;
 }
 
 DWORD File::Read(LPVOID buf, DWORD size) {
 	DWORD res = 0;
-	::ReadFile(hFile_, buf, size, &res, NULL);
+	::ReadFile(hFile_, buf, size, &res, nullptr);
 	return res;
 }
 DWORD File::Write(LPVOID buf, DWORD size) {
 	DWORD res = 0;
-	::WriteFile(hFile_, buf, size, &res, NULL);
+	::WriteFile(hFile_, buf, size, &res, nullptr);
 	return res;
 }
 bool File::IsEqualsPath(std::wstring path1, std::wstring path2) {
+#ifdef __L_STD_FILESYSTEM
+	bool res = (path_t(path1) == path_t(path2));
+#else
 	path1 = PathProperty::GetUnique(path1);
 	path2 = PathProperty::GetUnique(path2);
 	bool res = (wcscmp(path1.c_str(), path2.c_str()) == 0);
+#endif
 	return res;
 }
 std::vector<std::wstring> File::GetFilePathList(std::wstring dir) {
 	std::vector<std::wstring> res;
 
+#ifdef __L_STD_FILESYSTEM
+	path_t p = dir;
+	if (stdfs::exists(p) && stdfs::is_directory(p)) {
+		for (auto itr : stdfs::directory_iterator(p)) {
+			if (!itr.is_directory())
+				res.push_back(PathProperty::ReplaceYenToSlash(itr.path()));
+		}
+	}
+#else
 	WIN32_FIND_DATA data;
 	HANDLE hFind;
 	std::wstring findDir = dir + L"*.*";
@@ -276,12 +324,25 @@ std::vector<std::wstring> File::GetFilePathList(std::wstring dir) {
 
 	} while (FindNextFile(hFind, &data));
 	FindClose(hFind);
+#endif
 
 	return res;
 }
 std::vector<std::wstring> File::GetDirectoryPathList(std::wstring dir) {
 	std::vector<std::wstring> res;
 
+#ifdef __L_STD_FILESYSTEM
+	path_t p = dir;
+	if (stdfs::exists(p) && stdfs::is_directory(p)) {
+		for (auto itr : stdfs::directory_iterator(dir)) {
+			if (itr.is_directory()) {
+				std::wstring str = PathProperty::ReplaceYenToSlash(itr.path());
+				str += L'/';
+				res.push_back(str);
+			}
+		}
+	}
+#else
 	WIN32_FIND_DATA data;
 	HANDLE hFind;
 	std::wstring findDir = dir + L"*.*";
@@ -303,6 +364,7 @@ std::vector<std::wstring> File::GetDirectoryPathList(std::wstring dir) {
 
 	} while (FindNextFile(hFind, &data));
 	FindClose(hFind);
+#endif
 
 	return res;
 }
@@ -310,13 +372,13 @@ std::vector<std::wstring> File::GetDirectoryPathList(std::wstring dir) {
 /**********************************************************
 //FileManager
 **********************************************************/
-FileManager* FileManager::thisBase_ = NULL;
+FileManager* FileManager::thisBase_ = nullptr;
 FileManager::FileManager() {}
 FileManager::~FileManager() {
 	EndLoadThread();
 }
 bool FileManager::Initialize() {
-	if (thisBase_ != NULL)return false;
+	if (thisBase_ != nullptr)return false;
 	thisBase_ = this;
 	threadLoad_ = new LoadThread();
 	threadLoad_->Start();
@@ -325,10 +387,10 @@ bool FileManager::Initialize() {
 void FileManager::EndLoadThread() {
 	{
 		Lock lock(lock_);
-		if (threadLoad_ == NULL)return;
+		if (threadLoad_ == nullptr)return;
 		threadLoad_->Stop();
 		threadLoad_->Join();
-		threadLoad_ = NULL;
+		threadLoad_ = nullptr;
 	}
 }
 bool FileManager::AddArchiveFile(std::wstring path) {
@@ -370,10 +432,10 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 	std::wstring orgPath = path;
 	path = PathProperty::GetUnique(path);
 
-	ref_count_ptr<FileReader> res = NULL;
+	ref_count_ptr<FileReader> res = nullptr;
 	ref_count_ptr<File> fileRaw = new File(path);
 	if (fileRaw->IsExists()) {
-		res = new ManagedFileReader(fileRaw, NULL);
+		res = new ManagedFileReader(fileRaw, nullptr);
 	}
 	else {
 		//Cannot find a physical file, search in the archive entries.
@@ -424,12 +486,12 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 		}
 
 	}
-	if (res != NULL)res->_SetOriginalPath(orgPath);
+	if (res != nullptr)res->_SetOriginalPath(orgPath);
 	return res;
 }
 
 ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entry) {
-	ref_count_ptr<ByteBuffer> res = NULL;
+	ref_count_ptr<ByteBuffer> res = nullptr;
 	try {
 		Lock lock(lock_);
 
@@ -441,7 +503,7 @@ ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entr
 		}
 		else {
 			res = ArchiveFile::CreateEntryBuffer(entry);
-			if (res != NULL)mapByteBuffer_[key] = res;
+			if (res != nullptr)mapByteBuffer_[key] = res;
 		}
 	}
 	catch (...) {}
@@ -465,21 +527,21 @@ void FileManager::_ReleaseByteBuffer(ArchiveFileEntry::ptr entry) {
 void FileManager::AddLoadThreadEvent(ref_count_ptr<FileManager::LoadThreadEvent> event) {
 	{
 		Lock lock(lock_);
-		if (threadLoad_ == NULL)return;
+		if (threadLoad_ == nullptr)return;
 		threadLoad_->AddEvent(event);
 	}
 }
 void FileManager::AddLoadThreadListener(FileManager::LoadThreadListener* listener) {
 	{
 		Lock lock(lock_);
-		if (threadLoad_ == NULL)return;
+		if (threadLoad_ == nullptr)return;
 		threadLoad_->AddListener(listener);
 	}
 }
 void FileManager::RemoveLoadThreadListener(FileManager::LoadThreadListener* listener) {
 	{
 		Lock lock(lock_);
-		if (threadLoad_ == NULL)return;
+		if (threadLoad_ == nullptr)return;
 		threadLoad_->RemoveListener(listener);
 	}
 }
@@ -498,7 +560,7 @@ void FileManager::LoadThread::_Run() {
 
 		while (this->GetStatus() == RUN) {
 			//Logger::WriteTop(StringUtility::Format("ロードイベント取り出し開始"));
-			ref_count_ptr<FileManager::LoadThreadEvent> event = NULL;
+			ref_count_ptr<FileManager::LoadThreadEvent> event = nullptr;
 			{
 				Lock lock(lockEvent_);
 				if (listEvent_.size() == 0)break;
@@ -591,13 +653,13 @@ ManagedFileReader::ManagedFileReader(ref_count_ptr<File> file, std::shared_ptr<A
 	file_ = file;
 	entry_ = entry;
 
-	if (entry_ == NULL) {
+	if (entry_ == nullptr) {
 		type_ = TYPE_NORMAL;
 	}
-	else if (entry_->compressionType == ArchiveFileEntry::CT_NONE && entry_ != NULL) {
+	else if (entry_->compressionType == ArchiveFileEntry::CT_NONE && entry_ != nullptr) {
 		type_ = TYPE_ARCHIVED;
 	}
-	else if (entry_->compressionType != ArchiveFileEntry::CT_NONE && entry_ != NULL) {
+	else if (entry_->compressionType != ArchiveFileEntry::CT_NONE && entry_ != nullptr) {
 		type_ = TYPE_ARCHIVED_COMPRESSED;
 	}
 }
@@ -612,21 +674,21 @@ bool ManagedFileReader::Open() {
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
 		buffer_ = FileManager::GetBase()->_GetByteBuffer(entry_);
-		res = buffer_ != NULL;
+		res = buffer_ != nullptr;
 	}
 	return res;
 }
 void ManagedFileReader::Close() {
-	if (file_ != NULL)file_->Close();
-	if (buffer_ != NULL) {
-		buffer_ = NULL;
+	if (file_ != nullptr)file_->Close();
+	if (buffer_ != nullptr) {
+		buffer_ = nullptr;
 		FileManager::GetBase()->_ReleaseByteBuffer(entry_);
 	}
 }
 int ManagedFileReader::GetFileSize() {
 	int res = 0;
 	if (type_ == TYPE_NORMAL)res = file_->GetSize();
-	else if ((type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) && buffer_ != NULL)
+	else if ((type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) && buffer_ != nullptr)
 		res = entry_->sizeFull;
 	return res;
 }
@@ -653,7 +715,7 @@ BOOL ManagedFileReader::SetFilePointerBegin() {
 		res = file_->SetFilePointerBegin();
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
-		if (buffer_ != NULL) {
+		if (buffer_ != nullptr) {
 			offset_ = 0;
 			res = TRUE;
 		}
@@ -667,7 +729,7 @@ BOOL ManagedFileReader::SetFilePointerEnd() {
 		offset_ = file_->GetSize();
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
-		if (buffer_ != NULL) {
+		if (buffer_ != nullptr) {
 			offset_ = buffer_->GetSize();
 			res = TRUE;
 		}
@@ -680,7 +742,7 @@ BOOL ManagedFileReader::Seek(LONG offset) {
 		res = file_->Seek(offset);
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
-		if (buffer_ != NULL) {
+		if (buffer_ != nullptr) {
 			res = TRUE;
 		}
 	}
@@ -694,7 +756,7 @@ LONG ManagedFileReader::GetFilePointer() {
 		res = file_->GetFilePointer();
 	}
 	else if (type_ == TYPE_ARCHIVED || type_ == TYPE_ARCHIVED_COMPRESSED) {
-		if (buffer_ != NULL) {
+		if (buffer_ != nullptr) {
 			res = offset_;
 		}
 	}
@@ -945,10 +1007,10 @@ bool PropertyFile::Load(std::wstring path) {
 
 	std::vector<char> text;
 	FileManager* fileManager = FileManager::GetBase();
-	if (fileManager != NULL) {
+	if (fileManager != nullptr) {
 		ref_count_ptr<FileReader> reader = fileManager->GetFileReader(path);
 
-		if (reader == NULL || !reader->Open()) {
+		if (reader == nullptr || !reader->Open()) {
 			Logger::WriteTop(ErrorUtility::GetFileNotFoundErrorMessage(path));
 			return false;
 		}
@@ -1042,11 +1104,11 @@ double PropertyFile::GetReal(std::wstring key, double def) {
 **********************************************************/
 const std::string SystemValueManager::RECORD_SYSTEM = "__RECORD_SYSTEM__";
 const std::string SystemValueManager::RECORD_SYSTEM_GLOBAL = "__RECORD_SYSTEM_GLOBAL__";
-SystemValueManager* SystemValueManager::thisBase_ = NULL;
+SystemValueManager* SystemValueManager::thisBase_ = nullptr;
 SystemValueManager::SystemValueManager() {}
 SystemValueManager::~SystemValueManager() {}
 bool SystemValueManager::Initialize() {
-	if (thisBase_ != NULL)return false;
+	if (thisBase_ != nullptr)return false;
 
 	mapRecord_[RECORD_SYSTEM] = new RecordBuffer();
 	mapRecord_[RECORD_SYSTEM_GLOBAL] = new RecordBuffer();
@@ -1067,5 +1129,5 @@ bool SystemValueManager::IsExists(std::string keyRecord, std::string keyValue) {
 	return record->IsExists(keyValue);
 }
 gstd::ref_count_ptr<RecordBuffer> SystemValueManager::GetRecordBuffer(std::string key) {
-	return IsExists(key) ? mapRecord_[key] : NULL;
+	return IsExists(key) ? mapRecord_[key] : nullptr;
 }

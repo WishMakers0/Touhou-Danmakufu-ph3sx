@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "GstdUtility.hpp"
 #include "Logger.hpp"
 
@@ -13,20 +14,18 @@ std::wstring operator+(std::wstring l, const std::wstring& r) {
 //DebugUtility
 void DebugUtility::DumpMemoryLeaksOnExit() {
 #ifdef _DEBUG
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	_CrtDumpMemoryLeaks();
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
-	//if(!_CrtCheckMemory())
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtDumpMemoryLeaks();
 #endif
 }
 
 //================================================================
 //Encoding
 const unsigned char Encoding::BOM_UTF16LE[] = { 0xFF, 0xFE };
-int Encoding::Detect(const void* data, int dataSize) {
+size_t Encoding::Detect(const void* data, size_t dataSize) {
 	return UNKNOWN;
 }
-bool Encoding::IsUtf16Le(const void* data, int dataSize) {
+bool Encoding::IsUtf16Le(const void* data, size_t dataSize) {
 	if (dataSize < 2)return false;
 	if (memcmp(data, "\0", 1) == 0)return false;
 
@@ -38,10 +37,10 @@ bool Encoding::IsUtf16Le(const void* data, int dataSize) {
 	}
 	return res;
 }
-int Encoding::GetBomSize(const void* data, int dataSize) {
+size_t Encoding::GetBomSize(const void* data, size_t dataSize) {
 	if (dataSize < 2)return 0;
 
-	int res = 0;
+	size_t res = 0;
 	if (memcmp(data, BOM_UTF16LE, 2) == 0)
 		res = 2;
 	return res;
@@ -55,7 +54,7 @@ std::string StringUtility::ConvertWideToMulti(std::wstring const &wstr, int code
 
 	//マルチバイト変換後のサイズを調べます
 	//WideCharToMultiByteの第6引数に0を渡すと変換後のサイズが返ります
-	int sizeMulti = ::WideCharToMultiByte(codeMulti, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
+	size_t sizeMulti = ::WideCharToMultiByte(codeMulti, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
 	if (sizeMulti == 0)return "";//失敗(とりあえず空文字とします)
 
 	//最後の\0が含まれるため
@@ -74,7 +73,7 @@ std::wstring StringUtility::ConvertMultiToWide(std::string const &str, int codeM
 
 	//UNICODE変換後のサイズを調べます
 	//MultiByteToWideCharの第6引数に0を渡すと変換後のサイズが返ります
-	int sizeWide = ::MultiByteToWideChar(codeMulti, 0, str.c_str(), -1, NULL, 0);
+	size_t sizeWide = ::MultiByteToWideChar(codeMulti, 0, str.c_str(), -1, NULL, 0);
 	if (sizeWide == 0)return L"";//失敗(とりあえず空文字とします)
 
 	//最後の\0が含まれるため
@@ -94,7 +93,7 @@ std::string StringUtility::ConvertUtf8ToMulti(std::vector<char>& text) {
 	return strShiftJIS;
 }
 std::wstring StringUtility::ConvertUtf8ToWide(std::vector<char>& text) {
-	int posText = 0;
+	size_t posText = 0;
 	if ((unsigned char)&text[0] == 0xef &&
 		(unsigned char)&text[1] == 0xbb &&
 		(unsigned char)&text[2] == 0xbf) {
@@ -152,7 +151,7 @@ std::string StringUtility::Format(const char* str, ...) {
 	va_list	vl;
 	va_start(vl, str);
 	if (_vsnprintf(buf, sizeof(buf), str, vl) < 0) {	//バッファを超えていた場合、動的に確保する
-		int size = sizeof(buf);
+		size_t size = sizeof(buf);
 		while (true) {
 			size *= 2;
 			char* nBuf = new char[size];
@@ -171,8 +170,8 @@ std::string StringUtility::Format(const char* str, ...) {
 	return res;
 }
 
-int StringUtility::CountCharacter(std::string& str, char c) {
-	int count = 0;
+size_t StringUtility::CountCharacter(std::string& str, char c) {
+	size_t count = 0;
 	char* pbuf = &str[0];
 	char* ebuf = &str[str.size() - 1];
 	while (pbuf <= ebuf) {
@@ -184,14 +183,14 @@ int StringUtility::CountCharacter(std::string& str, char c) {
 	}
 	return count;
 }
-int StringUtility::CountCharacter(std::vector<char>& str, char c) {
+size_t StringUtility::CountCharacter(std::vector<char>& str, char c) {
 	if (str.size() == 0)return 0;
 
 	int encoding = Encoding::SHIFT_JIS;
 	if (Encoding::IsUtf16Le(&str[0], str.size()))
 		encoding = Encoding::UTF16LE;
 
-	int count = 0;
+	size_t count = 0;
 	char* pbuf = &str[0];
 	char* ebuf = &str[str.size() - 1];
 	while (pbuf <= ebuf) {
@@ -212,17 +211,19 @@ int StringUtility::CountCharacter(std::vector<char>& str, char c) {
 	return count;
 
 }
-int StringUtility::ToInteger(std::string const & s) {
+int StringUtility::ToInteger(const std::string& s) {
 	return atoi(s.c_str());
 }
-double StringUtility::ToDouble(std::string const & s) {
+double StringUtility::ToDouble(const std::string& s) {
 	return atof(s.c_str());
 }
 std::string StringUtility::Replace(std::string& source, std::string pattern, std::string placement) {
 	std::string res = ReplaceAll(source, pattern, placement, 1);
 	return res;
 }
-std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, std::string placement, int replaceCount, int start, int end) {
+std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, std::string placement, 
+	size_t replaceCount, size_t start, size_t end)
+{
 	bool bDBCSLeadByteCheck = (pattern.size() == 1);
 	std::string result;
 	if (end == 0) end = source.size();
@@ -230,7 +231,7 @@ std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, 
 	std::string::size_type pos = start;
 	std::string::size_type len = pattern.size();
 
-	int count = 0;
+	size_t count = 0;
 	while ((pos = source.find(pattern, pos)) != std::string::npos) {
 		if (pos > 0) {
 			char ch = source[pos - 1];
@@ -253,36 +254,34 @@ std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, 
 	result.append(source, pos_before, source.size() - pos_before);
 	return result;
 }
-std::string StringUtility::Slice(std::string const & s, int length) {
-	length = min(s.size() - 1, length);
+std::string StringUtility::Slice(const std::string& s, size_t length) {
+	if (s.size() > 0)
+		length = std::min(s.size() - 1, length);
+	else length = 0;
 	return s.substr(0, length);
 }
 std::string StringUtility::Trim(const std::string& str) {
 	if (str.size() == 0)return str;
 
-	std::wstring wstr = StringUtility::ConvertMultiToWide(str);
-	int left = 0;
-	for (; left < wstr.size(); left++) {
-		wchar_t wch = wstr[left];
-		if (wch != 0x20 && wch != 0x09)
-			break;
+	auto itrBeg = str.begin();
+	for (char c : str) {
+		if (c != 0x20 && c != 0x09) break;
+		++itrBeg;
 	}
 
-	int right = wstr.size() - 1;
-	for (; right >= 0; right--) {
-		wchar_t wch = wstr[right];
-		if (wch != 0x20 && wch != 0x09 && wch != 0x0 && wch != '\r' && wch != '\n') {
-			right++;
-			break;
-		}
+	auto itrEnd = str.end();
+	for (auto itr = str.rbegin(); itr != str.rend(); ++itr) {
+		char c = *itr;
+		if (c != 0x20 && c != 0x09 && c != 0x0 && c != '\r' && c != '\n') break;
+		--itrEnd;
 	}
 
-	std::wstring wres = wstr;
-	if (left <= right) {
-		wres = wstr.substr(left, right - left);
-	}
+	std::string res;
+	if (itrBeg <= itrEnd)
+		res = std::string(itrBeg, itrEnd);
+	else
+		res = "";
 
-	std::string res = StringUtility::ConvertWideToMulti(wres);
 	return res;
 }
 //----------------------------------------------------------------
@@ -308,7 +307,7 @@ std::wstring StringUtility::Format(const wchar_t* str, ...) {
 	va_list	vl;
 	va_start(vl, str);
 	if (_vsnwprintf(buf, sizeof(buf) / 2U - 1U, str, vl) < 0) {	//バッファを超えていた場合、動的に確保する
-		int size = sizeof(buf);
+		size_t size = sizeof(buf);
 		while (true) {
 			size *= 2U;
 			wchar_t* nBuf = new wchar_t[size];
@@ -332,7 +331,7 @@ std::wstring StringUtility::FormatToWide(const char* str, ...) {
 	va_list	vl;
 	va_start(vl, str);
 	if (_vsnprintf(buf, sizeof(buf), str, vl) < 0) {	//バッファを超えていた場合、動的に確保する
-		int size = sizeof(buf);
+		size_t size = sizeof(buf);
 		while (true) {
 			size *= 2;
 			char* nBuf = new char[size];
@@ -353,8 +352,8 @@ std::wstring StringUtility::FormatToWide(const char* str, ...) {
 	return wres;
 }
 
-int StringUtility::CountCharacter(std::wstring& str, wchar_t c) {
-	int count = 0;
+size_t StringUtility::CountCharacter(std::wstring& str, wchar_t c) {
+	size_t count = 0;
 	wchar_t* pbuf = &str[0];
 	wchar_t* ebuf = &str[str.size() - 1];
 	while (pbuf <= ebuf) {
@@ -363,10 +362,10 @@ int StringUtility::CountCharacter(std::wstring& str, wchar_t c) {
 	}
 	return count;
 }
-int StringUtility::ToInteger(std::wstring const & s) {
+int StringUtility::ToInteger(const std::wstring& s) {
 	return _wtoi(s.c_str());
 }
-double StringUtility::ToDouble(std::wstring const & s) {
+double StringUtility::ToDouble(const std::wstring& s) {
 	wchar_t *stopscan;
 	return wcstod(s.c_str(), &stopscan);
 	//return _wtof(s.c_str());
@@ -375,14 +374,16 @@ std::wstring StringUtility::Replace(std::wstring& source, std::wstring pattern, 
 	std::wstring res = ReplaceAll(source, pattern, placement, 1);
 	return res;
 }
-std::wstring StringUtility::ReplaceAll(std::wstring& source, std::wstring pattern, std::wstring placement, int replaceCount, int start, int end) {
+std::wstring StringUtility::ReplaceAll(std::wstring& source, std::wstring pattern, std::wstring placement, 
+	size_t replaceCount, size_t start, size_t end)
+{
 	std::wstring result;
 	if (end == 0) end = source.size();
 	std::wstring::size_type pos_before = 0;
 	std::wstring::size_type pos = start;
 	std::wstring::size_type len = pattern.size();
 
-	int count = 0;
+	size_t count = 0;
 	while ((pos = source.find(pattern, pos)) != std::wstring::npos) {
 		result.append(source, pos_before, pos - pos_before);
 		result.append(placement);
@@ -395,46 +396,47 @@ std::wstring StringUtility::ReplaceAll(std::wstring& source, std::wstring patter
 	result.append(source, pos_before, source.size() - pos_before);
 	return result;
 }
-std::wstring StringUtility::Slice(std::wstring const & s, int length) {
-	length = min(s.size() - 1, length);
+std::wstring StringUtility::Slice(const std::wstring& s, size_t length) {
+	if (s.size() > 0)
+		length = std::min(s.size() - 1, length);
+	else length = 0;
 	return s.substr(0, length);
 }
 std::wstring StringUtility::Trim(const std::wstring& str) {
-	if (str.size() == 0)return str;
+	if (str.size() == 0) return str;
 
-	int left = 0;
-	for (; left < str.size(); left++) {
-		wchar_t wch = str[left];
-		if (wch != 0x20 && wch != 0x09)
-			break;
+	auto itrBeg = str.begin();
+	for (wchar_t wch : str) {
+		if (wch != 0x20 && wch != 0x09) break;
+		++itrBeg;
 	}
 
-	int right = str.size() - 1;
-	for (; right >= 0; right--) {
-		wchar_t wch = str[right];
-		if (wch != 0x20 && wch != 0x09 && wch != 0x0 && wch != '\r' && wch != '\n') {
-			right++;
-			break;
-		}
+	auto itrEnd = str.end();
+	for (auto itr = str.rbegin(); itr != str.rend(); ++itr) {
+		wchar_t wch = *itr;
+		if (wch != 0x20 && wch != 0x09 && wch != 0x0 && wch != '\r' && wch != '\n') break;
+		--itrEnd;
 	}
 
-	std::wstring res = str;
-	if (left <= right) {
-		res = str.substr(left, right - left);
-	}
+	std::wstring res;
+	if (itrBeg <= itrEnd)
+		res = std::wstring(itrBeg, itrEnd);
+	else
+		res = L"";
+
 	return res;
 }
-int StringUtility::CountAsciiSizeCharacter(std::wstring& str) {
+size_t StringUtility::CountAsciiSizeCharacter(std::wstring& str) {
 	if (str.size() == 0)return 0;
 
-	int wcount = str.size();
-	WORD *listType = new WORD[wcount];
+	size_t wcount = str.size();
+	WORD* listType = new WORD[wcount];
 	GetStringTypeEx(0, CT_CTYPE3, str.c_str(), wcount, listType);
 
-	int res = 0;
-	for (int iType = 0; iType < wcount; iType++) {
+	size_t res = 0;
+	for (size_t iType = 0; iType < wcount; iType++) {
 		WORD type = listType[iType];
-		if ((type& C3_HALFWIDTH) == C3_HALFWIDTH) {
+		if ((type & C3_HALFWIDTH) == C3_HALFWIDTH) {
 			res++;
 		}
 		else {
@@ -445,8 +447,8 @@ int StringUtility::CountAsciiSizeCharacter(std::wstring& str) {
 	delete[] listType;
 	return res;
 }
-int StringUtility::GetByteSize(std::wstring& str) {
-	int res = str.size() * sizeof(wchar_t);
+size_t StringUtility::GetByteSize(std::wstring& str) {
+	size_t res = str.size() * sizeof(wchar_t);
 	return res;
 }
 
@@ -507,11 +509,13 @@ void Math::InitializeFPU() {
 //================================================================
 //ByteOrder
 void ByteOrder::Reverse(LPVOID buf, DWORD size) {
-	unsigned char* pStart = (unsigned char*)buf;
-	unsigned char* pEnd = (unsigned char*)buf + size - 1;
+	if (size < 2) return;
+
+	byte* pStart = reinterpret_cast<byte*>(buf);
+	byte* pEnd = pStart + size - 1;
 
 	for (; pStart < pEnd;) {
-		unsigned char temp = *pStart;
+		byte temp = *pStart;
 		*pStart = *pEnd;
 		*pEnd = temp;
 

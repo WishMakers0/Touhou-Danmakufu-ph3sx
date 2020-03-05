@@ -52,7 +52,7 @@ namespace gstd {
 			T tmp; Read(tmp); return tmp;
 		}
 
-		std::string ReadString(int size) {
+		std::string ReadString(size_t size) {
 			std::string res = "";
 			res.resize(size);
 			Read(&res[0], size);
@@ -92,13 +92,13 @@ namespace gstd {
 	**********************************************************/
 	class ByteBuffer : public Writer, public Reader {
 	protected:
-		int reserve_;
-		int size_;
-		int offset_;
+		size_t reserve_;
+		size_t size_;
+		size_t offset_;
 		char* data_;
 
-		int _GetReservedSize();
-		void _Resize(int size);
+		size_t _GetReservedSize();
+		void _Resize(size_t size);
 	public:
 		ByteBuffer();
 		ByteBuffer(ByteBuffer& buffer);
@@ -108,15 +108,19 @@ namespace gstd {
 		void Copy(std::stringstream& src);
 		void Clear();
 
-		void Seek(int pos);
-		void SetSize(int size);
+		void Seek(size_t pos);
+		void SetSize(size_t size);
 		int GetSize() { return size_; }
-		int GetOffset() { return offset_; }
+		size_t size() { return size_; }
+		size_t GetOffset() { return offset_; }
 
 		virtual DWORD Write(LPVOID buf, DWORD size);
 		virtual DWORD Read(LPVOID buf, DWORD size);
 
-		char* GetPointer(int offset = 0);
+		_NODISCARD char* GetPointer(size_t offset = 0);
+		_NODISCARD char& operator[](size_t offset);
+
+		ByteBuffer& operator=(const ByteBuffer& other) noexcept;
 	};
 
 	/**********************************************************
@@ -143,6 +147,7 @@ namespace gstd {
 		bool IsExists();
 		static bool IsExists(std::wstring path);
 		bool IsDirectory();
+		static bool IsDirectory(std::wstring path);
 
 		int GetSize();
 		std::wstring& GetPath() { return path_; }
