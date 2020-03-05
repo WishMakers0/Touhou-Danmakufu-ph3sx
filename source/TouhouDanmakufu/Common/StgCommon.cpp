@@ -1,4 +1,5 @@
 #include "source/GcLib/pch.h"
+
 #include "StgCommon.hpp"
 #include "StgSystem.hpp"
 
@@ -136,9 +137,9 @@ void StgMovePattern_Angle::Move() {
 	if (acceleration_ != 0) {
 		speed_ += acceleration_;
 		if (acceleration_ > 0)
-			speed_ = min(speed_, maxSpeed_);
+			speed_ = std::min(speed_, maxSpeed_);
 		if (acceleration_ < 0)
-			speed_ = max(speed_, maxSpeed_);
+			speed_ = std::max(speed_, maxSpeed_);
 	}
 	if (angularVelocity_ != 0) {
 		SetDirectionAngle(angle + angularVelocity_);
@@ -169,8 +170,11 @@ void StgMovePattern_Angle::_Activate() {
 	}
 }
 void StgMovePattern_Angle::SetDirectionAngle(double angle) {
-	c_ = cos(angle);
-	s_ = sin(angle);
+	if (angle != StgMovePattern::NO_CHANGE) {
+		angle = Math::NormalizeAngleRad(angle);
+		c_ = cos(angle);
+		s_ = sin(angle);
+	}
 	angDirection_ = angle;
 }
 double StgMovePattern_Angle::GetSpeedX() {
@@ -197,16 +201,16 @@ void StgMovePattern_XY::Move() {
 	if (accelerationX_ != 0) {
 		c_ += accelerationX_;
 		if (accelerationX_ > 0)
-			c_ = min(c_, maxSpeedX_);
+			c_ = std::min(c_, maxSpeedX_);
 		if (accelerationX_ < 0)
-			c_ = max(c_, maxSpeedX_);
+			c_ = std::max(c_, maxSpeedX_);
 	}
 	if (accelerationY_ != 0) {
 		s_ += accelerationY_;
 		if (accelerationY_ > 0)
-			s_ = min(s_, maxSpeedY_);
+			s_ = std::min(s_, maxSpeedY_);
 		if (accelerationY_ < 0)
-			s_ = max(s_, maxSpeedY_);
+			s_ = std::max(s_, maxSpeedY_);
 	}
 
 	double px = target_->GetPositionX() + c_;
