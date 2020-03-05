@@ -5,8 +5,6 @@
 
 #include "../pch.h"
 
-#include "PtrUtil.hpp"
-
 //‰º‹L‚ðŽQl
 //http://marupeke296.com/CPP_SmartPointer.html
 
@@ -93,29 +91,23 @@ namespace gstd {
 
 			if (SYNC) {
 				if (InterlockedDecrement(info_.countRef_) == 0) {
-					delete[] info_.pPtr_;
-					info_.pPtr_ = nullptr;
+					ptr_delete_scalar(info_.pPtr_);
 				}
 				if (info_.countWeak_ != nullptr) {
 					if (InterlockedDecrement(info_.countWeak_) == 0) {
-						delete info_.countRef_;
-						info_.countRef_ = nullptr;
-						delete info_.countWeak_;
-						info_.countWeak_ = nullptr;
+						ptr_delete(info_.countRef_);
+						ptr_delete(info_.countWeak_);
 					}
 				}
 			}
 			else {
 				if (--(*info_.countRef_) == 0) {
-					delete[] info_.pPtr_;
-					info_.pPtr_ = nullptr;
+					ptr_delete_scalar(info_.pPtr_);
 				}
 				if (info_.countWeak_ != nullptr) {
 					if (--(*info_.countWeak_) == 0) {
-						delete info_.countRef_;
-						info_.countRef_ = nullptr;
-						delete info_.countWeak_;
-						info_.countWeak_ = nullptr;
+						ptr_delete(info_.countRef_);
+						ptr_delete(info_.countWeak_);
 					}
 				}
 			}
@@ -231,6 +223,10 @@ namespace gstd {
 			return info_.pPtr_ == p.GetPointer();
 		}
 
+		explicit operator bool() {
+			return (info_.pPtr_ != nullptr) ? (info_.countRef_ > 0) : false;
+		}
+
 		// !=”äŠr‰‰ŽZŽq
 		bool operator !=(const T* p) {
 			return info_.pPtr_ != p;
@@ -323,18 +319,14 @@ namespace gstd {
 			if (info_.countWeak_ != nullptr) {
 				if (SYNC) {
 					if (InterlockedDecrement(info_.countWeak_) == 0) {
-						delete info_.countRef_;
-						info_.countRef_ = nullptr;
-						delete info_.countWeak_;
-						info_.countWeak_ = nullptr;
+						ptr_delete(info_.countRef_);
+						ptr_delete(info_.countWeak_);
 					}
 				}
 				else {
 					if (--(*info_.countWeak_) == 0) {
-						delete info_.countRef_;
-						info_.countRef_ = nullptr;
-						delete info_.countWeak_;
-						info_.countWeak_ = nullptr;
+						ptr_delete(info_.countRef_);
+						ptr_delete(info_.countWeak_);
 					}
 				}
 			}
@@ -477,6 +469,10 @@ namespace gstd {
 		template<class D>
 		bool operator ==(ref_count_weak_ptr<D, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ == p.GetPointer()) : (nullptr == p.GetPointer());
+		}
+
+		explicit operator bool() {
+			return IsExists() ? (info_.pPtr_ != nullptr) : false;
 		}
 
 		// !=”äŠr‰‰ŽZŽq
