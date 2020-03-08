@@ -394,9 +394,10 @@ int StgEnemyBossSceneObject::GetActiveStepLifeCount() {
 double StgEnemyBossSceneObject::GetActiveStepTotalMaxLife() {
 	if (dataStep_ >= listData_.size())return 0;
 
-	std::atomic<double> res = 0;
+	//std::atomic<double> res = 0;
+	double res = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iData = 0; iData < listData_[dataStep_].size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 		std::vector<double>& listLife = data->GetLifeList();
@@ -409,9 +410,10 @@ double StgEnemyBossSceneObject::GetActiveStepTotalMaxLife() {
 double StgEnemyBossSceneObject::GetActiveStepTotalLife() {
 	if (dataStep_ >= listData_.size())return 0;
 
-	std::atomic<double> res = 0;
+	//std::atomic<double> res = 0;
+	double res = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iData = dataIndex_; iData < listData_[dataStep_].size(); iData++) {
 		res = res + GetActiveStepLife(iData);
 	}

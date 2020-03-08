@@ -1155,7 +1155,6 @@ void DxScriptObjectManager::SetShader(gstd::ref_count_ptr<Shader> shader, double
 	int tPriMin = (int)(min * (listShader_.size() - 1) + 0.5);
 	int tPriMax = (int)(max * (listShader_.size() - 1) + 0.5);
 
-#pragma omp parallel for
 	for (int iPri = tPriMin; iPri <= tPriMax; ++iPri) {
 		if (iPri < 0 || iPri >= listShader_.size())break;
 		listShader_[iPri] = shader;

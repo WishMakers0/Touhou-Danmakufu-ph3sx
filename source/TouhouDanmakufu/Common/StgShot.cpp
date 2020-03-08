@@ -275,7 +275,7 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, i
 
 	double rd = radius * radius;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
@@ -288,7 +288,7 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, i
 
 		double tr = sx * sx + sy * sy;
 
-#pragma omp critical(GetShotIdInCircle)
+//#pragma omp critical(DeleteInCircle)
 		if (tr <= rd) {
 			if (typeTo == TO_TYPE_IMMEDIATE) {
 				obj->DeleteImmediate();
@@ -331,7 +331,7 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 
 	double rd = radius * radius;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
@@ -346,7 +346,7 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 		if (tr <= rd) {
 			int id = obj->GetObjectID();
 
-#pragma omp critical(GetShotIdInCircle)
+//#pragma omp critical(GetShotIdInCircle)
 			res.push_back(id);
 		}
 	}
