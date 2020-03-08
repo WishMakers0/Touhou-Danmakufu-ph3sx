@@ -33,27 +33,22 @@
 
 //-------- 汎用
 namespace gstd {
-	std::string to_mbcs(std::wstring const& s);
-	std::wstring to_wide(std::string const& s);
-
-	template < typename T >
+	template<typename T>
 	class lightweight_vector {
 	public:
-		unsigned length;
-		unsigned capacity;
+		size_t length;
+		size_t capacity;
 		T* at;
 
-		lightweight_vector() : length(0), capacity(0), at(NULL) {}
+		lightweight_vector() : length(0), capacity(0), at(nullptr) {}
 
 		lightweight_vector(lightweight_vector const& source);
 
 		~lightweight_vector() {
-			if (at != NULL) {
-				delete[] at;
-			}
+			ptr_delete_scalar(at);
 		}
 
-		lightweight_vector& operator = (lightweight_vector const& source);
+		lightweight_vector& operator=(lightweight_vector const& source);
 
 		void expand();
 
@@ -65,9 +60,7 @@ namespace gstd {
 
 		void pop_back() {
 			--length;
-
-			T temp;
-			at[length] = temp;
+			std::destroy_at(&at[length]);
 		}
 
 		void clear() {
@@ -76,22 +69,19 @@ namespace gstd {
 
 		void release() {
 			length = 0;
-			if (at != NULL) {
-				delete[] at;
-				at = NULL;
-				capacity = 0;
-			}
+			if (at) capacity = 0;
+			ptr_delete_scalar(at);
 		}
 
-		unsigned size() const {
+		size_t size() const {
 			return length;
 		}
 
-		T& operator[] (unsigned i) {
+		T& operator[] (size_t i) {
 			return at[i];
 		}
 
-		T const& operator[] (unsigned i) const {
+		T const& operator[] (size_t i) const {
 			return at[i];
 		}
 
@@ -107,65 +97,73 @@ namespace gstd {
 		void insert(T* pos, T const& value);
 	};
 
-	template < typename T >
-	lightweight_vector < T >::lightweight_vector(lightweight_vector const& source) {
+	template<typename T>
+	lightweight_vector<T>::lightweight_vector(lightweight_vector const& source) {
 		length = source.length;
 		capacity = source.capacity;
+
 		if (source.capacity > 0) {
 			at = new T[source.capacity];
-			for (int i = length - 1; i >= 0; --i)
-				at[i] = source.at[i];
+			memcpy(at, source.at, length * sizeof(T));
 		}
 		else {
-			at = NULL;
+			at = nullptr;
 		}
 	}
 
-	template < typename T >
-	lightweight_vector < T >& lightweight_vector < T >::operator = (lightweight_vector < T > const& source) {
-		if (at != NULL) delete[] at;
+	template<typename T>
+	lightweight_vector<T>& lightweight_vector<T>::operator=(lightweight_vector<T> const& source) {
+		if (this == std::addressof(source)) return *this;
+
+		ptr_delete_scalar(at);
+
 		length = source.length;
 		capacity = source.capacity;
+
 		if (source.capacity > 0) {
 			at = new T[source.capacity];
-			for (int i = length - 1; i >= 0; --i)
-				at[i] = source.at[i];
+			memcpy(at, source.at, length * sizeof(T));
 		}
 		else {
-			at = NULL;
+			at = nullptr;
 		}
+
 		return *this;
 	}
 
-	template < typename T >
-	void lightweight_vector < T >::expand() {
+	template<typename T>
+	void lightweight_vector<T>::expand() {
 		if (capacity == 0) {
 			//delete[] at;
-			capacity = 4;
-			at = new T[4];
+			capacity = 0x4;
+			at = new T[capacity];
 		}
 		else {
-			capacity *= 2;
+			if (capacity < 0x400000)
+				capacity = capacity << 1;
+			else if (capacity == 0x400000)
+				capacity = 0x500000;
+			else
+				throw gstd::wexception("Cannot expand array any further. (max = 5242880)");
+
 			T* n = new T[capacity];
-			for (int i = length - 1; i >= 0; --i)
-				n[i] = at[i];
+			memcpy(n, at, length * sizeof(T));
 			delete[] at;
 			at = n;
 		}
 	}
 
-	template < typename T >
-	void lightweight_vector < T >::erase(T* pos) {
+	template<typename T>
+	void lightweight_vector<T>::erase(T* pos) {
 		--length;
 		for (T* i = pos; i < at + length; ++i) {
 			*i = *(i + 1);
 		}
 	}
-
-	template < typename T >
-	void lightweight_vector < T >::insert(T* pos, T const& value) {
+	template<typename T>
+	void lightweight_vector<T>::insert(T* pos, T const& value) {
 		if (length == capacity) {
-			unsigned pos_index = pos - at;
+			size_t pos_index = pos - at;
 			expand();
 			pos = at + pos_index;
 		}
@@ -184,7 +182,7 @@ namespace gstd {
 			tk_real, tk_char, tk_boolean, tk_array
 		};
 
-		type_data(type_kind k, type_data* t = NULL) : kind(k), element(t) {}
+		type_data(type_kind k, type_data* t = nullptr) : kind(k), element(t) {}
 
 		type_data(type_data const& source) : kind(source.kind), element(source.element) {}
 
@@ -202,7 +200,7 @@ namespace gstd {
 		type_kind kind;
 		type_data* element;
 
-		type_data& operator = (type_data const& source);
+		type_data& operator=(type_data const& source);
 	};
 
 	class value {
@@ -232,7 +230,7 @@ namespace gstd {
 			release();
 		}
 
-		value& operator = (value const& source) {
+		value& operator=(value const& source) {
 			data = source.data;
 			return *this;
 		}
@@ -260,9 +258,9 @@ namespace gstd {
 		wchar_t as_char() const;
 		bool as_boolean() const;
 		std::wstring as_string() const;
-		unsigned length_as_array() const;
-		value const& index_as_array(unsigned i) const;
-		value& index_as_array(unsigned i);
+		size_t length_as_array() const;
+		value const& index_as_array(size_t i) const;
+		value& index_as_array(size_t i);
 		type_data* get_type() const;
 
 		void unique() const {
@@ -284,7 +282,7 @@ namespace gstd {
 		}
 		struct body {
 			type_data* type;
-			lightweight_vector<value> array_value;
+			std::vector<value> array_value;
 
 			union {
 				double real_value;
@@ -299,7 +297,7 @@ namespace gstd {
 	class script_engine;
 	class script_machine;
 
-	typedef value(*callback) (script_machine* machine, int argc, value const* argv);
+	typedef value (*callback)(script_machine* machine, int argc, value const* argv);
 
 	struct function {
 		char const* name;
@@ -330,9 +328,9 @@ namespace gstd {
 		type_data* get_array_type(type_data* element);
 	private:
 		script_type_manager(script_type_manager const&);
-		script_type_manager& operator = (script_type_manager const& source);
+		script_type_manager& operator=(script_type_manager const& source);
 
-		std::list < type_data > types;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		std::list<type_data> types;	//中身のポインタを使うのでアドレスが変わらないようにlist
 		type_data* real_type;
 		type_data* char_type;
 		type_data* boolean_type;
@@ -390,7 +388,7 @@ namespace gstd {
 
 		//コピー、代入演算子の自動生成を無効に
 		script_engine(script_engine const& source);
-		script_engine& operator = (script_engine const& source);
+		script_engine& operator=(script_engine const& source);
 
 		//エラー
 		bool error;
@@ -419,11 +417,11 @@ namespace gstd {
 			union {
 				struct {
 					int level;	//assign/push_variableの変数の環境位置
-					unsigned variable;	//assign/push_variableの変数のインデックス
+					size_t variable;	//assign/push_variableの変数のインデックス
 				};
 				struct {
 					block* sub;	//call/call_and_push_resultの飛び先
-					unsigned arguments;	//call/call_and_push_resultの引数の数
+					size_t arguments;	//call/call_and_push_resultの引数の数
 				};
 				struct {
 					int ip;	//loop_backの戻り先
@@ -434,7 +432,7 @@ namespace gstd {
 
 			code(int the_line, command_kind the_command) : line(the_line), command(the_command) {}
 
-			code(int the_line, command_kind the_command, int the_level, unsigned the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
+			code(int the_line, command_kind the_command, int the_level, size_t the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
 
 			code(int the_line, command_kind the_command, block* the_sub, int the_arguments) : line(the_line), command(the_command), sub(the_sub),
 				arguments(the_arguments) {
@@ -462,13 +460,13 @@ namespace gstd {
 			block_kind kind;
 
 			block(int the_level, block_kind the_kind) :
-				level(the_level), arguments(0), name(), func(NULL), codes(), kind(the_kind) {
+				level(the_level), arguments(0), name(), func(nullptr), codes(), kind(the_kind) {
 			}
 		};
 
-		std::list < block > blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
+		std::list<block> blocks;	//中身のポインタを使うのでアドレスが変わらないようにlist
 		block* main_block;
-		std::map < std::string, block* > events;
+		std::map<std::string, block*> events;
 
 		block* new_block(int level, block_kind kind) {
 			block x(level, kind);
@@ -538,7 +536,7 @@ namespace gstd {
 	private:
 		script_machine();
 		script_machine(script_machine const& source);
-		script_machine& operator = (script_machine const& source);
+		script_machine& operator=(script_machine const& source);
 
 		script_engine* engine;
 
@@ -548,15 +546,16 @@ namespace gstd {
 
 		bool bTerminate;
 
-		typedef lightweight_vector < value > variables_t;
-		typedef lightweight_vector < value > stack_t;
+		typedef std::vector<value> variables_t;
+		typedef std::vector<value> stack_t;
 
 		struct environment {
-			environment* pred, * succ;	//双方向リンクリスト
+			environment* pred;	//双方向リンクリスト
+			environment* succ;
 			environment* parent;
 			int ref_count;
 			script_engine::block* sub;
-			unsigned ip;
+			size_t ip;
 			variables_t variables;
 			stack_t stack;
 			bool has_result;
@@ -571,25 +570,25 @@ namespace gstd {
 		environment* new_environment(environment* parent, script_engine::block* b);
 		void dispose_environment(environment* object);
 
-		typedef lightweight_vector<environment*> threads_t;
+		typedef std::list<environment*> threads_t;
 
 		threads_t threads;
-		unsigned current_thread_index;
+		std::list<environment*>::iterator current_thread_index;
 		bool finished;
 		bool stopped;
 		bool resuming;
 
 		void yield() {
-			if (current_thread_index > 0)
-				--current_thread_index;
+			if (current_thread_index == threads.begin())
+				current_thread_index = std::prev(threads.end());
 			else
-				current_thread_index = threads.size() - 1;
+				--current_thread_index;
 		}
 
 		void advance();
 
 	public:
-		int get_thread_count() { return threads.size(); }
+		size_t get_thread_count() { return threads.size(); }
 	};
 
 	template<int num>
