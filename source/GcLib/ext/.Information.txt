@@ -1,0 +1,10 @@
+Missing header files:
+	[zlib 1.2.11] 		-> https://www.zlib.net/
+		zconf.h
+		zlib.h
+	[libvorbis 1.3.6]	-> https://xiph.org/
+		codec.h
+		vorbisfile.h
+	[libogg 1.3.4]		-> https://xiph.org/
+		ogg.h
+		os_types.h
