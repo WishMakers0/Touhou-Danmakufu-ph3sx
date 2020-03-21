@@ -259,14 +259,14 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Other files
 /bin_ext
 /bin_th_dnh
-/library
-source/GcLib/gstd/Script - Copy.cpp
-source/GcLib/gstd/Script - Copy.hpp
-source/GcLib/gstd/Script - Copy (2).cpp
-source/GcLib/gstd/Script - Copy (2).hpp
-source/GcLib/gstd/ScriptClient - Copy.cpp
-source/GcLib/gstd/ScriptClient - Copy.hpp
-source/GcLib/gstd/ScriptClient - vector.cpp
-source/GcLib/gstd/ScriptClient - vector.hpp
+/library/ogg_static.lib
+/library/vorbis_static.lib
+/library/vorbisfile_static.lib
+/library/zlibstatic.lib
+/library/zlibstaticd.lib
+/source/GcLib/ext/zlib/zlib.h
+/source/GcLib/ext/zlib/zconf.h
