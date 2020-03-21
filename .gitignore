@@ -263,9 +263,9 @@ __pycache__/
 # Other files
 /bin_ext
 /bin_th_dnh
-/library/ogg_static.lib
-/library/vorbis_static.lib
-/library/vorbisfile_static.lib
+# /library/ogg_static.lib
+# /library/vorbis_static.lib
+# /library/vorbisfile_static.lib
 /library/zlibstatic.lib
 /library/zlibstaticd.lib
 /source/GcLib/ext/zlib/zlib.h

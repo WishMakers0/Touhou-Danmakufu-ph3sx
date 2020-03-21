@@ -130,7 +130,7 @@
 
 //--------------------------------EXTERNAL--------------------------------
 
-#include <zlib.h>
+#include <zlib/zlib.h>
 
 #include <omp.h>
 
@@ -140,12 +140,12 @@
 #pragma comment (lib, "zlibstaticd.lib")
 #endif
 
-#include "ext/codec.h"
-#include "ext/vorbisfile.h"
+#include <codec.h>
+#include <vorbisfile.h>
 
-#pragma comment(lib, "source/GcLib/ext/ogg_static.lib")
-#pragma comment(lib, "source/GcLib/ext/vorbis_static.lib")
-#pragma comment(lib, "source/GcLib/ext/vorbisfile_static.lib")
+#pragma comment(lib, "ogg_static.lib")
+#pragma comment(lib, "vorbis_static.lib")
+#pragma comment(lib, "vorbisfile_static.lib")
 
 //----------------------------------------------
 
