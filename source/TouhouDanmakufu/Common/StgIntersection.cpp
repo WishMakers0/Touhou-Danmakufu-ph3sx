@@ -145,10 +145,9 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
 				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
 			if (objEnemy) {
-				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
-				tp.SetObjectID(idObject);
+				tp.SetObjectID(objEnemy);
 				tp.SetPoint(pos);
 				listEnemyTargetPointNext_.push_back(tp);
 			}
@@ -180,10 +179,9 @@ void StgIntersectionManager::AddEnemyTargetToShot(StgIntersectionTarget::ptr tar
 			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
 				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
 			if (objEnemy) {
-				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
-				tp.SetObjectID(idObject);
+				tp.SetObjectID(objEnemy);
 				tp.SetPoint(pos);
 				listEnemyTargetPointNext_.push_back(tp);
 			}

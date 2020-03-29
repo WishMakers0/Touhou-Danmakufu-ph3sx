@@ -611,10 +611,8 @@ void StgSystemController::_ControlScene() {
 					objectCount += objectManager->GetAliveObjectCount();
 			}
 		}
-		if (logger->IsWindowVisible()) {
-			logger->SetInfo(4, L"Task count", StringUtility::Format(L"%d", taskCount));
-			logger->SetInfo(5, L"Object count", StringUtility::Format(L"%d", objectCount));
-		}
+		logger->SetInfo(4, L"Task count", StringUtility::Format(L"%d", taskCount));
+		logger->SetInfo(5, L"Object count", StringUtility::Format(L"%d", objectCount));
 	}
 }
 void StgSystemController::StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData) {

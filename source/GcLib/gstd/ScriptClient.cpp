@@ -1591,8 +1591,7 @@ std::wstring ScriptFileLineMap::GetPath(int line) {
 **********************************************************/
 const std::string ScriptCommonDataManager::nameAreaDefault_ = "";
 ScriptCommonDataManager::ScriptCommonDataManager() {
-	CreateArea(nameAreaDefault_);
-	defaultAreaIterator_ = mapData_.find(nameAreaDefault_);
+	defaultAreaIterator_ = CreateArea(nameAreaDefault_);
 }
 ScriptCommonDataManager::~ScriptCommonDataManager() {
 	for (auto itr = mapData_.begin(); itr != mapData_.end(); ++itr) {
@@ -1619,12 +1618,14 @@ void ScriptCommonDataManager::Erase(std::string name) {
 bool ScriptCommonDataManager::IsExists(std::string name) {
 	return mapData_.find(name) != mapData_.end();
 }
-void ScriptCommonDataManager::CreateArea(std::string name) {
-	if (IsExists(name)) {
+std::map<std::string, ScriptCommonData::ptr>::const_iterator ScriptCommonDataManager::CreateArea(std::string name) {
+	auto itrCheck = mapData_.find(name);
+	if (itrCheck != mapData_.end()) {
 		Logger::WriteTop(StringUtility::Format("ScriptCommonDataManager: Area \"%s\" already exists.", name.c_str()));
-		return;
+		return itrCheck;
 	}
-	mapData_[name] = new ScriptCommonData();
+	auto pairRes = mapData_.insert(std::make_pair(name, new ScriptCommonData()));
+	return pairRes.first;
 }
 void ScriptCommonDataManager::CopyArea(std::string nameDest, std::string nameSrc) {
 	ScriptCommonData::ptr dataSrc = mapData_[nameSrc];
@@ -1633,8 +1634,9 @@ void ScriptCommonDataManager::CopyArea(std::string nameDest, std::string nameSrc
 	mapData_[nameDest] = dataDest;
 }
 ScriptCommonData::ptr ScriptCommonDataManager::GetData(std::string name) {
-	if (!IsExists(name))return NULL;
-	return mapData_[name];
+	auto itr = mapData_.find(name);
+	if (itr == mapData_.end()) return nullptr;
+	return itr->second;
 }
 ScriptCommonData::ptr ScriptCommonDataManager::GetData(AreaCommonData_T::const_iterator name) {
 	return name->second;
@@ -1843,9 +1845,9 @@ void ScriptCommonDataInfoPanel::Update(gstd::ref_count_ptr<ScriptCommonDataManag
 	if (!IsWindowVisible())return;
 	{
 		Lock lock(lock_);
-		commonDataManager_->Clear();
+		//if (commonDataManager_) commonDataManager_->Clear();
 
-		if (commonDataManager != NULL) {
+		if (commonDataManager) {
 			/*
 			std::vector<std::string> listKey = commonDataManager->GetKeyList();
 			for (int iKey = 0; iKey < listKey.size(); iKey++) {

@@ -329,16 +329,16 @@ public:
 /**********************************************************
 //StgIntersectionTargetPoint
 **********************************************************/
+class StgEnemyObject;
 class StgIntersectionTargetPoint {
 private:
 	POINT pos_;
-	int idObject_;
-
+	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync ptrObject_;
 public:
 	POINT& GetPoint() { return pos_; }
 	void SetPoint(POINT& pos) { pos_ = pos; }
-	int GetObjectID() { return idObject_; }
-	void SetObjectID(int id) { idObject_ = id; }
+	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync GetObjectID() { return ptrObject_; }
+	void SetObjectID(gstd::ref_count_weak_ptr<StgEnemyObject>::unsync id) { ptrObject_ = id; }
 };
 
 #endif

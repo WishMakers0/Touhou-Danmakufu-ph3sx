@@ -320,7 +320,7 @@ namespace gstd {
 
 		//void SetDefaultAreaName(std::string name) { nameAreaDefault_ = name; }
 		bool IsExists(std::string name);
-		void CreateArea(std::string name);
+		AreaCommonData_T::const_iterator CreateArea(std::string name);
 		void CopyArea(std::string nameDest, std::string nameSrc);
 		ScriptCommonData::ptr GetData(std::string name);
 		ScriptCommonData::ptr GetData(AreaCommonData_T::const_iterator name);
