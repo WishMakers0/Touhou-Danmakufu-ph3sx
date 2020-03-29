@@ -377,7 +377,7 @@ void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 
 	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
-#pragma omp parallel for
+#pragma omp for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
@@ -2512,7 +2512,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		double rcInc = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / countRect;
 		double rectV = rcSrcOrg.top;
 
-		double srcX[] = { rcSrcOrg.left, rcSrcOrg.right };
+		double srcX[] = { (double)rcSrcOrg.left, (double)rcSrcOrg.right };
 
 		VERTEX_TLX oldVerts[2];
 		std::list<LaserNode>::iterator itr = listPosition_.begin();
