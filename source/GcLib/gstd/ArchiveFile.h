@@ -113,9 +113,9 @@ namespace gstd {
 		static bool Deflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
 			bool ret = true;
 
-			const size_t CHUNK = 16384U;
-			char in[CHUNK];
-			char out[CHUNK];
+			const size_t CHUNK = 65536U;
+			char* in = new char[CHUNK];
+			char* out = new char[CHUNK];
 
 			int returnState = 0;
 			size_t countBytes = 0U;
@@ -165,6 +165,9 @@ namespace gstd {
 				ret = false;
 			}
 
+			delete[] in;
+			delete[] out;
+
 			deflateEnd(&stream);
 			if (res) *res = countBytes;
 			return ret;
@@ -174,9 +177,9 @@ namespace gstd {
 		static bool Inflate(TIN& bufIn, TOUT& bufOut, size_t count, size_t* res) {
 			bool ret = true;
 
-			const size_t CHUNK = 16384U;
-			char in[CHUNK];
-			char out[CHUNK];
+			const size_t CHUNK = 65536U;
+			char* in = new char[CHUNK];
+			char* out = new char[CHUNK];
 
 			int returnState = 0;
 			size_t countBytes = 0U;
@@ -226,6 +229,9 @@ namespace gstd {
 			catch (int&) {
 				ret = false;
 			}
+
+			delete[] in;
+			delete[] out;
 
 			inflateEnd(&stream);
 			if (res) *res = countBytes;
