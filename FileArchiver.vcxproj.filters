@@ -62,6 +62,9 @@
     <ClCompile Include="source\GcLib\gstd\Window.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
+    <ClCompile Include="source\GcLib\pch.cpp">
+      <Filter>source\GcLib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\FileArchiver\Constant.hpp">
@@ -123,6 +126,9 @@
     </ClInclude>
     <ClInclude Include="source\FileArchiver\resource.h">
       <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\pch.h">
+      <Filter>source\GcLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

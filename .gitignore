@@ -264,15 +264,12 @@ __pycache__/
 /bin_ext
 /bin_th_dnh
 
-/source/GcLib/ext/codec.h
-/source/GcLib/ext/ogg.h
-/source/GcLib/ext/os_types.h
-/source/GcLib/ext/vorbisfile.h
+/source/GcLib/ext/ogg/
+/source/GcLib/ext/vorbis/
 /library/ogg_static.lib
 /library/vorbis_static.lib
 /library/vorbisfile_static.lib
 
-/source/GcLib/ext/zlib.h
-/source/GcLib/ext/zconf.h
+/source/GcLib/ext/zlib/
 /library/zlibstatic.lib
 /library/zlibstaticd.lib

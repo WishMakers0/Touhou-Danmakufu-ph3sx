@@ -83,10 +83,12 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>FileArchiver/Debug\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>R:/temp/FileArchiver/Debug\FileArchiver.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>FileArchiver/Debug\</ObjectFileName>
       <ProgramDataBaseFileName>FileArchiver/Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -126,9 +128,11 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>FileArchiver/Release\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>R:/temp/FileArchiver/Release\FileArchiver.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>FileArchiver/Release\</ObjectFileName>
       <ProgramDataBaseFileName>FileArchiver/Release\</ProgramDataBaseFileName>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -160,6 +164,13 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile>
+      <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\FileArchiver\LibImpl.cpp" />
@@ -177,6 +188,15 @@
     <ClCompile Include="source\GcLib\gstd\Task.cpp" />
     <ClCompile Include="source\GcLib\gstd\Thread.cpp" />
     <ClCompile Include="source\GcLib\gstd\Window.cpp" />
+    <ClCompile Include="source\GcLib\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">source/GcLib/pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\FileArchiver\Constant.hpp" />
@@ -199,6 +219,7 @@
     <ClInclude Include="source\GcLib\gstd\Task.hpp" />
     <ClInclude Include="source\GcLib\gstd\Thread.hpp" />
     <ClInclude Include="source\GcLib\gstd\Window.hpp" />
+    <ClInclude Include="source\GcLib\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="source\FileArchiver\FileArchiver.rc">
