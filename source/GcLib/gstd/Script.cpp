@@ -1742,16 +1742,16 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 							switch (dup->sub->kind) {
 							case script_engine::block_kind::bk_function:
 								typeSub = L"function";
-								return;
+								break;
 							case script_engine::block_kind::bk_microthread:
 								typeSub = L"task";
-								return;
+								break;
 							case script_engine::block_kind::bk_sub:
 								typeSub = L"sub or an \'@\' block";
-								return;
+								break;
 							default:
 								typeSub = L"block";
-								return;
+								break;
 							}
 
 							std::wstring error = L"A ";
