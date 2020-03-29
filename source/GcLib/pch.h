@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 
 #define GAME_VERSION_TCL
-//#define GAME_VERSION_SP
+#define GAME_VERSION_SP
 
 //------------------------------------------------------------------------------
 
@@ -130,18 +130,16 @@
 
 //--------------------------------EXTERNAL--------------------------------
 
+//OpenMP
 #include <omp.h>
 
+//zlib
+#include <zlib/zlib.h>
+#pragma comment(lib, "zlibstatic.lib")
 
-#include <zlib.h>
-#if NDEBUG
-#pragma comment (lib, "zlibstatic.lib")
-#else
-#pragma comment (lib, "zlibstaticd.lib")
-#endif
-
-#include <codec.h>
-#include <vorbisfile.h>
+//libogg + libvorbis
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
 #pragma comment(lib, "ogg_static.lib")
 #pragma comment(lib, "vorbis_static.lib")
 #pragma comment(lib, "vorbisfile_static.lib")
@@ -152,11 +150,13 @@
 //#pragma comment(linker, "/entry:\"wWinMainCRTStartup\"")
 #endif
 
+//In the case crtdbg is used
 #ifdef _DEBUG
 #define __L_DBG_NEW__  ::new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #define new __L_DBG_NEW__
 #endif
 
+//Experimental
 #define __L_STD_FILESYSTEM
 #ifdef __L_STD_FILESYSTEM
 #include <filesystem>
