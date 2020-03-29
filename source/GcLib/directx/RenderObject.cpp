@@ -640,7 +640,7 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 
 		size_t countVertex = GetVertexCount();
 
-#pragma omp parallel for if(flgUseVertexBufferMode_)
+//#pragma omp for if(flgUseVertexBufferMode_)
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
 			size_t pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
@@ -1707,7 +1707,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
 				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
 
-#pragma omp parallel for
+#pragma omp for
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
 			size_t pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
@@ -1839,7 +1839,7 @@ void SpriteList2D::AddVertex(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 	int destX[] = { (int)rcDest_.left, (int)rcDest_.right, (int)rcDest_.left, (int)rcDest_.right };
 	int destY[] = { (int)rcDest_.top, (int)rcDest_.top, (int)rcDest_.bottom, (int)rcDest_.bottom };
 
-#pragma omp parallel for
+#pragma omp for
 	for (int iVert = 0; iVert < 4; ++iVert) {
 		VERTEX_TLX vt;
 		vt.texcoord.x = srcX[iVert] / width;

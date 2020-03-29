@@ -278,7 +278,7 @@ namespace gstd {
 
 	private:
 		inline void release() {
-			data.reset();
+			if (data) data.reset();
 		}
 		struct body {
 			type_data* type;
@@ -298,6 +298,10 @@ namespace gstd {
 	class script_machine;
 
 	typedef value (*callback)(script_machine* machine, int argc, value const* argv);
+
+	//Breaks IntelliSense for some reason
+#define DNH_FUNCAPI_DECL_(fn) static gstd::value fn (gstd::script_machine* machine, int argc, const gstd::value* argv)
+#define DNH_FUNCAPI_(fn) gstd::value fn (gstd::script_machine* machine, int argc, const gstd::value* argv)
 
 	struct function {
 		char const* name;

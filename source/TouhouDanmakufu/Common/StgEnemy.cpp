@@ -67,10 +67,14 @@ StgEnemyObject::StgEnemyObject(StgStageController* stageController) : StgMoveObj
 	rateDamageSpell_ = 100;
 	intersectedPlayerShotCount_ = 0;
 }
-StgEnemyObject:: ~StgEnemyObject() {}
+StgEnemyObject:: ~StgEnemyObject() {
+}
 void StgEnemyObject::Work() {
 	ClearIntersected();
 	intersectedPlayerShotCount_ = 0;
+
+	ptrIntersectionToShot_.clear();
+	ptrIntersectionToPlayer_.clear();
 
 	_Move();
 }
@@ -113,6 +117,12 @@ void StgEnemyObject::RegistIntersectionTarget() {
 }
 ref_count_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject() {
 	return ref_count_ptr<StgEnemyObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+}
+void StgEnemyObject::AddReferenceToShotIntersection(StgIntersectionTarget::ptr pointer) {
+	ptrIntersectionToShot_.push_back(pointer);
+}
+void StgEnemyObject::AddReferenceToPlayerIntersection(StgIntersectionTarget::ptr pointer) {
+	ptrIntersectionToPlayer_.push_back(pointer);
 }
 
 /**********************************************************
@@ -446,7 +456,7 @@ std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList() {
 
 	const double total = GetActiveStepTotalMaxLife();
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iData = 0; iData < res.size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 

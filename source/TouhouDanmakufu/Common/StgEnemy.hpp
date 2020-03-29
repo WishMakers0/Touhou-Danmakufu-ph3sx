@@ -22,7 +22,7 @@ public:
 	void RegistIntersectionTarget();
 
 	void AddEnemy(ref_count_ptr<StgEnemyObject>::unsync obj) { listObj_.push_back(obj); }
-	int GetEnemyCount() { return listObj_.size(); }
+	size_t GetEnemyCount() { return listObj_.size(); }
 
 	void SetBossSceneObject(ref_count_ptr<StgEnemyBossSceneObject>::unsync obj);
 	ref_count_ptr<StgEnemyBossSceneObject>::unsync GetBossSceneObject();
@@ -41,6 +41,11 @@ protected:
 	double rateDamageShot_;
 	double rateDamageSpell_;
 	int intersectedPlayerShotCount_;
+
+	bool bEnableGetIntersectionPositionFetch_;
+
+	std::vector<std::weak_ptr<StgIntersectionTarget>> ptrIntersectionToShot_;
+	std::vector<std::weak_ptr<StgIntersectionTarget>> ptrIntersectionToPlayer_;
 
 	virtual void _Move();
 	virtual void _AddRelativeIntersection();
@@ -65,6 +70,14 @@ public:
 	double GetShotDamageRate() { return rateDamageShot_; }
 	double GetSpellDamageRate() { return rateDamageSpell_; }
 	int GetIntersectedPlayerShotCount() { return intersectedPlayerShotCount_; }
+
+	void SetEnableGetIntersectionPosition(bool flg) { bEnableGetIntersectionPositionFetch_ = flg; }
+	bool GetEnableGetIntersectionPosition() { return bEnableGetIntersectionPositionFetch_; }
+
+	void AddReferenceToShotIntersection(StgIntersectionTarget::ptr pointer);
+	void AddReferenceToPlayerIntersection(StgIntersectionTarget::ptr pointer);
+	std::vector<std::weak_ptr<StgIntersectionTarget>>* GetIntersectionListShot() { return &ptrIntersectionToShot_; }
+	std::vector<std::weak_ptr<StgIntersectionTarget>>* GetIntersectionListPlayer() { return &ptrIntersectionToPlayer_; }
 };
 
 /**********************************************************

@@ -1146,7 +1146,7 @@ void DxScriptObjectManager::PrepareRenderObject() {
 	}
 }
 void DxScriptObjectManager::ClearRenderObject() {
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int iPri = 0; iPri < objRender_.size(); ++iPri) {
 		objRender_[iPri].clear();
 	}

@@ -206,8 +206,8 @@ std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::CreatePlayerSc
 	}
 	return res;
 }
-std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::CreateScriptInformationList(std::wstring path, bool bNeedHeader) {
-	std::vector<ref_count_ptr<ScriptInformation> > res;
+std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInformationList(std::wstring path, bool bNeedHeader) {
+	std::vector<ref_count_ptr<ScriptInformation>> res;
 	File file(path);
 	if (!file.Open())return res;
 	if (file.GetSize() < ArchiveFileHeader::MAGIC_LENGTH) return res;
@@ -260,8 +260,8 @@ std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::CreateScriptIn
 
 	return res;
 }
-std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::FindPlayerScriptInformationList(std::wstring dir) {
-	std::vector<ref_count_ptr<ScriptInformation> > res;
+std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScriptInformationList(std::wstring dir) {
+	std::vector<ref_count_ptr<ScriptInformation>> res;
 	WIN32_FIND_DATA data;
 	HANDLE hFind;
 	std::wstring findDir = dir + L"*.*";
@@ -274,8 +274,8 @@ std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::FindPlayerScri
 			std::wstring tDir = dir + name;
 			tDir += L"\\";
 
-			std::vector<ref_count_ptr<ScriptInformation> > list = FindPlayerScriptInformationList(tDir);
-			for (std::vector<ref_count_ptr<ScriptInformation> >::iterator itr = list.begin(); itr != list.end(); itr++) {
+			std::vector<ref_count_ptr<ScriptInformation>> list = FindPlayerScriptInformationList(tDir);
+			for (std::vector<ref_count_ptr<ScriptInformation>>::iterator itr = list.begin(); itr != list.end(); itr++) {
 				res.push_back(*itr);
 			}
 			continue;
@@ -287,7 +287,7 @@ std::vector<ref_count_ptr<ScriptInformation> > ScriptInformation::FindPlayerScri
 		std::wstring path = dir + name;
 
 		//スクリプト解析
-		std::vector<ref_count_ptr<ScriptInformation> > listInfo = CreateScriptInformationList(path, true);
+		std::vector<ref_count_ptr<ScriptInformation>> listInfo = CreateScriptInformationList(path, true);
 		for (int iInfo = 0; iInfo < listInfo.size(); iInfo++) {
 			ref_count_ptr<ScriptInformation> info = listInfo[iInfo];
 			if (info != NULL && info->GetType() == ScriptInformation::TYPE_PLAYER) {

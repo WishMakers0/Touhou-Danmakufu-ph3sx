@@ -394,6 +394,8 @@ LRESULT WindowLogger::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 void WindowLogger::SetInfo(int row, std::wstring textInfo, std::wstring textData) {
 	if (hWnd_ == NULL) return;
+	if (!IsWindowVisible()) return;
+
 	wndInfoPanel_->SetInfo(row, textInfo, textData);
 }
 
