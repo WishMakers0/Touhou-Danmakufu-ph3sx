@@ -100,7 +100,7 @@ NormalizeAngleR
 
 -------------------------------------------------------------------------------------------------------------------
 For the functions in this section, refer to these Desmos graph plot.
-"Basic" interpolations 	-> https://www.desmos.com/calculator/eycfmjsyoz
+"Basic" interpolations 	-> https://www.desmos.com/calculator/m8dnz348cq
 Bezier interpolations	-> https://www.desmos.com/calculator/0znq63ndc5
 
 Interpolate_Linear
