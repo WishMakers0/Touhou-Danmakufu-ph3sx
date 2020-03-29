@@ -2592,7 +2592,7 @@ script_type_manager::script_type_manager() {
 }
 
 type_data* script_type_manager::get_array_type(type_data* element) {
-	for (std::list < type_data >::iterator i = types.begin(); i != types.end(); ++i) {
+	for (std::list<type_data>::iterator i = types.begin(); i != types.end(); ++i) {
 		if (i->get_kind() == type_data::type_kind::tk_array && i->get_element() == element) {
 			return &*i;
 		}
@@ -2955,13 +2955,12 @@ void script_machine::advance() {
 
 			if (c->sub->func != nullptr) {
 				//ネイティブ呼び出し
+				
+				size_t sizePrev = current_stack.size();
 
-				value* argv = nullptr;
-				if (c->arguments > 0)
-					argv = &*std::prev(current_stack.end(), c->arguments);
+				value* argv = current_stack.data() + (sizePrev - c->arguments);
 
-				value ret;
-				ret = c->sub->func(this, c->arguments, argv);
+				value ret = c->sub->func(this, c->arguments, argv);
 
 				if (stopped) {
 					--(current->ip);
@@ -2969,11 +2968,14 @@ void script_machine::advance() {
 				else {
 					resuming = false;
 					//詰まれた引数を削除
-					for (size_t i = 0; i < c->arguments; ++i) current_stack.pop_back();
+					for (size_t i = 0; i < c->arguments; ++i) {
+						if (current_stack.size() == 0) break;
+						current_stack.pop_back();
+					}
 					//current_stack->length -= c->arguments;
 					//戻り値
 					if (c->command == script_engine::command_kind::pc_call_and_push_result)
-						current_stack.push_back(ret);
+						current_stack.push_back(value(ret));
 				}
 			}
 			else if (c->sub->kind == script_engine::block_kind::bk_microthread) {
@@ -2986,6 +2988,7 @@ void script_machine::advance() {
 
 				//引数の積み替え
 				for (size_t i = 0; i < c->arguments; ++i) {
+					if (current_stack.size() == 0) break;
 					value v = std::move(current_stack.back());
 					e->stack.push_back(v);
 					current_stack.pop_back();
@@ -3001,6 +3004,7 @@ void script_machine::advance() {
 
 				//引数の積み替え
 				for (size_t i = 0; i < c->arguments; ++i) {
+					if (current_stack.size() == 0) break;
 					value v = std::move(current_stack.back());
 					e->stack.push_back(v);
 					current_stack.pop_back();
@@ -3094,7 +3098,7 @@ next:
 			stack_t& stack = current->stack;
 			assert(stack.size() > 0);
 			value v = stack.back();
-			stack.push_back(v);
+			stack.push_back(value(v));
 		}
 		break;
 
@@ -3104,8 +3108,8 @@ next:
 			size_t len = stack.size();
 			value v1 = stack[len - 2];
 			value v2 = stack[len - 1];
-			stack.push_back(v1);
-			stack.push_back(v2);
+			stack.push_back(value(v1));
+			stack.push_back(value(v2));
 		}
 		break;
 
@@ -3174,7 +3178,7 @@ next:
 			break;
 
 		case script_engine::command_kind::pc_push_value:
-			current->stack.push_back(c->data);
+			current->stack.push_back(value(c->data));
 			break;
 
 		case script_engine::command_kind::pc_push_variable:
@@ -3193,7 +3197,7 @@ next:
 						value* var = &vars[c->variable];
 						if (c->command == script_engine::command_kind::pc_push_variable_writable)
 							var->unique();
-						current->stack.push_back(*var);
+						current->stack.push_back(value(*var));
 					}
 					break;
 				}
