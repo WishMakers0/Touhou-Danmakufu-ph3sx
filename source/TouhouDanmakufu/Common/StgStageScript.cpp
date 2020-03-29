@@ -382,8 +382,9 @@ function const stgFunction[] =
 	{ "ObjEnemy_AddIntersectionCircleA", StgStageScript::Func_ObjEnemy_AddIntersectionCircleA, 4 },
 	{ "ObjEnemy_SetIntersectionCircleToShot", StgStageScript::Func_ObjEnemy_SetIntersectionCircleToShot, 4 },
 	{ "ObjEnemy_SetIntersectionCircleToPlayer", StgStageScript::Func_ObjEnemy_SetIntersectionCircleToPlayer, 4 },
-	{ "ObjEnemy_GetIntersectionCircleToShot", StgStageScript::Func_ObjEnemy_GetIntersectionCircleToShot, 1 },
-	{ "ObjEnemy_GetIntersectionCircleToPlayer", StgStageScript::Func_ObjEnemy_GetIntersectionCircleToPlayer, 1 },
+	{ "ObjEnemy_GetIntersectionCircleListToShot", StgStageScript::Func_ObjEnemy_GetIntersectionCircleToShot, 1 },
+	{ "ObjEnemy_GetIntersectionCircleListToPlayer", StgStageScript::Func_ObjEnemy_GetIntersectionCircleToPlayer, 1 },
+	{ "ObjEnemy_SetEnableIntersectionPositionFetching", StgStageScript::Func_ObjEnemy_SetEnableIntersectionPositionFetching, 2 },
 
 		//STG共通関数：敵ボスシーンオブジェクト操作
 	{ "ObjEnemyBossScene_Create", StgStageScript::Func_ObjEnemyBossScene_Create, 0 },
@@ -1197,6 +1198,7 @@ gstd::value StgStageScript::Func_GetAllEnemyIntersectionPosition(gstd::script_ma
 	std::vector<StgIntersectionTargetPoint>* listPoint = interSectionManager->GetAllEnemyTargetPoint();
 	for (int iPoint = 0; iPoint < listPoint->size(); ++iPoint) {
 		StgIntersectionTargetPoint& target = listPoint->at(iPoint);
+		if (!target.GetObjectID()->GetEnableGetIntersectionPosition()) continue;
 		POINT pos = target.GetPoint();
 		std::vector<double> listLD;
 		listLD.push_back(pos.x);

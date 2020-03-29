@@ -357,7 +357,7 @@ size_t StgShotManager::GetShotCount(int typeOwner) {
 	std::atomic_uint res{ 0 };
 	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
-#pragma omp parallel for
+#pragma omp for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 

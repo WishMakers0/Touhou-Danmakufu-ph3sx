@@ -2278,6 +2278,9 @@ gstd::value DxScript::Func_CreateRenderTargetEx(gstd::script_machine* machine, i
 	if (width < 0) width = 0;
 	if (height < 0) height = 0;
 
+	if (width == 0 || height == 0)
+		return value(machine->get_engine()->get_boolean_type(), false);
+
 	if (script->mapTexture_.find(name) == script->mapTexture_.end()) {
 		ref_count_ptr<Texture> texture = new Texture();
 		bool res = texture->CreateRenderTarget(name, (size_t)width, (size_t)height);
@@ -2321,23 +2324,18 @@ gstd::value DxScript::Func_ClearRenderTargetA1(gstd::script_machine* machine, in
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
 	if (texture == nullptr)
 		texture = textureManager->GetTexture(name);
-	if (texture == nullptr)return value();
+	if (texture == nullptr) 
+		return value(machine->get_engine()->get_boolean_type(), false);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> current = graphics->GetRenderTarget();
-	if (texture == nullptr)
-		textureManager->GetTexture(name);
-	if (texture == nullptr && textureManager->IsDataExists(name)) {
-		texture = new Texture();
-		texture->CreateRenderTarget(name);
-	}
 
 	IDirect3DDevice9* device = graphics->GetDevice();
 	graphics->SetRenderTarget(texture);
 	device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
 	graphics->SetRenderTarget(current);
 
-	return value();
+	return value(machine->get_engine()->get_boolean_type(), true);
 }
 gstd::value DxScript::Func_ClearRenderTargetA2(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
@@ -2347,16 +2345,11 @@ gstd::value DxScript::Func_ClearRenderTargetA2(gstd::script_machine* machine, in
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
 	if (texture == nullptr)
 		texture = textureManager->GetTexture(name);
-	if (texture == nullptr)return value();
+	if (texture == nullptr)
+		return value(machine->get_engine()->get_boolean_type(), false);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> current = graphics->GetRenderTarget();
-	if (texture == nullptr)
-		textureManager->GetTexture(name);
-	if (texture == nullptr && textureManager->IsDataExists(name)) {
-		texture = new Texture();
-		texture->CreateRenderTarget(name);
-	}
 
 	byte cr = (byte)argv[1].as_real();
 	byte cg = (byte)argv[2].as_real();
@@ -2368,7 +2361,7 @@ gstd::value DxScript::Func_ClearRenderTargetA2(gstd::script_machine* machine, in
 	device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(ca, cr, cg, cb), 1.0f, 0);
 	graphics->SetRenderTarget(current);
 
-	return value();
+	return value(machine->get_engine()->get_boolean_type(), true);
 }
 gstd::value DxScript::Func_ClearRenderTargetA3(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
@@ -2378,16 +2371,11 @@ gstd::value DxScript::Func_ClearRenderTargetA3(gstd::script_machine* machine, in
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
 	if (texture == nullptr)
 		texture = textureManager->GetTexture(name);
-	if (texture == nullptr)return value();
+	if (texture == nullptr)
+		return value(machine->get_engine()->get_boolean_type(), false);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> current = graphics->GetRenderTarget();
-	if (texture == nullptr)
-		textureManager->GetTexture(name);
-	if (texture == nullptr && textureManager->IsDataExists(name)) {
-		texture = new Texture();
-		texture->CreateRenderTarget(name);
-	}
 
 	byte cr = (byte)argv[1].as_real();
 	byte cg = (byte)argv[2].as_real();
@@ -2405,7 +2393,7 @@ gstd::value DxScript::Func_ClearRenderTargetA3(gstd::script_machine* machine, in
 	device->Clear(0, &rc, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(ca, cr, cg, cb), 1.0f, 0);
 	graphics->SetRenderTarget(current);
 
-	return value();
+	return value(machine->get_engine()->get_boolean_type(), true);
 }
 gstd::value DxScript::Func_GetTransitionRenderTargetName(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	std::wstring res = TextureManager::TARGET_TRANSITION;
