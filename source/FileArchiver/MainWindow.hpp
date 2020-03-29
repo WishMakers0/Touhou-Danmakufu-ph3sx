@@ -1,7 +1,8 @@
 #ifndef __MAIN_WINDOW__
 #define __MAIN_WINDOW__
 
-#include"Constant.hpp"
+#include "../GcLib/pch.h"
+#include "Constant.hpp"
 
 /**********************************************************
 //MainWindow

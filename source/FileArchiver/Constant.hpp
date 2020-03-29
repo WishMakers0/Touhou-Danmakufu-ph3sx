@@ -1,6 +1,7 @@
 #ifndef __CONSTANT__
 #define __CONSTANT__
 
+#include "../GcLib/pch.h"
 #include "../GcLib/gstd/GstdLib.hpp"
 
 #include "resource.h"

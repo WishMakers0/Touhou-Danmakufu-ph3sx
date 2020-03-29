@@ -1,5 +1,7 @@
-#include"LibImpl.hpp"
-#include"MainWindow.hpp"
+#include "source/GcLib/pch.h"
+
+#include "LibImpl.hpp"
+#include "MainWindow.hpp"
 
 /**********************************************************
 WinMain
