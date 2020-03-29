@@ -1717,12 +1717,13 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 
 					lex2.advance();
 					if (lex2.next == token_kind::tk_open_par) {
-						if (kind == script_engine::block_kind::bk_sub) {
+						lex2.advance();
+						//I honestly should just throw out support for subs
+						if (lex2.next != token_kind::tk_close_par && kind == script_engine::block_kind::bk_sub) {
 							std::wstring error = L"A parameter list in not allowed here.\r\n";
 							throw parser_error(error);
 						}
 						else {
-							lex2.advance();
 							while (lex2.next == token_kind::tk_word || lex2.next == token_kind::tk_LET ||
 								lex2.next == token_kind::tk_REAL) {
 								++countArgs;
