@@ -78,7 +78,10 @@ public:
 	void GetValidRenderPriorityList(std::vector<PriListBool>& list);
 
 	void SetDeleteEventEnableByType(int type, bool bEnable);
-	bool IsDeleteEventEnable(int bit);
+	bool IsDeleteEventEnable(int bit) {
+		bool res = listDeleteEventEnable_[bit];
+		return res;
+	}
 
 	size_t GetVertexBufferSize() { return vertexBufferSize_; }
 	IDirect3DVertexBuffer9* GetVertexBuffer() { return vertexBuffer_; }
@@ -171,6 +174,29 @@ public:
 
 	static bool IsAlphaBlendValidType(int blendType);
 };
+#pragma region StgShotData_impl
+inline ref_count_ptr<Texture> StgShotData::GetTexture() {
+	return listShotData_->GetTexture(indexTexture_);
+}
+inline StgShotRenderer* StgShotData::GetRenderer() {
+	return GetRenderer(typeRender_);
+}
+inline StgShotRenderer* StgShotData::GetRenderer(int blendType) {
+	if (blendType < DirectGraphics::MODE_BLEND_ALPHA || blendType > DirectGraphics::MODE_BLEND_ALPHA_INV)
+		return listShotData_->GetRenderer(indexTexture_, 0);
+	return listShotData_->GetRenderer(indexTexture_, blendType - 1);
+}
+inline bool StgShotData::IsAlphaBlendValidType(int blendType) {
+	switch (blendType) {
+	case DirectGraphics::MODE_BLEND_ALPHA:
+	case DirectGraphics::MODE_BLEND_ADD_ARGB:
+	case DirectGraphics::MODE_BLEND_SUBTRACT:
+		return true;
+	default:
+		return false;
+	}
+}
+#pragma endregion StgShotData_impl
 
 /**********************************************************
 //StgShotRenderer
@@ -184,11 +210,21 @@ class StgShotRenderer : public RenderObjectTLX {
 public:
 	StgShotRenderer();
 	~StgShotRenderer();
-	virtual size_t GetVertexCount();
+
 	virtual void Render(StgShotManager* manager);
 	void AddVertex(VERTEX_TLX& vertex);
-	void AddSquareVertex(VERTEX_TLX* listVertex);
+	void AddSquareVertex(VERTEX_TLX* listVertex) {
+		AddVertex(listVertex[0]);
+		AddVertex(listVertex[2]);
+		AddVertex(listVertex[1]);
+		AddVertex(listVertex[1]);
+		AddVertex(listVertex[2]);
+		AddVertex(listVertex[3]);
+	}
 
+	virtual size_t GetVertexCount() {
+		return std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
+	}
 	virtual void SetVertexCount(size_t count) {
 		vertex_.SetSize(count * strideVertexStreamZero_);
 	}
@@ -360,10 +396,16 @@ public:
 	virtual ~StgNormalShotObject();
 	virtual void Work();
 	virtual void RenderOnShotManager();
-	virtual void ClearShotObject();
+
+	virtual void ClearShotObject() {
+		ClearIntersectionRelativeTarget();
+	}
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
 
-	virtual void RegistIntersectionTarget();
+	virtual void RegistIntersectionTarget() {
+		if (!bUserIntersectionMode_) _AddIntersectionRelativeTarget();
+	}
+
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 	virtual void SetShotDataID(int id);
 };
@@ -384,13 +426,18 @@ protected:
 
 public:
 	StgLaserObject(StgStageController* stageController);
-	virtual void ClearShotObject();
+	virtual void ClearShotObject() {
+		ClearIntersectionRelativeTarget();
+	}
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
 
 	int GetLength() { return length_; }
-	void SetLength(int length);
+	void SetLength(int length) { length_ = length; }
 	int GetRenderWidth() { return widthRender_; }
-	void SetRenderWidth(int width);
+	void SetRenderWidth(int width) {
+		widthRender_ = width;
+		if (widthIntersection_ < 0)widthIntersection_ = width / 4;
+	}
 	int GetIntersectionWidth() { return widthIntersection_; }
 	void SetIntersectionWidth(int width) { widthIntersection_ = width; }
 	void SetInvalidLength(float start, float end) { invalidLengthStart_ = start; invalidLengthEnd_ = end; }
@@ -414,7 +461,9 @@ public:
 	virtual void Work();
 	virtual void RenderOnShotManager();
 
-	virtual void RegistIntersectionTarget();
+	virtual void RegistIntersectionTarget() {
+		if (!bUserIntersectionMode_) _AddIntersectionRelativeTarget();
+	}
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 	virtual void SetX(double x) { StgShotObject::SetX(x); posXE_ = x; }
 	virtual void SetY(double y) { StgShotObject::SetY(y); posYE_ = y; }
@@ -439,7 +488,9 @@ public:
 	StgStraightLaserObject(StgStageController* stageController);
 	virtual void Work();
 	virtual void RenderOnShotManager();
-	virtual void RegistIntersectionTarget();
+	virtual void RegistIntersectionTarget() {
+		if (!bUserIntersectionMode_) _AddIntersectionRelativeTarget();
+	}
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 
 	double GetLaserAngle() { return angLaser_; }
@@ -475,11 +526,52 @@ public:
 	StgCurveLaserObject(StgStageController* stageController);
 	virtual void Work();
 	virtual void RenderOnShotManager();
-	virtual void RegistIntersectionTarget();
+	virtual void RegistIntersectionTarget() {
+		if (!bUserIntersectionMode_) _AddIntersectionRelativeTarget();
+	}
 	virtual std::vector<StgIntersectionTarget::ptr> GetIntersectionTargetList();
 	void SetTipDecrement(double dec) { tipDecrement_ = dec; }
 };
 
 
+
+
+inline bool StgShotManager::LoadPlayerShotData(std::wstring path, bool bReload) {
+	return listPlayerShotData_->AddShotDataList(path, bReload);
+}
+inline bool StgShotManager::LoadEnemyShotData(std::wstring path, bool bReload) {
+	return listEnemyShotData_->AddShotDataList(path, bReload);
+}
+
+#pragma region StgShotObject_impl
+inline void StgShotObject::_SetVertexPosition(VERTEX_TLX& vertex, float x, float y, float z, float w) {
+	constexpr float bias = -0.5f;
+	vertex.position.x = x + bias;
+	vertex.position.y = y + bias;
+	vertex.position.z = z;
+	vertex.position.w = w;
+}
+inline void StgShotObject::_SetVertexUV(VERTEX_TLX& vertex, float u, float v) {
+	StgShotData* shotData = _GetShotData();
+	if (shotData == nullptr)return;
+
+	ref_count_ptr<Texture> texture = shotData->GetTexture();
+	int width = texture->GetWidth();
+	int height = texture->GetHeight();
+	vertex.texcoord.x = u / width;
+	vertex.texcoord.y = v / height;
+}
+inline void StgShotObject::_SetVertexColorARGB(VERTEX_TLX& vertex, D3DCOLOR color) {
+	vertex.diffuse_color = color;
+}
+inline void StgShotObject::SetAlpha(int alpha) {
+	color_ = ColorAccess::SetColorA(color_, alpha);
+}
+inline void StgShotObject::SetColor(int r, int g, int b) {
+	color_ = ColorAccess::SetColorR(color_, r);
+	color_ = ColorAccess::SetColorG(color_, g);
+	color_ = ColorAccess::SetColorB(color_, b);
+}
+#pragma endregion StgShotObject_impl
 
 #endif

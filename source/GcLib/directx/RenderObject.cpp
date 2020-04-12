@@ -712,74 +712,6 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 		}
 	}
 }
-void RenderObjectTLX::SetVertexCount(size_t count) {
-	RenderObject::SetVertexCount(count);
-	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
-	SetAlpha(255);
-}
-VERTEX_TLX* RenderObjectTLX::GetVertex(size_t index) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size()) return nullptr;
-	return (VERTEX_TLX*)vertex_.GetPointer(pos);
-}
-void RenderObjectTLX::SetVertex(size_t index, VERTEX_TLX& vertex) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size()) return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectTLX::SetVertexPosition(size_t index, float x, float y, float z, float w) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-
-	constexpr float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-	vertex->position.w = w;
-}
-void RenderObjectTLX::SetVertexUV(size_t index, float u, float v) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectTLX::SetVertexColor(size_t index, D3DCOLOR color) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->diffuse_color = color;
-}
-void RenderObjectTLX::SetVertexColorARGB(size_t index, int a, int r, int g, int b) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
-}
-void RenderObjectTLX::SetVertexAlpha(size_t index, int alpha) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorA(color, alpha);
-}
-void RenderObjectTLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorR(color, r);
-	color = ColorAccess::SetColorG(color, g);
-	color = ColorAccess::SetColorB(color, b);
-}
-void RenderObjectTLX::SetColorRGB(D3DCOLOR color) {
-	int r = ColorAccess::GetColorR(color);
-	int g = ColorAccess::GetColorG(color);
-	int b = ColorAccess::GetColorB(color);
-	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-		SetVertexColorRGB(iVert, r, g, b);
-	}
-}
-void RenderObjectTLX::SetAlpha(int alpha) {
-	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-		SetVertexAlpha(iVert, alpha);
-	}
-}
 
 /**********************************************************
 //RenderObjectLX
@@ -997,73 +929,7 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		device->SetIndices(nullptr);
 	}
 }
-void RenderObjectLX::SetVertexCount(size_t count) {
-	RenderObject::SetVertexCount(count);
-	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
-	SetAlpha(255);
-}
-VERTEX_LX* RenderObjectLX::GetVertex(size_t index) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return nullptr;
-	return (VERTEX_LX*)vertex_.GetPointer(pos);
-}
-void RenderObjectLX::SetVertex(size_t index, VERTEX_LX& vertex) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectLX::SetVertexPosition(size_t index, float x, float y, float z) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
 
-	constexpr float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectLX::SetVertexUV(size_t index, float u, float v) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectLX::SetVertexColor(size_t index, D3DCOLOR color) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->diffuse_color = color;
-}
-void RenderObjectLX::SetVertexColorARGB(size_t index, int a, int r, int g, int b) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
-}
-void RenderObjectLX::SetVertexAlpha(size_t index, int alpha) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorA(color, alpha);
-}
-void RenderObjectLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorR(color, r);
-	color = ColorAccess::SetColorG(color, g);
-	color = ColorAccess::SetColorB(color, b);
-}
-void RenderObjectLX::SetColorRGB(D3DCOLOR color) {
-	int r = ColorAccess::GetColorR(color);
-	int g = ColorAccess::GetColorG(color);
-	int b = ColorAccess::GetColorB(color);
-	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-		SetVertexColorRGB(iVert, r, g, b);
-	}
-}
-void RenderObjectLX::SetAlpha(int alpha) {
-	for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-		SetVertexAlpha(iVert, alpha);
-	}
-}
 /**********************************************************
 //RenderObjectNX
 **********************************************************/
@@ -1136,38 +1002,6 @@ void RenderObjectNX::Render() {
 			device->SetIndices(nullptr);
 		}
 	}
-}
-VERTEX_NX* RenderObjectNX::GetVertex(size_t index) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return nullptr;
-	return (VERTEX_NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectNX::SetVertex(size_t index, VERTEX_NX& vertex) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectNX::SetVertexPosition(size_t index, float x, float y, float z) {
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-
-	constexpr float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectNX::SetVertexUV(size_t index, float u, float v) {
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectNX::SetVertexNormal(size_t index, float x, float y, float z) {
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
 }
 
 /**********************************************************
@@ -1404,44 +1238,6 @@ void RenderObjectB2NX::CalculateWeightCenter() {
 	posWeightCenter_.y = (float)yTotal;
 	posWeightCenter_.z = (float)zTotal;
 }
-VERTEX_B2NX* RenderObjectB2NX::GetVertex(size_t index) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return nullptr;
-	return (VERTEX_B2NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectB2NX::SetVertex(size_t index, VERTEX_B2NX& vertex) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectB2NX::SetVertexPosition(size_t index, float x, float y, float z) {
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-
-	constexpr float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectB2NX::SetVertexUV(size_t index, float u, float v) {
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectB2NX::SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate) {
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
-	if (pos == 0)vertex->blendRate = rate;
-}
-void RenderObjectB2NX::SetVertexNormal(size_t index, float x, float y, float z) {
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
-}
 
 //RenderObjectB2NXBlock
 RenderObjectB2NXBlock::RenderObjectB2NXBlock() {}
@@ -1510,44 +1306,6 @@ void RenderObjectB4NX::CalculateWeightCenter() {
 	posWeightCenter_.y = (float)yTotal;
 	posWeightCenter_.z = (float)zTotal;
 }
-VERTEX_B4NX* RenderObjectB4NX::GetVertex(size_t index) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return nullptr;
-	return (VERTEX_B4NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectB4NX::SetVertex(size_t index, VERTEX_B4NX& vertex) {
-	size_t pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.size())return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectB4NX::SetVertexPosition(size_t index, float x, float y, float z) {
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectB4NX::SetVertexUV(size_t index, float u, float v) {
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectB4NX::SetVertexBlend(size_t index, int pos, BYTE indexBlend, float rate) {
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
-	if (pos <= 2)vertex->blendRate[pos] = rate;
-}
-void RenderObjectB4NX::SetVertexNormal(size_t index, float x, float y, float z) {
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == nullptr)return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
-}
 
 //RenderObjectB4NXBlock
 RenderObjectB4NXBlock::RenderObjectB4NXBlock() {}
@@ -1589,25 +1347,6 @@ void Sprite2D::Copy(Sprite2D* src) {
 	scale_ = src->scale_;
 	matRelative_ = src->matRelative_;
 }
-void Sprite2D::SetSourceRect(RECT_D &rcSrc) {
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture == nullptr)return;
-	int width = texture->GetWidth();
-	int height = texture->GetHeight();
-
-	//テクスチャUV
-	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(1, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(2, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
-	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
-}
-void Sprite2D::SetDestinationRect(RECT_D &rcDest) {
-	//頂点位置
-	SetVertexPosition(0, rcDest.left, rcDest.top);
-	SetVertexPosition(1, rcDest.right, rcDest.top);
-	SetVertexPosition(2, rcDest.left, rcDest.bottom);
-	SetVertexPosition(3, rcDest.right, rcDest.bottom);
-}
 void Sprite2D::SetDestinationCenter() {
 	ref_count_ptr<Texture>& texture = texture_[0];
 	if (texture == nullptr || GetVertexCount() < 4)return;
@@ -1622,26 +1361,6 @@ void Sprite2D::SetDestinationCenter() {
 	RECT_D rcDest = { -vWidth / 2., -vHeight / 2., vWidth / 2., vHeight / 2. };
 
 	SetDestinationRect(rcDest);
-}
-void Sprite2D::SetVertex(RECT_D &rcSrc, RECT_D &rcDest, D3DCOLOR color) {
-	SetSourceRect(rcSrc);
-	SetDestinationRect(rcDest);
-	SetColorRGB(color);
-	SetAlpha(ColorAccess::GetColorA(color));
-}
-RECT_D Sprite2D::GetDestinationRect() {
-	constexpr float bias = -0.5f;
-
-	RECT_D rect;
-	VERTEX_TLX* vertexLeftTop = GetVertex(0);
-	VERTEX_TLX* vertexRightBottom = GetVertex(3);
-
-	rect.left = vertexLeftTop->position.x - bias;
-	rect.top = vertexLeftTop->position.y - bias;
-	rect.right = vertexRightBottom->position.x - bias;
-	rect.bottom = vertexRightBottom->position.y - bias;
-
-	return rect;
 }
 
 /**********************************************************
@@ -1707,7 +1426,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
 				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
 
-#pragma omp for
+//#pragma omp for
 		for (int iVert = 0; iVert < countVertex; ++iVert) {
 			size_t pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
@@ -1801,10 +1520,6 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 		if (autoClearVertexList_ && (countVertex >= 6)) ClearVertexCount();
 	}
 }
-size_t SpriteList2D::GetVertexCount() {
-	size_t res = std::min((size_t)countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
-	return res;
-}
 void SpriteList2D::_AddVertex(VERTEX_TLX& vertex) {
 	size_t count = vertex_.size() / strideVertexStreamZero_;
 	if (countRenderVertex_ >= count) {
@@ -1839,7 +1554,7 @@ void SpriteList2D::AddVertex(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 	int destX[] = { (int)rcDest_.left, (int)rcDest_.right, (int)rcDest_.left, (int)rcDest_.right };
 	int destY[] = { (int)rcDest_.top, (int)rcDest_.top, (int)rcDest_.bottom, (int)rcDest_.bottom };
 
-#pragma omp for
+//#pragma omp for
 	for (int iVert = 0; iVert < 4; ++iVert) {
 		VERTEX_TLX vt;
 		vt.texcoord.x = srcX[iVert] / width;
@@ -1892,13 +1607,6 @@ void SpriteList2D::SetDestinationCenter() {
 	RECT_D rcDest = { -vWidth / 2., -vHeight / 2., vWidth / 2., vHeight / 2. };
 
 	SetDestinationRect(rcDest);
-}
-void SpriteList2D::CloseVertex() {
-	bCloseVertexList_ = true;
-
-	position_ = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-	angle_ = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-	scale_ = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 }
 
 /**********************************************************
@@ -1959,35 +1667,6 @@ void Sprite3D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 		if (effect != nullptr) effect->End();
 	}
 }
-
-void Sprite3D::SetSourceRect(RECT_D &rcSrc) {
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture == nullptr)return;
-	int width = texture->GetWidth();
-	int height = texture->GetHeight();
-
-	//テクスチャUV
-	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(1, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
-	SetVertexUV(2, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
-}
-void Sprite3D::SetDestinationRect(RECT_D &rcDest) {
-	//頂点位置
-	SetVertexPosition(0, rcDest.left, rcDest.top, 0);
-	SetVertexPosition(1, rcDest.left, rcDest.bottom, 0);
-	SetVertexPosition(2, rcDest.right, rcDest.top, 0);
-	SetVertexPosition(3, rcDest.right, rcDest.bottom, 0);
-}
-void Sprite3D::SetVertex(RECT_D &rcSrc, RECT_D &rcDest, D3DCOLOR color) {
-	SetSourceRect(rcSrc);
-	SetDestinationRect(rcDest);
-
-	//頂点色
-	SetColorRGB(color);
-	SetAlpha(ColorAccess::GetColorA(color));
-}
-
 void Sprite3D::SetSourceDestRect(RECT_D &rcSrc) {
 	int width = rcSrc.right - rcSrc.left;
 	int height = rcSrc.bottom - rcSrc.top;
@@ -2000,13 +1679,6 @@ void Sprite3D::SetSourceDestRect(RECT_D &rcSrc) {
 
 	SetSourceRect(rcSrc);
 	SetDestinationRect(rcDest);
-}
-void Sprite3D::SetVertex(RECT_D &rcSrc, D3DCOLOR color) {
-	SetSourceDestRect(rcSrc);
-
-	//頂点色
-	SetColorRGB(color);
-	SetAlpha(ColorAccess::GetColorA(color));
 }
 
 /**********************************************************
@@ -2068,10 +1740,6 @@ void TrajectoryObject3D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR
 		}
 	}
 	RenderObjectLX::Render(angX, angY, angZ);
-}
-void TrajectoryObject3D::SetInitialLine(D3DXVECTOR3 pos1, D3DXVECTOR3 pos2) {
-	dataInit_.pos1 = pos1;
-	dataInit_.pos2 = pos2;
 }
 void TrajectoryObject3D::AddPoint(D3DXMATRIX mat) {
 	Data data;
@@ -2188,17 +1856,7 @@ bool DxMesh::CreateFromFileInLoadThread(std::wstring path, int type) {
 
 	return res;
 }
-void DxMesh::SetColorRGB(D3DCOLOR color) {
-	int r = ColorAccess::GetColorR(color);
-	int g = ColorAccess::GetColorG(color);
-	int b = ColorAccess::GetColorB(color);
-	ColorAccess::SetColorR(color_, r);
-	ColorAccess::SetColorG(color_, g);
-	ColorAccess::SetColorB(color_, b);
-}
-void DxMesh::SetAlpha(int alpha) {
-	ColorAccess::SetColorA(color_, alpha);
-}
+
 /**********************************************************
 //DxMeshManager
 **********************************************************/

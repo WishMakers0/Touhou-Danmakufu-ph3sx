@@ -252,12 +252,6 @@ void StgShotManager::RegistIntersectionTarget() {
 	*/
 }
 
-bool StgShotManager::LoadPlayerShotData(std::wstring path, bool bReload) {
-	return listPlayerShotData_->AddShotDataList(path, bReload);
-}
-bool StgShotManager::LoadEnemyShotData(std::wstring path, bool bReload) {
-	return listEnemyShotData_->AddShotDataList(path, bReload);
-}
 RECT StgShotManager::GetShotAutoDeleteClipRect() {
 	ref_count_ptr<StgStageInformation> stageInfo = stageController_->GetStageInformation();
 	RECT rcStgFrame = stageInfo->GetStgFrameRect();
@@ -357,7 +351,7 @@ size_t StgShotManager::GetShotCount(int typeOwner) {
 	std::atomic_uint res{ 0 };
 	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
-#pragma omp for
+//#pragma omp for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
@@ -377,7 +371,7 @@ void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 
 	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
-#pragma omp for
+//#pragma omp for
 	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
 		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
 
@@ -407,10 +401,6 @@ void StgShotManager::SetDeleteEventEnableByType(int type, bool bEnable) {
 	else {
 		listDeleteEventEnable_.reset(bit);
 	}
-}
-bool StgShotManager::IsDeleteEventEnable(int bit) {
-	bool res = listDeleteEventEnable_[bit];
-	return res;
 }
 
 /**********************************************************
@@ -648,8 +638,8 @@ void StgShotDataList::_ScanShot(std::vector<StgShotData*>& listData, Scanner& sc
 				else if (strRender == L"INV_DESTRGB")
 					typeRender = DirectGraphics::MODE_BLEND_INV_DESTRGB;
 
-				if (element == L"render")data->typeRender_ = typeRender;
-				else if (element == L"delay_render")data->typeDelayRender_ = typeRender;
+				if (element.size() == 6 /*element == L"render"*/)data->typeRender_ = typeRender;
+				else if (element.size() == 12 /*element == L"delay_render"*/)data->typeDelayRender_ = typeRender;
 			}
 			else if (element == L"alpha") {
 				scanner.CheckType(scanner.Next(), Token::TK_EQUAL);
@@ -797,27 +787,6 @@ StgShotData::AnimationData* StgShotData::GetData(int frame) {
 
 	return &listAnime_[0];
 }
-ref_count_ptr<Texture> StgShotData::GetTexture() {
-	return listShotData_->GetTexture(indexTexture_);
-}
-StgShotRenderer* StgShotData::GetRenderer() {
-	return GetRenderer(typeRender_);
-}
-StgShotRenderer* StgShotData::GetRenderer(int blendType) {
-	if (blendType < DirectGraphics::MODE_BLEND_ALPHA || blendType > DirectGraphics::MODE_BLEND_ALPHA_INV)
-		return listShotData_->GetRenderer(indexTexture_, 0);
-	return listShotData_->GetRenderer(indexTexture_, blendType - 1);
-}
-bool StgShotData::IsAlphaBlendValidType(int blendType) {
-	switch (blendType) {
-	case DirectGraphics::MODE_BLEND_ALPHA:
-	case DirectGraphics::MODE_BLEND_ADD_ARGB:
-	case DirectGraphics::MODE_BLEND_SUBTRACT:
-		return true;
-	default:
-		return false;
-	}
-}
 
 /**********************************************************
 //StgShotRenderer
@@ -829,10 +798,6 @@ StgShotRenderer::StgShotRenderer() {
 }
 StgShotRenderer::~StgShotRenderer() {
 
-}
-size_t StgShotRenderer::GetVertexCount() {
-	size_t res = std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
-	return res;
 }
 void StgShotRenderer::Render(StgShotManager* manager) {
 	if (countRenderVertex_ < 3)
@@ -883,14 +848,6 @@ void StgShotRenderer::AddVertex(VERTEX_TLX& vertex) {
 	SetVertex(countRenderVertex_, vertex);
 	countRenderVertex_++;
 }
-void StgShotRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
-	AddVertex(listVertex[0]);
-	AddVertex(listVertex[2]);
-	AddVertex(listVertex[1]);
-	AddVertex(listVertex[1]);
-	AddVertex(listVertex[2]);
-	AddVertex(listVertex[3]);
-}
 
 /**********************************************************
 //StgShotObject
@@ -933,6 +890,9 @@ StgShotObject::~StgShotObject() {
 	if (listReserveShot_ != nullptr) {
 		listReserveShot_->Clear(stageController_);
 	}
+}
+ref_count_ptr<StgShotObject>::unsync StgShotObject::GetOwnObject() {
+	return ref_count_ptr<StgShotObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
 }
 void StgShotObject::Work() {}
 void StgShotObject::_Move() {
@@ -1106,37 +1066,6 @@ StgShotData* StgShotObject::_GetShotData() {
 	}
 
 	return res;
-}
-ref_count_ptr<StgShotObject>::unsync StgShotObject::GetOwnObject() {
-	return ref_count_ptr<StgShotObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
-}
-void StgShotObject::_SetVertexPosition(VERTEX_TLX& vertex, float x, float y, float z, float w) {
-	constexpr float bias = -0.5f;
-	vertex.position.x = x + bias;
-	vertex.position.y = y + bias;
-	vertex.position.z = z;
-	vertex.position.w = w;
-}
-void StgShotObject::_SetVertexUV(VERTEX_TLX& vertex, float u, float v) {
-	StgShotData* shotData = _GetShotData();
-	if (shotData == nullptr)return;
-
-	ref_count_ptr<Texture> texture = shotData->GetTexture();
-	int width = texture->GetWidth();
-	int height = texture->GetHeight();
-	vertex.texcoord.x = u / width;
-	vertex.texcoord.y = v / height;
-}
-void StgShotObject::_SetVertexColorARGB(VERTEX_TLX& vertex, D3DCOLOR color) {
-	vertex.diffuse_color = color;
-}
-void StgShotObject::SetAlpha(int alpha) {
-	color_ = ColorAccess::SetColorA(color_, alpha);
-}
-void StgShotObject::SetColor(int r, int g, int b) {
-	color_ = ColorAccess::SetColorR(color_, r);
-	color_ = ColorAccess::SetColorG(color_, g);
-	color_ = ColorAccess::SetColorB(color_, b);
 }
 
 void StgShotObject::AddShot(int frame, int idShot, int radius, int angle) {
@@ -1488,9 +1417,6 @@ void StgNormalShotObject::RenderOnShotManager() {
 	renderer->AddSquareVertex(verts);
 }
 
-void StgNormalShotObject::ClearShotObject() {
-	ClearIntersectionRelativeTarget();
-}
 void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
 	double damage = 0;
 	int otherType = otherTarget->GetTargetType();
@@ -1568,12 +1494,6 @@ void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 		}
 	}
 }
-void StgNormalShotObject::RegistIntersectionTarget() {
-	if (!bUserIntersectionMode_) {
-		_AddIntersectionRelativeTarget();
-	}
-
-}
 void StgNormalShotObject::SetShotDataID(int id) {
 	StgShotData* oldData = _GetShotData();
 	StgShotObject::SetShotDataID(id);
@@ -1614,16 +1534,6 @@ StgLaserObject::StgLaserObject(StgStageController* stageController) : StgShotObj
 	c_ = 1;
 	s_ = 0;
 	lastAngle_ = 0;
-}
-void StgLaserObject::SetLength(int length) {
-	length_ = length;
-}
-void StgLaserObject::SetRenderWidth(int width) {
-	widthRender_ = width;
-	if (widthIntersection_ < 0)widthIntersection_ = width / 4;
-}
-void StgLaserObject::ClearShotObject() {
-	ClearIntersectionRelativeTarget();
 }
 void StgLaserObject::_AddIntersectionRelativeTarget() {
 	if (delay_ > 0)return;
@@ -1954,11 +1864,6 @@ void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 		}
 	}
 }
-void StgLooseLaserObject::RegistIntersectionTarget() {
-	if (!bUserIntersectionMode_) {
-		_AddIntersectionRelativeTarget();
-	}
-}
 
 /**********************************************************
 //StgStraightLaserObject(設置型レーザー)
@@ -2261,11 +2166,7 @@ void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision)
 		}
 	}
 }
-void StgStraightLaserObject::RegistIntersectionTarget() {
-	if (!bUserIntersectionMode_) {
-		_AddIntersectionRelativeTarget();
-	}
-}
+
 /**********************************************************
 //StgCurveLaserObject(曲がる型レーザー)
 **********************************************************/
@@ -2600,10 +2501,5 @@ void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 			}
 
 		}
-	}
-}
-void StgCurveLaserObject::RegistIntersectionTarget() {
-	if (!bUserIntersectionMode_) {
-		_AddIntersectionRelativeTarget();
 	}
 }
