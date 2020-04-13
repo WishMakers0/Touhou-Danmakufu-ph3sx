@@ -1849,38 +1849,6 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 				}
 			}
 			break;
-			/*
-			case token_kind::tk_FOR:
-			{
-				lex2.advance();
-				if (cur == 0) {
-					if (lex2.next != token_kind::tk_open_par) {
-						std::wstring error = L"\"(\" is required.\r\n";
-						throw parser_error(error);
-					}
-
-					lex2.advance();
-					switch (lex2.next) {
-					case token_kind::tk_REAL:
-					case token_kind::tk_LET:
-					{
-						lex2.advance();
-						std::string name = lex2.word;
-
-						symbol s;
-						s.level = level + 1;
-						s.sub = nullptr;
-						s.variable = 0;
-						s.can_overload = false;
-						current_frame->singular_insert(name, s);
-
-						break;
-					}
-					}
-				}
-				break;
-			}
-			*/
 			case token_kind::tk_REAL:
 			case token_kind::tk_LET:
 				lex2.advance();
@@ -2334,7 +2302,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 		else if (lex->next == token_kind::tk_LOOP) {
 			lex->advance();
 			if (lex->next == token_kind::tk_open_par) {
-				parse_parentheses(block);
+				parse_parentheses(block, lex);
 				int ip = block->codes.size();
 				block->codes.push_back(code(lex->line, script_engine::command_kind::pc_loop_count));
 				parse_inline_block(block, lex, script_engine::block_kind::bk_loop);
@@ -3308,6 +3276,7 @@ next:
 		case script_engine::command_kind::pc_dup:
 		{
 			stack_t& stack = current->stack;
+			assert(stack.size() >= 1);
 			stack.push_back(stack.back());
 			break;
 		}
@@ -3315,6 +3284,7 @@ next:
 		{
 			stack_t& stack = current->stack;
 			size_t len = stack.size();
+			assert(len >= 2);
 			stack.push_back(stack[len - 2]);
 			stack.push_back(stack[len - 1]);
 			break;
