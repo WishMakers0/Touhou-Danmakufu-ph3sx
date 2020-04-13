@@ -120,7 +120,11 @@ namespace directx {
 	public:
 		Matrices() {};
 		virtual ~Matrices() {};
-		void SetSize(int size) { matrix_.resize(size); for (int iMat = 0; iMat < size; iMat++) { D3DXMatrixIdentity(&matrix_[iMat]); } }
+		void SetSize(int size) { 
+			matrix_.resize(size); 
+			for (int iMat = 0; iMat < size; iMat++)
+				D3DXMatrixIdentity(&matrix_[iMat]);
+		}
 		int GetSize() { return matrix_.size(); }
 		void SetMatrix(int index, D3DXMATRIX& mat) { matrix_[index] = mat; }
 		D3DXMATRIX& GetMatrix(int index) { return matrix_[index]; }
@@ -309,28 +313,28 @@ namespace directx {
 	inline void RenderObjectTLX::SetVertexAlpha(size_t index, int alpha) {
 		VERTEX_TLX* vertex = GetVertex(index);
 		if (vertex == nullptr)return;
-		D3DCOLOR& color = vertex->diffuse_color;
-		color = ColorAccess::SetColorA(color, alpha);
+		vertex->diffuse_color = (vertex->diffuse_color & 0x00ffffff) | ((byte)alpha << 24);
 	}
 	inline void RenderObjectTLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
 		VERTEX_TLX* vertex = GetVertex(index);
 		if (vertex == nullptr)return;
-		D3DCOLOR& color = vertex->diffuse_color;
-		color = ColorAccess::SetColorR(color, r);
-		color = ColorAccess::SetColorG(color, g);
-		color = ColorAccess::SetColorB(color, b);
+		D3DCOLOR dc = D3DCOLOR_ARGB(0, r, g, b);
+		vertex->diffuse_color = (vertex->diffuse_color & 0xff000000) | dc;
 	}
 	inline void RenderObjectTLX::SetColorRGB(D3DCOLOR color) {
-		int r = ColorAccess::GetColorR(color);
-		int g = ColorAccess::GetColorG(color);
-		int b = ColorAccess::GetColorB(color);
+		D3DCOLOR dc = color & 0x00ffffff;
 		for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-			SetVertexColorRGB(iVert, r, g, b);
+			VERTEX_TLX* vertex = GetVertex(iVert);
+			if (vertex == nullptr)return;
+			vertex->diffuse_color = (vertex->diffuse_color & 0xff000000) | dc;
 		}
 	}
 	inline void RenderObjectTLX::SetAlpha(int alpha) {
+		D3DCOLOR dc = (byte)alpha << 24;
 		for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-			SetVertexAlpha(iVert, alpha);
+			VERTEX_TLX* vertex = GetVertex(iVert);
+			if (vertex == nullptr)return;
+			vertex->diffuse_color = (vertex->diffuse_color & 0x00ffffff) | dc;
 		}
 	}
 #pragma endregion RenderObjectTLX_impl
@@ -404,28 +408,28 @@ namespace directx {
 	inline void RenderObjectLX::SetVertexAlpha(size_t index, int alpha) {
 		VERTEX_LX* vertex = GetVertex(index);
 		if (vertex == nullptr)return;
-		D3DCOLOR& color = vertex->diffuse_color;
-		color = ColorAccess::SetColorA(color, alpha);
+		vertex->diffuse_color = (vertex->diffuse_color & 0x00ffffff) | ((byte)alpha << 24);
 	}
 	inline void RenderObjectLX::SetVertexColorRGB(size_t index, int r, int g, int b) {
 		VERTEX_LX* vertex = GetVertex(index);
 		if (vertex == nullptr)return;
-		D3DCOLOR& color = vertex->diffuse_color;
-		color = ColorAccess::SetColorR(color, r);
-		color = ColorAccess::SetColorG(color, g);
-		color = ColorAccess::SetColorB(color, b);
+		D3DCOLOR dc = D3DCOLOR_ARGB(0, r, g, b);
+		vertex->diffuse_color = (vertex->diffuse_color & 0xff000000) | dc;
 	}
 	inline void RenderObjectLX::SetColorRGB(D3DCOLOR color) {
-		int r = ColorAccess::GetColorR(color);
-		int g = ColorAccess::GetColorG(color);
-		int b = ColorAccess::GetColorB(color);
+		D3DCOLOR dc = color & 0x00ffffff;
 		for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-			SetVertexColorRGB(iVert, r, g, b);
+			VERTEX_LX* vertex = GetVertex(iVert);
+			if (vertex == nullptr)return;
+			vertex->diffuse_color = (vertex->diffuse_color & 0xff000000) | dc;
 		}
 	}
 	inline void RenderObjectLX::SetAlpha(int alpha) {
+		D3DCOLOR dc = (byte)alpha << 24;
 		for (size_t iVert = 0; iVert < vertex_.size(); ++iVert) {
-			SetVertexAlpha(iVert, alpha);
+			VERTEX_LX* vertex = GetVertex(iVert);
+			if (vertex == nullptr)return;
+			vertex->diffuse_color = (vertex->diffuse_color & 0x00ffffff) | dc;
 		}
 	}
 #pragma endregion RenderObjectLX_impl
@@ -687,47 +691,6 @@ namespace directx {
 
 		RECT_D GetDestinationRect();
 	};
-#pragma region Sprite2D_impl
-	inline void Sprite2D::SetSourceRect(RECT_D& rcSrc) {
-		gstd::ref_count_ptr<Texture>& texture = texture_[0];
-		if (texture == nullptr)return;
-		int width = texture->GetWidth();
-		int height = texture->GetHeight();
-
-		//テクスチャUV
-		SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
-		SetVertexUV(1, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
-		SetVertexUV(2, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
-		SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
-	}
-	inline void Sprite2D::SetDestinationRect(RECT_D& rcDest) {
-		//頂点位置
-		SetVertexPosition(0, rcDest.left, rcDest.top);
-		SetVertexPosition(1, rcDest.right, rcDest.top);
-		SetVertexPosition(2, rcDest.left, rcDest.bottom);
-		SetVertexPosition(3, rcDest.right, rcDest.bottom);
-	}
-	inline void Sprite2D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color) {
-		SetSourceRect(rcSrc);
-		SetDestinationRect(rcDest);
-		SetColorRGB(color);
-		SetAlpha(ColorAccess::GetColorA(color));
-	}
-	inline RECT_D Sprite2D::GetDestinationRect() {
-		constexpr float bias = -0.5f;
-
-		RECT_D rect;
-		VERTEX_TLX* vertexLeftTop = GetVertex(0);
-		VERTEX_TLX* vertexRightBottom = GetVertex(3);
-
-		rect.left = vertexLeftTop->position.x - bias;
-		rect.top = vertexLeftTop->position.y - bias;
-		rect.right = vertexRightBottom->position.x - bias;
-		rect.bottom = vertexRightBottom->position.y - bias;
-
-		return rect;
-	}
-#pragma endregion Sprite2D_impl
 
 	/**********************************************************
 	//SpriteList2D
@@ -793,42 +756,6 @@ namespace directx {
 		void SetVertex(RECT_D &rcSrc, D3DCOLOR color = D3DCOLOR_ARGB(255, 255, 255, 255));
 		void SetBillboardEnable(bool bEnable) { bBillboard_ = bEnable; }
 	};
-#pragma region Sprite3D_impl
-	inline void Sprite3D::SetSourceRect(RECT_D& rcSrc) {
-		gstd::ref_count_ptr<Texture>& texture = texture_[0];
-		if (texture == nullptr)return;
-		int width = texture->GetWidth();
-		int height = texture->GetHeight();
-
-		//テクスチャUV
-		SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
-		SetVertexUV(1, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
-		SetVertexUV(2, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
-		SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
-	}
-	inline void Sprite3D::SetDestinationRect(RECT_D& rcDest) {
-		//頂点位置
-		SetVertexPosition(0, rcDest.left, rcDest.top, 0);
-		SetVertexPosition(1, rcDest.left, rcDest.bottom, 0);
-		SetVertexPosition(2, rcDest.right, rcDest.top, 0);
-		SetVertexPosition(3, rcDest.right, rcDest.bottom, 0);
-	}
-	inline void Sprite3D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color) {
-		SetSourceRect(rcSrc);
-		SetDestinationRect(rcDest);
-
-		//頂点色
-		SetColorRGB(color);
-		SetAlpha(ColorAccess::GetColorA(color));
-	}
-	inline void Sprite3D::SetVertex(RECT_D& rcSrc, D3DCOLOR color) {
-		SetSourceDestRect(rcSrc);
-
-		//頂点色
-		SetColorRGB(color);
-		SetAlpha(ColorAccess::GetColorA(color));
-	}
-#pragma endregion Sprite3D_impl
 
 	/**********************************************************
 	//TrajectoryObject3D
@@ -913,8 +840,8 @@ namespace directx {
 
 		virtual void Render() = 0;
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) = 0;
-		virtual void Render(std::wstring nameAnime, int time) { Render(); }
-		virtual void Render(std::wstring nameAnime, int time, 
+		virtual inline void Render(std::wstring nameAnime, int time) { Render(); }
+		virtual inline void Render(std::wstring nameAnime, int time,
 			D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) { Render(angX, angY, angZ); }
 
 		void SetPosition(D3DXVECTOR3 pos) { position_ = pos; }
@@ -928,8 +855,12 @@ namespace directx {
 		void SetScaleXYZ(float sx = 1.0f, float sy = 1.0f, float sz = 1.0f) { scale_.x = sx; scale_.y = sy; scale_.z = sz; }
 
 		void SetColor(D3DCOLOR color) { color_ = color; }
-		void SetColorRGB(D3DCOLOR color);
-		void SetAlpha(int alpha);
+		inline void SetColorRGB(D3DCOLOR color) {
+			color_ = (color_ & 0xff000000) | (color & 0x00ffffff);
+		}
+		inline void SetAlpha(int alpha) {
+			color_ = (color_ & 0x00ffffff) | ((byte)alpha << 24);
+		}
 
 		bool IsCoordinate2D() { return bCoordinate2D_; }
 		void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
@@ -939,19 +870,6 @@ namespace directx {
 		gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
 		void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
 	};
-#pragma region DxMesh_impl
-	inline void DxMesh::SetColorRGB(D3DCOLOR color) {
-		int r = ColorAccess::GetColorR(color);
-		int g = ColorAccess::GetColorG(color);
-		int b = ColorAccess::GetColorB(color);
-		ColorAccess::SetColorR(color_, r);
-		ColorAccess::SetColorG(color_, g);
-		ColorAccess::SetColorB(color_, b);
-	}
-	inline void DxMesh::SetAlpha(int alpha) {
-		ColorAccess::SetColorA(color_, alpha);
-	}
-#pragma endregion DxMesh_impl
 
 	/**********************************************************
 	//DxMeshManager

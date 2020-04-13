@@ -8,34 +8,6 @@ using namespace directx;
 /**********************************************************
 //ColorAccess
 **********************************************************/
-int ColorAccess::GetColorA(D3DCOLOR& color) {
-	return gstd::BitAccess::GetByte(color, BIT_ALPHA);
-}
-D3DCOLOR& ColorAccess::SetColorA(D3DCOLOR& color, int alpha) {
-	ClampColor(alpha);
-	return gstd::BitAccess::SetByte(color, BIT_ALPHA, (unsigned char)alpha);
-}
-int ColorAccess::GetColorR(D3DCOLOR color) {
-	return gstd::BitAccess::GetByte(color, BIT_RED);
-}
-D3DCOLOR& ColorAccess::SetColorR(D3DCOLOR& color, int red) {
-	ClampColor(red);
-	return gstd::BitAccess::SetByte(color, BIT_RED, (unsigned char)red);
-}
-int ColorAccess::GetColorG(D3DCOLOR& color) {
-	return gstd::BitAccess::GetByte(color, BIT_GREEN);
-}
-D3DCOLOR& ColorAccess::SetColorG(D3DCOLOR& color, int green) {
-	ClampColor(green);
-	return gstd::BitAccess::SetByte(color, BIT_GREEN, (unsigned char)green);
-}
-int ColorAccess::GetColorB(D3DCOLOR& color) {
-	return gstd::BitAccess::GetByte(color, BIT_BLUE);
-}
-D3DCOLOR& ColorAccess::SetColorB(D3DCOLOR& color, int blue) {
-	ClampColor(blue);
-	return gstd::BitAccess::SetByte(color, BIT_BLUE, (unsigned char)blue);
-}
 D3DCOLORVALUE ColorAccess::SetColor(D3DCOLORVALUE value, D3DCOLOR color) {
 	float a = (float)GetColorA(color) / 255.0f;
 	float r = (float)GetColorR(color) / 255.0f;
@@ -89,28 +61,10 @@ D3DCOLOR& ColorAccess::SetColorHSV(D3DCOLOR& color, int hue, int saturation, int
 	SetColorB(color, blue);
 	return color;
 }
-void ColorAccess::ClampColor(int& color) {
-	if (color > 255) color = 255;
-	if (color < 0) color = 0;
-}
 
 /**********************************************************
 //DxMath
 **********************************************************/
-D3DXVECTOR4 DxMath::VectMatMulti(D3DXVECTOR4 v, D3DMATRIX& mat) {
-	float x, y, z;
-
-	x = v.x;
-	y = v.y;
-	z = v.z;
-
-	v.x = (x*mat._11) + (y*mat._21) + (z*mat._31) + mat._41;
-	v.y = (x*mat._12) + (y*mat._22) + (z*mat._32) + mat._42;
-	v.z = (x*mat._13) + (y*mat._23) + (z*mat._33) + mat._43;
-	v.w = (x*mat._14) + (y*mat._24) + (z*mat._34) + mat._44;
-
-	return v;
-}
 bool DxMath::IsIntersected(D3DXVECTOR2& pos, std::vector<D3DXVECTOR2>& list) {
 	if (list.size() <= 2)return false;
 

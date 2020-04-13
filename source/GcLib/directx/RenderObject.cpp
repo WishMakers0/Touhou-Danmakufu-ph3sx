@@ -1347,6 +1347,45 @@ void Sprite2D::Copy(Sprite2D* src) {
 	scale_ = src->scale_;
 	matRelative_ = src->matRelative_;
 }
+void Sprite2D::SetSourceRect(RECT_D& rcSrc) {
+	gstd::ref_count_ptr<Texture>& texture = texture_[0];
+	if (texture == nullptr)return;
+	int width = texture->GetWidth();
+	int height = texture->GetHeight();
+
+	//テクスチャUV
+	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
+	SetVertexUV(1, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
+	SetVertexUV(2, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
+	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
+}
+void Sprite2D::SetDestinationRect(RECT_D& rcDest) {
+	//頂点位置
+	SetVertexPosition(0, rcDest.left, rcDest.top);
+	SetVertexPosition(1, rcDest.right, rcDest.top);
+	SetVertexPosition(2, rcDest.left, rcDest.bottom);
+	SetVertexPosition(3, rcDest.right, rcDest.bottom);
+}
+void Sprite2D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color) {
+	SetSourceRect(rcSrc);
+	SetDestinationRect(rcDest);
+	SetColorRGB(color);
+	SetAlpha(ColorAccess::GetColorA(color));
+}
+RECT_D Sprite2D::GetDestinationRect() {
+	constexpr float bias = -0.5f;
+
+	RECT_D rect;
+	VERTEX_TLX* vertexLeftTop = GetVertex(0);
+	VERTEX_TLX* vertexRightBottom = GetVertex(3);
+
+	rect.left = vertexLeftTop->position.x - bias;
+	rect.top = vertexLeftTop->position.y - bias;
+	rect.right = vertexRightBottom->position.x - bias;
+	rect.bottom = vertexRightBottom->position.y - bias;
+
+	return rect;
+}
 void Sprite2D::SetDestinationCenter() {
 	ref_count_ptr<Texture>& texture = texture_[0];
 	if (texture == nullptr || GetVertexCount() < 4)return;
@@ -1679,6 +1718,40 @@ void Sprite3D::SetSourceDestRect(RECT_D &rcSrc) {
 
 	SetSourceRect(rcSrc);
 	SetDestinationRect(rcDest);
+}
+void Sprite3D::SetSourceRect(RECT_D& rcSrc) {
+	gstd::ref_count_ptr<Texture>& texture = texture_[0];
+	if (texture == nullptr)return;
+	int width = texture->GetWidth();
+	int height = texture->GetHeight();
+
+	//テクスチャUV
+	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
+	SetVertexUV(1, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
+	SetVertexUV(2, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
+	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
+}
+void Sprite3D::SetDestinationRect(RECT_D& rcDest) {
+	//頂点位置
+	SetVertexPosition(0, rcDest.left, rcDest.top, 0);
+	SetVertexPosition(1, rcDest.left, rcDest.bottom, 0);
+	SetVertexPosition(2, rcDest.right, rcDest.top, 0);
+	SetVertexPosition(3, rcDest.right, rcDest.bottom, 0);
+}
+void Sprite3D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color) {
+	SetSourceRect(rcSrc);
+	SetDestinationRect(rcDest);
+
+	//頂点色
+	SetColorRGB(color);
+	SetAlpha(ColorAccess::GetColorA(color));
+}
+void Sprite3D::SetVertex(RECT_D& rcSrc, D3DCOLOR color) {
+	SetSourceDestRect(rcSrc);
+
+	//頂点色
+	SetColorRGB(color);
+	SetAlpha(ColorAccess::GetColorA(color));
 }
 
 /**********************************************************

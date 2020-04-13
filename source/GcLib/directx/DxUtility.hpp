@@ -16,14 +16,34 @@ namespace directx {
 			BIT_GREEN = 8,
 			BIT_BLUE = 0,
 		};
-		static int GetColorA(D3DCOLOR& color);
-		static D3DCOLOR& SetColorA(D3DCOLOR& color, int alpha);
-		static int GetColorR(D3DCOLOR color);
-		static D3DCOLOR& SetColorR(D3DCOLOR& color, int red);
-		static int GetColorG(D3DCOLOR& color);
-		static D3DCOLOR& SetColorG(D3DCOLOR& color, int green);
-		static int GetColorB(D3DCOLOR& color);
-		static D3DCOLOR& SetColorB(D3DCOLOR& color, int blue);
+		static int GetColorA(D3DCOLOR& color) {
+			return gstd::BitAccess::GetByte(color, BIT_ALPHA);
+		}
+		static int GetColorR(D3DCOLOR color) {
+			return gstd::BitAccess::GetByte(color, BIT_RED);
+		}
+		static int GetColorG(D3DCOLOR& color) {
+			return gstd::BitAccess::GetByte(color, BIT_GREEN);
+		}
+		static int GetColorB(D3DCOLOR& color) {
+			return gstd::BitAccess::GetByte(color, BIT_BLUE);
+		}
+		static D3DCOLOR& SetColorA(D3DCOLOR& color, int alpha) {
+			ClampColor(alpha);
+			return gstd::BitAccess::SetByte(color, BIT_ALPHA, (byte)alpha);
+		}		
+		static D3DCOLOR& SetColorR(D3DCOLOR& color, int red) {
+			ClampColor(red);
+			return gstd::BitAccess::SetByte(color, BIT_RED, (byte)red);
+		}
+		static D3DCOLOR& SetColorG(D3DCOLOR& color, int green) {
+			ClampColor(green);
+			return gstd::BitAccess::SetByte(color, BIT_GREEN, (byte)green);
+		}
+		static D3DCOLOR& SetColorB(D3DCOLOR& color, int blue) {
+			ClampColor(blue);
+			return gstd::BitAccess::SetByte(color, BIT_BLUE, (byte)blue);
+		}
 
 		static D3DCOLORVALUE SetColor(D3DCOLORVALUE value, D3DCOLOR color);
 		static D3DMATERIAL9 SetColor(D3DMATERIAL9 mat, D3DCOLOR color);
@@ -31,7 +51,10 @@ namespace directx {
 
 		static D3DCOLOR& SetColorHSV(D3DCOLOR& color, int hue, int saturation, int value);
 
-		static void ClampColor(int& color);
+		static void ClampColor(int& color) {
+			if (color > 255) color = 255;
+			if (color < 0) color = 0;
+		}
 	};
 
 
@@ -149,7 +172,11 @@ namespace directx {
 		}
 
 		//ベクトルと行列の積
-		static D3DXVECTOR4 VectMatMulti(D3DXVECTOR4 v, D3DMATRIX& mat);
+		static D3DXVECTOR4 VectMatMulti(D3DXVECTOR4 v, D3DXMATRIX& mat) {
+			D3DXVECTOR4 res;
+			D3DXVec4Transform(&res, &v, &mat);
+			return res;
+		}
 
 		//衝突判定：点－多角形
 		static bool IsIntersected(D3DXVECTOR2& pos, std::vector<D3DXVECTOR2>& list);
