@@ -26,13 +26,14 @@
 #pragma warning (disable:4244)	//double' から 'float' に変換
 
 #include "Logger.hpp"
-
+#include "LightweightVector.hpp"
 
 //重複宣言チェックをしない
 //#define __SCRIPT_H__NO_CHECK_DUPLICATED
 
 //-------- 汎用
 namespace gstd {
+	/*
 	template<typename T>
 	class lightweight_vector {
 	public:
@@ -173,6 +174,7 @@ namespace gstd {
 		*pos = value;
 		++length;
 	}
+	*/
 
 	//-------- ここから
 
@@ -183,24 +185,31 @@ namespace gstd {
 		};
 
 		type_data(type_kind k, type_data* t = nullptr) : kind(k), element(t) {}
-
 		type_data(type_data const& source) : kind(source.kind), element(source.element) {}
 
 		//デストラクタはデフォルトに任せる
 
-		type_kind get_kind() {
-			return kind;
-		}
+		type_kind get_kind() { return kind; }
+		type_data* get_element() { return element; }
 
-		type_data* get_element() {
-			return element;
-		}
+		friend bool operator==(const type_data& ld, const type_data& rd) {
+			if (ld.kind != rd.kind) return false;
 
+			//Same element or both null
+			if (ld.element == rd.element) return true;
+			//Either null
+			else if (ld.element == nullptr || rd.element == nullptr) return false;
+
+			return (*ld.element == *rd.element);
+		}
+		bool operator<(const type_data& other) const {
+			if (kind != other.kind) return ((uint8_t)kind < (uint8_t)other.kind);
+			if (element == nullptr || other.element == nullptr) return false;
+			return (*element) < (*other.element);
+		}
 	private:
 		type_kind kind;
 		type_data* element;
-
-		type_data& operator=(type_data const& source);
 	};
 
 	class value {
@@ -276,6 +285,7 @@ namespace gstd {
 
 		void overwrite(const value& source);	//危険！外から呼ぶな
 
+		static value new_from(const value& source);
 	private:
 		inline void release() {
 			if (data) data.reset();
@@ -310,41 +320,39 @@ namespace gstd {
 	};
 
 	class script_type_manager {
+		static script_type_manager* base_;
 	public:
 		script_type_manager();
 
 		type_data* get_real_type() {
-			return real_type;
+			return const_cast<type_data*>(&*real_type);
 		}
-
 		type_data* get_char_type() {
-			return char_type;
+			return const_cast<type_data*>(&*char_type);
 		}
-
 		type_data* get_boolean_type() {
-			return boolean_type;
+			return const_cast<type_data*>(&*boolean_type);
 		}
-
 		type_data* get_string_type() {
-			return string_type;
+			return const_cast<type_data*>(&*string_type);
 		}
-
 		type_data* get_array_type(type_data* element);
+
+		static script_type_manager* get_instance() { return base_; }
 	private:
 		script_type_manager(script_type_manager const&);
-		script_type_manager& operator=(script_type_manager const& source);
 
-		std::list<type_data> types;	//中身のポインタを使うのでアドレスが変わらないようにlist
-		type_data* real_type;
-		type_data* char_type;
-		type_data* boolean_type;
-		type_data* string_type;
+		std::set<type_data> types;
+		std::set<type_data>::iterator real_type;
+		std::set<type_data>::iterator char_type;
+		std::set<type_data>::iterator boolean_type;
+		std::set<type_data>::iterator string_type;
 	};
 
 	class script_engine {
 	public:
-		script_engine(script_type_manager* a_type_manager, std::string const& source, int funcc, function const* funcv);
-		script_engine(script_type_manager* a_type_manager, std::vector<char> const& source, int funcc, function const* funcv);
+		script_engine(std::string const& source, int funcc, function const* funcv);
+		script_engine(std::vector<char> const& source, int funcc, function const* funcv);
 		virtual ~script_engine();
 
 		void* data;	//クライアント用空間
@@ -362,28 +370,24 @@ namespace gstd {
 		}
 
 		script_type_manager* get_type_manager() {
-			return type_manager;
+			return script_type_manager::get_instance();
 		}
 
 		//compatibility
 		type_data* get_real_type() {
-			return type_manager->get_real_type();
+			return get_type_manager()->get_real_type();
 		}
-
 		type_data* get_char_type() {
-			return type_manager->get_char_type();
+			return get_type_manager()->get_char_type();
 		}
-
 		type_data* get_boolean_type() {
-			return type_manager->get_boolean_type();
+			return get_type_manager()->get_boolean_type();
 		}
-
 		type_data* get_array_type(type_data* element) {
-			return type_manager->get_array_type(element);
+			return get_type_manager()->get_array_type(element);
 		}
-
 		type_data* get_string_type() {
-			return type_manager->get_string_type();
+			return get_type_manager()->get_string_type();
 		}
 
 #ifndef _MSC_VER
@@ -399,14 +403,12 @@ namespace gstd {
 		std::wstring error_message;
 		int error_line;
 
-		//型
-		script_type_manager* type_manager;
-
 		//中間コード
 		enum class command_kind : uint8_t {
 			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, pc_call, pc_call_and_push_result, pc_case_begin,
 			pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
 			pc_compare_le, pc_compare_ne, pc_dup, pc_dup2,
+			pc_for,
 			pc_loop_ascent, pc_loop_back, pc_loop_count, pc_loop_descent, pc_loop_if, pc_loop_continue, pc_continue_marker,
 			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait
 		};
@@ -417,6 +419,8 @@ namespace gstd {
 			command_kind command;
 			int line;	//ソースコード上の行
 			value data;	//pc_push_valueでpushするデータ
+
+			std::string var_name;	//For assign/push_variable
 
 			union {
 				struct {
@@ -436,7 +440,8 @@ namespace gstd {
 
 			code(int the_line, command_kind the_command) : line(the_line), command(the_command) {}
 
-			code(int the_line, command_kind the_command, int the_level, size_t the_variable) : line(the_line), command(the_command), level(the_level), variable(the_variable) {}
+			code(int the_line, command_kind the_command, int the_level, size_t the_variable, std::string the_name) : line(the_line),
+				command(the_command), level(the_level), variable(the_variable), var_name(the_name) {}
 
 			code(int the_line, command_kind the_command, block* the_sub, int the_arguments) : line(the_line), command(the_command), sub(the_sub),
 				arguments(the_arguments) {
@@ -534,9 +539,7 @@ namespace gstd {
 		}
 
 		bool has_event(std::string event_name);
-
 		int get_current_line();
-
 	private:
 		script_machine();
 		script_machine(script_machine const& source);
@@ -550,8 +553,8 @@ namespace gstd {
 
 		bool bTerminate;
 
-		typedef std::vector<value> variables_t;
-		typedef std::vector<value> stack_t;
+		typedef script_vector<value> variables_t;
+		typedef script_vector<value> stack_t;
 
 		struct environment {
 			environment* pred;	//双方向リンクリスト
@@ -574,9 +577,7 @@ namespace gstd {
 		environment* new_environment(environment* parent, script_engine::block* b);
 		void dispose_environment(environment* object);
 
-		typedef std::list<environment*> threads_t;
-
-		threads_t threads;
+		std::list<environment*> threads;
 		std::list<environment*>::iterator current_thread_index;
 		bool finished;
 		bool stopped;
@@ -590,10 +591,18 @@ namespace gstd {
 		}
 
 		void advance();
-
 	public:
 		size_t get_thread_count() { return threads.size(); }
 	};
+	inline bool script_machine::has_event(std::string event_name) {
+		assert(!error);
+		return engine->events.find(event_name) != engine->events.end();
+	}
+	inline int script_machine::get_current_line() {
+		environment* current = *current_thread_index;
+		script_engine::code* c = &(current->sub->codes[current->ip]);
+		return c->line;
+	}
 
 	template<int num>
 	class constant {
