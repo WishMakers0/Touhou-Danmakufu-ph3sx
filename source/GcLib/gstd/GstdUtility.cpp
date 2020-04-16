@@ -11,15 +11,6 @@ std::wstring operator+(std::wstring l, const std::wstring& r) {
 }
 
 //================================================================
-//DebugUtility
-void DebugUtility::DumpMemoryLeaksOnExit() {
-#ifdef _DEBUG
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	//_CrtDumpMemoryLeaks();
-#endif
-}
-
-//================================================================
 //Encoding
 const unsigned char Encoding::BOM_UTF16LE[] = { 0xFF, 0xFE };
 size_t Encoding::Detect(const void* data, size_t dataSize) {
@@ -447,10 +438,6 @@ size_t StringUtility::CountAsciiSizeCharacter(std::wstring& str) {
 	delete[] listType;
 	return res;
 }
-size_t StringUtility::GetByteSize(std::wstring& str) {
-	size_t res = str.size() * sizeof(wchar_t);
-	return res;
-}
 
 //================================================================
 //ErrorUtility
@@ -467,9 +454,6 @@ std::wstring ErrorUtility::GetLastErrorMessage(DWORD error) {
 	std::wstring res = (wchar_t*)lpMsgBuf;
 	::LocalFree(lpMsgBuf);
 	return res;
-}
-std::wstring ErrorUtility::GetLastErrorMessage() {
-	return GetLastErrorMessage(GetLastError());
 }
 std::wstring ErrorUtility::GetErrorMessage(int type) {
 	std::wstring res = L"Unknown error";
@@ -488,22 +472,10 @@ std::wstring ErrorUtility::GetFileNotFoundErrorMessage(std::wstring path) {
 	res += StringUtility::Format(L" path[%s]", path.c_str());
 	return res;
 }
-std::wstring ErrorUtility::GetParseErrorMessage(int line, std::wstring what) {
-	return GetParseErrorMessage(L"", line, what);
-}
 std::wstring ErrorUtility::GetParseErrorMessage(std::wstring path, int line, std::wstring what) {
 	std::wstring res = GetErrorMessage(ERROR_PARSE);
 	res += StringUtility::Format(L" path[%s] line[%d] msg[%s]", path.c_str(), line, what.c_str());
 	return res;
-}
-
-//================================================================
-//Math
-void Math::InitializeFPU() {
-	__asm
-	{
-		finit
-	};
 }
 
 //================================================================
@@ -666,17 +638,11 @@ void Scanner::_SkipComment() {
 void Scanner::_SkipSpace() {
 	wchar_t ch = _CurrentChar();
 	while (true) {
-		if (ch != L' ' && ch != L'\t')break;
+		if (ch != L' ' && ch != L'\t') break;
 		ch = _NextChar();
 	}
 }
-void Scanner::_RaiseError(std::wstring str) {
-	throw gstd::wexception(str);
-}
 
-Token& Scanner::GetToken() {
-	return token_;
-}
 Token& Scanner::Next() {
 	if (!HasNext()) {
 		_RaiseError(L"Next:‚·‚Å‚ÉI’[‚Å‚·");
@@ -878,15 +844,6 @@ int Scanner::GetCurrentLine() {
 	}
 	return line;
 }
-int Scanner::GetCurrentPointer() {
-	return pointer_;
-}
-void Scanner::SetCurrentPointer(int pos) {
-	pointer_ = pos;
-}
-void Scanner::SetPointerBegin() {
-	pointer_ = textStartPointer_;
-}
 std::wstring Scanner::GetString(int start, int end) {
 	std::wstring res;
 	if (typeEncoding_ == Encoding::UTF16LE) {
@@ -985,9 +942,6 @@ TextParser::TextParser(std::string source) {
 	SetSource(source);
 }
 TextParser::~TextParser() {}
-void TextParser::_RaiseError(std::wstring message) {
-	throw gstd::wexception(message);
-}
 TextParser::Result TextParser::_ParseComparison(int pos) {
 	Result res = _ParseSum(pos);
 	while (scan_->HasNext()) {

@@ -10,7 +10,12 @@ namespace gstd {
 	//DebugUtility
 	class DebugUtility {
 	public:
-		static void DumpMemoryLeaksOnExit();
+		static void DumpMemoryLeaksOnExit() {
+#ifdef _DEBUG
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtDumpMemoryLeaks();
+#endif
+		}
 	};
 
 	//================================================================
@@ -107,8 +112,11 @@ namespace gstd {
 			size_t replaceCount = UINT_MAX, size_t start = 0, size_t end = 0);
 		static std::wstring Slice(const std::wstring& s, size_t length);
 		static std::wstring Trim(const std::wstring& str);
+
 		static size_t CountAsciiSizeCharacter(std::wstring& str);
-		static size_t GetByteSize(std::wstring& str);
+		static size_t GetByteSize(std::wstring& str) {
+			return str.size() * sizeof(wchar_t);
+		}
 	};
 
 	//================================================================
@@ -123,10 +131,14 @@ namespace gstd {
 		};
 	public:
 		static std::wstring GetLastErrorMessage(DWORD error);
-		static std::wstring GetLastErrorMessage();
+		static std::wstring GetLastErrorMessage() {
+			return GetLastErrorMessage(GetLastError());
+		}
 		static std::wstring GetErrorMessage(int type);
 		static std::wstring GetFileNotFoundErrorMessage(std::wstring path);
-		static std::wstring GetParseErrorMessage(int line, std::wstring what);
+		static std::wstring GetParseErrorMessage(int line, std::wstring what) {
+			return GetParseErrorMessage(L"", line, what);
+		}
 		static std::wstring GetParseErrorMessage(std::wstring path, int line, std::wstring what);
 	};
 
@@ -181,7 +193,11 @@ namespace gstd {
 			return angle;
 		}
 
-		static void InitializeFPU();
+		static void InitializeFPU() {
+			__asm {
+				finit
+			};
+		}
 
 		static inline const double Round(double val) { return floorl(val + 0.5); }
 	};
@@ -564,7 +580,9 @@ namespace gstd {
 
 		virtual void _SkipComment();//コメントをとばす
 		virtual void _SkipSpace();//空白をとばす
-		virtual void _RaiseError(std::wstring str);//例外を投げます
+		virtual void _RaiseError(std::wstring str) {	//例外を投げます
+			throw gstd::wexception(str);
+		}
 	public:
 		Scanner(char* str, int size);
 		Scanner(std::string str);
@@ -575,16 +593,18 @@ namespace gstd {
 		void SetPermitSignNumber(bool bEnable) { bPermitSignNumber_ = bEnable; }
 		int GetEncoding() { return typeEncoding_; }
 
-		Token& GetToken();//現在のトークンを取得
+		Token& GetToken() {	//現在のトークンを取得
+			return token_;
+		}
 		Token& Next();
 		bool HasNext();
 		void CheckType(Token& tok, Token::Type type);
 		void CheckIdentifer(Token& tok, std::wstring id);
 		int GetCurrentLine();
 
-		int GetCurrentPointer();
-		void SetCurrentPointer(int pos);
-		void SetPointerBegin();
+		int GetCurrentPointer() { return pointer_; }
+		void SetCurrentPointer(int pos) { pointer_ = pos; }
+		void SetPointerBegin() { pointer_ = textStartPointer_; }
 		std::wstring GetString(int start, int end);
 
 		bool CompareMemory(int start, int end, const char* data);
@@ -651,7 +671,9 @@ namespace gstd {
 	protected:
 		gstd::ref_count_ptr<Scanner> scan_;
 
-		void _RaiseError(std::wstring message);
+		void _RaiseError(std::wstring message) {
+			throw gstd::wexception(message);
+		}
 		Result _ParseComparison(int pos);
 		Result _ParseSum(int pos);
 		Result _ParseProduct(int pos);
