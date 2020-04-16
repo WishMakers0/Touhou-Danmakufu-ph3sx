@@ -239,7 +239,7 @@ void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 
 	std::vector<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 
-#pragma omp for
+//#pragma omp for
 	for (int iObj = 0; iObj < GetItemCount(); ++iObj) {
 		ref_count_ptr<StgItemObject>::unsync obj = *(itr + iObj);
 

@@ -363,7 +363,7 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 		}
 	}
 	*/
-#pragma omp parallel for
+#pragma omp for
 	for (int iA = 0; iA < listTargetA.size(); ++iA) {
 		StgIntersectionTarget::ptr targetA = listTargetA[iA];
 

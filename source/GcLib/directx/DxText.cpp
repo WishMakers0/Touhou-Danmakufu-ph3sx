@@ -111,7 +111,7 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont) {
 	int yMax = iBmp_h + iOfs_y + widthBorder * 2;
 
 	if (size > 0) {
-#pragma omp parallel for
+#pragma omp for
 		for (int iy = 0; iy < yMax; iy++) {
 			int yBmp = iy - iOfs_y - widthBorder;
 			int colorR = ColorAccess::GetColorR(colorTop) - gapColorR * yBmp;

@@ -1064,7 +1064,7 @@ gstd::ref_count_ptr<Shader> DxScriptObjectManager::GetShader(int index) {
 void DxScriptObjectManager::DeleteObjectByScriptID(int64_t idScript) {
 	if (idScript == ScriptClientBase::ID_SCRIPT_FREE) return;
 
-#pragma omp parallel for
+#pragma omp for
 	for (int iObj = 0; iObj < obj_.size(); ++iObj) {
 		if (obj_[iObj] == nullptr) continue;
 		if (obj_[iObj]->GetScriptID() != idScript) continue;
