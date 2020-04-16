@@ -209,7 +209,7 @@ Interpolate_CubicBezier
 
 typeof
 	Arguments:
-		1) value (any)
+		1) (any) value
 	Description:
 		Returns the type of the given value.
 		Examples:
@@ -220,7 +220,7 @@ typeof
 		
 ftypeof
 	Arguments:
-		1) value (any)
+		1) (any) value
 	Description:
 		Returns the root type of the given value.
 		Examples:
@@ -273,9 +273,9 @@ bit_right
 
 isNull
 	Arguments:
-		1) value
+		1) (any) value
 	Description:
-		A boolean value of whether the given value has been assigned a value.
+		Returns a boolean value of whether the given value/variable has been assigned a value.
 
 __DEBUG_BREAK
 	Description:
@@ -283,7 +283,10 @@ __DEBUG_BREAK
 
 -------------------------------------------------------------------------------------------------------------------
 A "matrix" here is a 16-member array representing a 4x4 matrix arranged row-by-row.
+	Ex: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 A "vector" here is a real value array of the specified size.
+	Ex: [3, 4, 5] 		-> VECTOR3
+		[5, 5, 0, 2]	-> VECTOR4
 
 MatrixIdentity
 	Description:
@@ -301,7 +304,7 @@ MatrixAdd
 		2) matrix2
 	Description:
 		Adds two matrices together.
-		Note: Directly using the "+" also works.
+		Note: Directly using the "+" operator also works.
 
 MatrixSubtract
 	Arguments:
@@ -309,7 +312,7 @@ MatrixSubtract
 		2) matrix2
 	Description:
 		Subtracts two matrices.
-		Note: Directly using the "-" also works.
+		Note: Directly using the "-" operator also works.
 		
 MatrixMultiply
 	Arguments:
@@ -317,7 +320,6 @@ MatrixMultiply
 		2) matrix2
 	Description:
 		Multiplies two matrices together.
-		Note: Directly using the "*" also works.
 		
 MatrixDivide
 	Arguments:
@@ -325,7 +327,6 @@ MatrixDivide
 		2) matrix2
 	Description:
 		Divides two matrices.
-		Note: Directly using the "/" also works.
 
 MatrixTranspose
 	Arguments:
@@ -341,17 +342,17 @@ MatrixDeterminant
 
 MatrixLookAtLH
 	Arguments:
-		1) eye vector 			(size 3)
-		2) destination vector 	(size 3)
-		3) orientation vector 	(size 3)
+		1) (VECTOR3) eye vector
+		2) (VECTOR3) destination vector
+		3) (VECTOR3) orientation vector
 	Description:
 		Constructs a left-handed look-at matrix.
 
 MatrixLookAtRH
 	Arguments:
-		1) eye vector 			(size 3)
-		2) destination vector 	(size 3)
-		3) orientation vector 	(size 3)
+		1) (VECTOR3) eye vector
+		2) (VECTOR3) destination vector
+		3) (VECTOR3) orientation vector
 	Description:
 		Constructs a right-handed look-at matrix.
 		
@@ -400,7 +401,7 @@ GetSoundDivisionVolumeRate
 	Arguments:
 		1) division
 	Description:
-		The volume rate of the given sound division.
+		Returns the volume rate of the given sound division.
 
 LoadTextureEx
 	Arguments:
@@ -408,7 +409,7 @@ LoadTextureEx
 		2) (bool) use mipmap
 		3) (bool) use non-power-of-two
 	Description:
-		Boolean value of whether loading was successful.
+		Returns a boolean value of whether loading was successful.
 	
 		Loads a texture with more options.
 		Mipmap option generates a mipmap chain, causes textures to look better when scaled down when used with mipmap filtering.
@@ -420,7 +421,7 @@ LoadTextureInLoadThreadEx
 		2) (bool) use mipmap
 		3) (bool) use non-power-of-two
 	Description:
-		Boolean value of whether initial loading was successful.
+		Returns a boolean value of whether initial loading was successful.
 	
 		LoadTextureEx in the load thread.
 
@@ -430,16 +431,16 @@ CreateRenderTargetEx
 		2) width
 		3) height
 	Description:
-		Boolean value of whether creation was successful.
+		Returns a boolean value of whether creation was successful.
 		
 		Creates a render target with the specified name, width, and height.
-		Fails if either value is not a positive value.
+		Fails if either value is not a positive integer.
 		
 ClearRenderTargetA1
 	Arguments:
 		1) (string) name
 	Description:
-		Boolean value of whether the operation was successful.
+		Returns a boolean value of whether the operation was successful.
 		
 		Clears the render target.
 	
@@ -451,7 +452,7 @@ ClearRenderTargetA2
 		4) clear color blue
 		5) clear color alpha
 	Description:
-		Boolean value of whether the operation was successful.
+		Returns a boolean value of whether the operation was successful.
 		
 		Clears the render target, and fills it with the specified color and alpha.
 
@@ -467,7 +468,7 @@ ClearRenderTargetA3
 		8) rectangle right
 		9) rectangle bottom
 	Description:
-		Boolean value of whether the operation was successful.
+		Returns a boolean value of whether the operation was successful.
 		
 		Clears the render target in the specified rectangular area, and fills that area with the specified color and alpha.
 
@@ -482,7 +483,7 @@ SaveRenderedTextureA3
 	Description:
 		SaveRenderedTextureA2, with the added ability of image format specification.
 		Available formats are:
-			IFF_BMP: Bitmap file. 										(.bmp)
+			IFF_BMP: Bitmap file. 										(.bmp) (default)
 			IFF_JPG: Joint Photographic Experts Group graphics file. 	(.jpeg)
 			IFF_TGA: TARGA bitmap file. 								(.tga)
 			IFF_PNG: Portable Network Graphics file. 					(.png)
@@ -540,7 +541,7 @@ ObjRender_SetTextureFilterMin
 		Filtering modes:
 			FILTER_NONE
 			FILTER_POINT
-			FILTER_LINEAR
+			FILTER_LINEAR (default)
 			FILTER_ANISOTROPIC
 
 ObjRender_SetTextureFilterMag
@@ -582,8 +583,8 @@ ObjText_SetFontCharacterSet
 		Sets the charset for the following text object. 
 		Causes font to render correctly in languages with non-latin-like writing system.
 		Charsets:
-			CHARSET_ANSI		[default]
-			CHARSET_SHIFTJIS	[default for Japanese text]
+			CHARSET_ANSI		(default)
+			CHARSET_SHIFTJIS	(default for Japanese text)
 			CHARSET_HANGUL
 			CHARSET_ARABIC		
 			CHARSET_HEBREW
@@ -859,5 +860,5 @@ PauseScript
 		2) (bool) pause
 	Description:
 		Pauses or unpauses the specified script.
-		Causes an error is the script ID is the ID of the script the function was called from,
-			or as known as: "a script cannot pause itself".
+		Causes an error is the script ID is the ID of the script from which the function was called,
+			aka; "a script cannot pause itself".
