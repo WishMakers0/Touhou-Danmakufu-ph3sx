@@ -168,14 +168,6 @@ namespace stdfs = std::filesystem;
 using path_t = stdfs::path;
 #endif
 
-//#define __L_XNAMATH
-#ifdef __L_XNAMATH
-#pragma warning (push)
-#pragma warning (disable : 6011 26495)
-#include "../../DirectX9c/DirectXMath/DirectXMath.h"
-#pragma warning (pop)
-#endif
-
 //Pointer utilities
 template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
 	if (ptr) delete ptr;

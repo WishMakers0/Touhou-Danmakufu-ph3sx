@@ -600,7 +600,9 @@ namespace directx {
 		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
 		void AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
 		void ActivateObject(int id, bool bActivate);
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { return obj_[id]; }
+		gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { 
+			return ((id < 0 || id >= obj_.size()) ? nullptr : obj_[id]); 
+		}
 		std::vector<int> GetValidObjectIdentifier();
 		DxScriptObjectBase* GetObjectPointer(int id);
 		virtual void DeleteObject(int id);

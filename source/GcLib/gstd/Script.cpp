@@ -2938,8 +2938,15 @@ void script_machine::dispose_environment(environment* object) {
 	assert(object->ref_count == 0);
 
 	//使用中リストからの削除
-	*((object->pred != nullptr) ? &object->pred->succ : &first_using_environment) = object->succ;
-	*((object->succ != nullptr) ? &object->succ->pred : &last_using_environment) = object->pred;
+	if (object->pred != nullptr)
+		object->pred->succ = object->succ;
+	else
+		first_using_environment = object->succ;
+
+	if (object->succ != nullptr)
+		object->succ->pred = object->pred;
+	else
+		last_using_environment = object->pred;
 
 	//ごみリストへの追加
 	object->pred = last_garbage_environment;

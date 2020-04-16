@@ -152,7 +152,7 @@ namespace gstd {
 		}
 
 		// =代入演算子
-		ref_count_ptr<T, SYNC>& operator =(T *src) {
+		ref_count_ptr<T, SYNC>& operator=(T *src) {
 			if (src == info_.pPtr_)
 				return (*this);
 			SetPointer(src);
@@ -160,7 +160,7 @@ namespace gstd {
 		}
 
 		// =代入演算子
-		ref_count_ptr<T, SYNC>& operator =(const ref_count_ptr<T, SYNC> &src) {
+		ref_count_ptr<T, SYNC>& operator=(const ref_count_ptr<T, SYNC> &src) {
 			// 自分自身への代入は不正で意味が無いので
 			// 行わない。
 			if (src.info_.pPtr_ == info_.pPtr_)
@@ -180,7 +180,7 @@ namespace gstd {
 		}
 
 		// =代入演算子（明示的アップキャスト付き）
-		template<class T2> ref_count_ptr& operator =(ref_count_ptr<T2, SYNC> &src) {
+		template<class T2> ref_count_ptr& operator=(ref_count_ptr<T2, SYNC> &src) {
 			// 自分自身への代入は不正で意味が無いので
 			// 行わない。
 			if (src.GetPointer() == info_.pPtr_)
@@ -202,24 +202,24 @@ namespace gstd {
 		}
 
 		// *間接演算子
-		T& operator *() { return *info_.pPtr_; }
+		T& operator*() { return *info_.pPtr_; }
 
 		// ->メンバ選択演算子
-		T* operator ->() { return info_.pPtr_; }
+		T* operator->() { return info_.pPtr_; }
 
 		// []配列参照演算子
-		T& operator [](int n) { return info_.pPtr_[n]; }
+		T& operator[](int n) { return info_.pPtr_[n]; }
 
 		// ==比較演算子
-		bool operator ==(const T* p) {
+		bool operator==(const T* p) {
 			return info_.pPtr_ == p;
 		}
-		bool operator ==(const ref_count_ptr<T, SYNC>& p)const {
+		bool operator==(const ref_count_ptr<T, SYNC>& p)const {
 			return info_.pPtr_ == p.info_.pPtr_;
 		}
 
 		template<class D>
-		bool operator ==(ref_count_ptr<D, SYNC>& p)const {
+		bool operator==(ref_count_ptr<D, SYNC>& p)const {
 			return info_.pPtr_ == p.GetPointer();
 		}
 
@@ -228,15 +228,15 @@ namespace gstd {
 		}
 
 		// !=比較演算子
-		bool operator !=(const T* p) {
+		bool operator!=(const T* p) {
 			return info_.pPtr_ != p;
 		}
-		bool operator !=(const ref_count_ptr<T, SYNC>& p)const {
+		bool operator!=(const ref_count_ptr<T, SYNC>& p)const {
 			return info_.pPtr_ != p.info_.pPtr_;
 		}
 
 		template<class D>
-		bool operator !=(ref_count_ptr<D, SYNC>& p)const {
+		bool operator!=(ref_count_ptr<D, SYNC>& p)const {
 			return info_.pPtr_ != p.info_.pPtr_;
 		}
 
@@ -264,9 +264,9 @@ namespace gstd {
 		// 参照カウンタへのポインタを取得
 		inline long* _GetReferenceCountPointer() { return info_.countRef_; }	//この関数は外部からしようしないこと
 		inline long* _GetWeakCountPointer() { return info_.countWeak_; }		//この関数は外部からしようしないこと
-		int GetReferenceCount() { 
-			int res = info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0; 
-			return res; 
+		inline int GetReferenceCount() { 
+			return (info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0);
+			
 		}
 
 		template<class T2>
@@ -288,6 +288,9 @@ namespace gstd {
 				res._AddRef();
 			}
 			return res;
+		}
+		static ref_count_ptr<T, SYNC> DownCast(nullptr_t) {
+			return nullptr;
 		}
 	};
 
@@ -377,7 +380,7 @@ namespace gstd {
 		}
 
 		// =代入演算子
-		ref_count_weak_ptr<T, SYNC>& operator =(T *src) {
+		ref_count_weak_ptr<T, SYNC>& operator=(T *src) {
 			if (src != nullptr)
 				throw std::exception("ref_count_weak_ptr =に非NULLを代入しようとしました");
 			info_.pPtr_ = nullptr;
@@ -387,7 +390,7 @@ namespace gstd {
 			info_.pPtr_ = src;
 			return (*this);
 		}
-		ref_count_weak_ptr<T, SYNC>& operator =(const ref_count_weak_ptr<T, SYNC> &src) {
+		ref_count_weak_ptr<T, SYNC>& operator=(const ref_count_weak_ptr<T, SYNC> &src) {
 			// 自分自身への代入は不正で意味が無いので
 			// 行わない。
 			if (src.info_.pPtr_ == info_.pPtr_)
@@ -407,7 +410,7 @@ namespace gstd {
 		}
 
 		// =代入演算子
-		ref_count_weak_ptr<T, SYNC>& operator =(const ref_count_ptr<T, SYNC> &src) {
+		ref_count_weak_ptr<T, SYNC>& operator=(const ref_count_ptr<T, SYNC> &src) {
 			// 自分自身への代入は不正で意味が無いので
 			// 行わない。
 			if (src.info_.pPtr_ == info_.pPtr_)
@@ -429,7 +432,7 @@ namespace gstd {
 		}
 
 		// =代入演算子（明示的アップキャスト付き）
-		template<class T2> ref_count_weak_ptr& operator =(ref_count_weak_ptr<T2, SYNC> &src) {
+		template<class T2> ref_count_weak_ptr& operator=(ref_count_weak_ptr<T2, SYNC> &src) {
 			// 自分自身への代入は不正で意味が無いので
 			// 行わない。
 			if (src.GetPointer() == info_.pPtr_)
@@ -451,23 +454,23 @@ namespace gstd {
 		}
 
 		// *間接演算子
-		T& operator *() { return *info_.pPtr_; }
+		T& operator*() { return *info_.pPtr_; }
 
 		// ->メンバ選択演算子
-		T* operator ->() { return info_.pPtr_; }
+		T* operator->() { return info_.pPtr_; }
 
 		// []配列参照演算子
-		T& operator [](int n) { return info_.pPtr_[n]; }
+		T& operator[](int n) { return info_.pPtr_[n]; }
 
 		// ==比較演算子
-		bool operator ==(const T* p) {
+		bool operator==(const T* p) {
 			return IsExists() ? (info_.pPtr_ == p) : (nullptr == p);
 		}
-		bool operator ==(const ref_count_weak_ptr<T, SYNC>& p) const {
+		bool operator==(const ref_count_weak_ptr<T, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ == p.info_.pPtr_) : (nullptr == p.info_.pPtr_);
 		}
 		template<class D>
-		bool operator ==(ref_count_weak_ptr<D, SYNC>& p) const {
+		bool operator==(ref_count_weak_ptr<D, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ == p.GetPointer()) : (nullptr == p.GetPointer());
 		}
 
@@ -476,14 +479,14 @@ namespace gstd {
 		}
 
 		// !=比較演算子
-		bool operator !=(const T* p) {
+		bool operator!=(const T* p) {
 			return IsExists() ? (info_.pPtr_ != p) : (nullptr != p);
 		}
-		bool operator !=(const ref_count_weak_ptr<T, SYNC>& p) const {
+		bool operator!=(const ref_count_weak_ptr<T, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ != p.info_.pPtr_) : (nullptr != p.info_.pPtr_);
 		}
 		template<class D>
-		bool operator !=(ref_count_weak_ptr<D, SYNC>& p) const {
+		bool operator!=(ref_count_weak_ptr<D, SYNC>& p) const {
 			return IsExists() ? (info_.pPtr_ != p.GetPointer()) : (nullptr != p.GetPointer());
 		}
 
@@ -495,11 +498,11 @@ namespace gstd {
 		// 参照カウンタへのポインタを取得
 		inline long* _GetReferenceCountPointer() { return info_.countRef_; }	//この関数は外部からしようしないこと
 		inline long* _GetWeakCountPointer() { return info_.countWeak_; }		//この関数は外部からしようしないこと
-		int GetReferenceCount() { 
-			int res = info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0; 
-			return res; 
+		inline int GetReferenceCount() { 
+			return (info_.countRef_ != nullptr ? (int)*info_.countRef_ : 0); 
 		}
-		bool IsExists() { 
+
+		inline bool IsExists() { 
 			return info_.countRef_ != nullptr ? (*info_.countRef_ > 0) : false; 
 		}
 

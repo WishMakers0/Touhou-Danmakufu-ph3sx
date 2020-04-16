@@ -72,20 +72,21 @@ public:
 		LONG screenWidth = graphics->GetScreenWidth();
 		LONG screenHeight = graphics->GetScreenWidth();
 
+		constexpr LONG margin = 16L;
 		double x = circle_.GetX();
 		double y = circle_.GetY();
 		double r = circle_.GetR();
 
 		intersectionSpace_ = { (int)(x - r), (int)(y - r), (int)(x + r), (int)(y + r) };
-		intersectionSpace_.left = std::max(intersectionSpace_.left, 0L);
-		intersectionSpace_.left = std::min(intersectionSpace_.left, screenWidth);
-		intersectionSpace_.top = std::max(intersectionSpace_.top, 0L);
-		intersectionSpace_.top = std::min(intersectionSpace_.top, screenHeight);
+		intersectionSpace_.left = std::max(intersectionSpace_.left, -margin);
+		intersectionSpace_.left = std::min(intersectionSpace_.left, screenWidth + margin);
+		intersectionSpace_.top = std::max(intersectionSpace_.top, -margin);
+		intersectionSpace_.top = std::min(intersectionSpace_.top, screenHeight + margin);
 
-		intersectionSpace_.right = std::max(intersectionSpace_.right, 0L);
-		intersectionSpace_.right = std::min(intersectionSpace_.right, screenWidth);
-		intersectionSpace_.bottom = std::max(intersectionSpace_.bottom, 0L);
-		intersectionSpace_.bottom = std::min(intersectionSpace_.bottom, screenHeight);
+		intersectionSpace_.right = std::max(intersectionSpace_.right, -margin);
+		intersectionSpace_.right = std::min(intersectionSpace_.right, screenWidth + margin);
+		intersectionSpace_.bottom = std::max(intersectionSpace_.bottom, -margin);
+		intersectionSpace_.bottom = std::min(intersectionSpace_.bottom, screenHeight + margin);
 	}
 
 	DxCircle& GetCircle() { return circle_; }
@@ -127,17 +128,20 @@ public:
 		y2 += width;
 
 		DirectGraphics* graphics = DirectGraphics::GetBase();
+
+		constexpr double margin = 16.0;
 		double screenWidth = graphics->GetScreenWidth();
 		double screenHeight = graphics->GetScreenWidth();
-		x1 = std::min(x1, screenWidth);
-		x1 = std::max(x1, 0.0);
-		x2 = std::min(x2, screenWidth);
-		x2 = std::max(x2, 0.0);
 
-		y1 = std::min(y1, screenHeight);
-		y1 = std::max(y1, 0.0);
-		y2 = std::min(y2, screenHeight);
-		y2 = std::max(y2, 0.0);
+		x1 = std::min(x1, screenWidth + margin);
+		x1 = std::max(x1, -margin);
+		x2 = std::min(x2, screenWidth + margin);
+		x2 = std::max(x2, -margin);
+
+		y1 = std::min(y1, screenHeight + margin);
+		y1 = std::max(y1, -margin);
+		y2 = std::min(y2, screenHeight + margin);
+		y2 = std::max(y2, -margin);
 
 		//RECT rect = {x1 - width, y1 - width, x2 + width, y2 + width};
 		intersectionSpace_ = { (int)x1, (int)y1, (int)x2, (int)y2 };
@@ -230,33 +234,6 @@ public:
 	StgIntersectionCheckList* CreateIntersectionCheckList();
 };
 */
-class StgIntersectionSpace {
-	enum {
-		TYPE_A = 0,
-		TYPE_B = 1,
-	};
-protected:
-	std::vector<std::vector<StgIntersectionTarget::ptr>> listCell_;
-
-	double spaceWidth_; // 領域のX軸幅
-	double spaceHeight_; // 領域のY軸幅
-	double spaceLeft_; // 領域の左側（X軸最小値）
-	double spaceTop_; // 領域の上側（Y軸最小値）
-
-	StgIntersectionCheckList* listCheck_;
-
-	size_t _WriteIntersectionCheckList(StgIntersectionManager* manager, StgIntersectionCheckList*& listCheck);
-//		std::vector<std::vector<StgIntersectionTarget*>> &listStack);
-public:
-	StgIntersectionSpace();
-	virtual ~StgIntersectionSpace();
-	bool Initialize(int left, int top, int right, int bottom);
-	bool RegistTarget(int type, StgIntersectionTarget::ptr& target);
-	bool RegistTargetA(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_A, target); }
-	bool RegistTargetB(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_B, target); }
-	void ClearTarget();
-	StgIntersectionCheckList* CreateIntersectionCheckList(StgIntersectionManager* manager, size_t& total);
-};
 
 class StgIntersectionCheckList {
 	size_t count_;
@@ -288,6 +265,43 @@ public:
 		std::pair<StgIntersectionTarget::ptr, StgIntersectionTarget::ptr> pair = listTargetPair_[index];
 		listTargetPair_[index].second = nullptr;
 		return pair.second;
+	}
+};
+
+class StgIntersectionSpace {
+	enum {
+		TYPE_A = 0,
+		TYPE_B = 1,
+	};
+protected:
+	std::vector<std::vector<StgIntersectionTarget::ptr>> listCell_;
+
+	double spaceWidth_; // 領域のX軸幅
+	double spaceHeight_; // 領域のY軸幅
+	double spaceLeft_; // 領域の左側（X軸最小値）
+	double spaceTop_; // 領域の上側（Y軸最小値）
+
+	StgIntersectionCheckList* listCheck_;
+
+	size_t _WriteIntersectionCheckList(StgIntersectionManager* manager, StgIntersectionCheckList*& listCheck);
+//		std::vector<std::vector<StgIntersectionTarget*>> &listStack);
+public:
+	StgIntersectionSpace();
+	virtual ~StgIntersectionSpace();
+	bool Initialize(int left, int top, int right, int bottom);
+	bool RegistTarget(int type, StgIntersectionTarget::ptr& target);
+	bool RegistTargetA(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_A, target); }
+	bool RegistTargetB(StgIntersectionTarget::ptr& target) { return RegistTarget(TYPE_B, target); }
+	void ClearTarget() {
+		listCell_[0].clear();
+		listCell_[1].clear();
+	}
+	StgIntersectionCheckList* CreateIntersectionCheckList(StgIntersectionManager* manager, size_t& total) {
+		StgIntersectionCheckList* res = listCheck_;
+		res->Clear();
+
+		total += _WriteIntersectionCheckList(manager, res);
+		return res;
 	}
 };
 
@@ -326,6 +340,10 @@ public:
 	}
 };
 
+inline void StgIntersectionTarget::ClearObjectIntersectedIdList() { 
+	if (obj_) obj_->ClearIntersectedIdList(); 
+}
+
 /**********************************************************
 //StgIntersectionTargetPoint
 **********************************************************/
@@ -337,8 +355,8 @@ private:
 public:
 	POINT& GetPoint() { return pos_; }
 	void SetPoint(POINT& pos) { pos_ = pos; }
-	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync GetObjectID() { return ptrObject_; }
-	void SetObjectID(gstd::ref_count_weak_ptr<StgEnemyObject>::unsync id) { ptrObject_ = id; }
+	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync GetObjectRef() { return ptrObject_; }
+	void SetObjectRef(gstd::ref_count_weak_ptr<StgEnemyObject>::unsync id) { ptrObject_ = id; }
 };
 
 #endif

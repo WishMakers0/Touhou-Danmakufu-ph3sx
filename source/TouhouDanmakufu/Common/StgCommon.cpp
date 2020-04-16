@@ -87,9 +87,6 @@ void StgMoveObject::SetDirectionAngle(double angle) {
 	StgMovePattern_Angle* pattern = dynamic_cast<StgMovePattern_Angle*>(pattern_.get());
 	pattern->SetDirectionAngle(angle);
 }
-void StgMoveObject::SetPattern(std::shared_ptr<StgMovePattern> pattern) {
-	pattern_ = pattern;
-}
 void StgMoveObject::AddPattern(int frameDelay, std::shared_ptr<StgMovePattern> pattern) {
 	if (frameDelay == 0)
 		_AttachReservedPattern(pattern);
@@ -153,7 +150,7 @@ void StgMovePattern_Angle::Move() {
 	target_->SetPositionX(px);
 	target_->SetPositionY(py);
 
-	frameWork_++;
+	++frameWork_;
 }
 void StgMovePattern_Angle::_Activate() {
 	if (idRalativeID_ != DxScript::ID_INVALID) {
@@ -176,12 +173,6 @@ void StgMovePattern_Angle::SetDirectionAngle(double angle) {
 		s_ = sin(angle);
 	}
 	angDirection_ = angle;
-}
-double StgMovePattern_Angle::GetSpeedX() {
-	return (speed_ * c_);
-}
-double StgMovePattern_Angle::GetSpeedY() {
-	return (speed_ * s_);
 }
 
 //StgMovePattern_XY
@@ -219,15 +210,7 @@ void StgMovePattern_XY::Move() {
 	target_->SetPositionX(px);
 	target_->SetPositionY(py);
 
-	frameWork_++;
-}
-double StgMovePattern_XY::GetSpeed() {
-	double res = sqrt(c_ * c_ + s_ * s_);
-	return res;
-}
-double StgMovePattern_XY::GetDirectionAngle() {
-	double res = atan2(s_, c_);
-	return res;
+	++frameWork_;
 }
 
 //StgMovePattern_Line

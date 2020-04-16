@@ -16,12 +16,12 @@ namespace gstd {
 			FPS_FAST_MODE = 1200,
 		};
 	protected:
-		int fps_;//設定されているFPS
-		bool bUseTimer_;//タイマー制御
+		int fps_;			//設定されているFPS
+		bool bUseTimer_;	//タイマー制御
 		bool bCriticalFrame_;
 		bool bFastMode_;
 
-		std::list<ref_count_weak_ptr<FpsControlObject> > listFpsControlObject_;
+		std::list<ref_count_weak_ptr<FpsControlObject>> listFpsControlObject_;
 
 		inline int _GetTime();
 		inline void _Sleep(int msec);
@@ -41,7 +41,9 @@ namespace gstd {
 		bool IsFastMode() { return bFastMode_; }
 		void SetFastMode(bool b) { bFastMode_ = b; }
 
-		void AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj);
+		void AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) {
+			listFpsControlObject_.push_back(obj);
+		}
 		void RemoveFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj);
 		int GetControlObjectFps();
 	};
@@ -54,13 +56,13 @@ namespace gstd {
 			FAST_MODE_SKIP_RATE = 10,
 		};
 	protected:
-		float fpsCurrent_;//現在のFPS
-		int timePrevious_;//前回Waitしたときの時間
-		int timeError_;//持ち越し時間(誤差)
-		int timeCurrentFpsUpdate_;//1秒を測定するための時間保持
-		int rateSkip_;//描画スキップ数
-		int countSkip_;//描画スキップカウント
-		std::list<int> listFps_;//1秒ごとに現在fpsを計算するためにfpsを保持
+		float fpsCurrent_;		//現在のFPS
+		int timePrevious_;			//前回Waitしたときの時間
+		int timeError_;				//持ち越し時間(誤差)
+		int timeCurrentFpsUpdate_;	//1秒を測定するための時間保持
+		int rateSkip_;		//描画スキップ数
+		int countSkip_;		//描画スキップカウント
+		std::list<int> listFps_;	//1秒ごとに現在fpsを計算するためにfpsを保持
 
 	public:
 		StaticFpsController();
@@ -70,10 +72,13 @@ namespace gstd {
 		virtual bool IsSkip();
 		virtual void SetCriticalFrame() { bCriticalFrame_ = true; timeError_ = 0; countSkip_ = 0; }
 
-		void SetSkipRate(int value);
-		virtual float GetCurrentFps();
-		virtual float GetCurrentWorkFps();
-		virtual float GetCurrentRenderFps();
+		void SetSkipRate(int value) {
+			rateSkip_ = value;
+			countSkip_ = 0;
+		}
+		virtual float GetCurrentFps() { return (fpsCurrent_ / (rateSkip_ + 1)); }
+		virtual float GetCurrentWorkFps() { return fpsCurrent_; }
+		virtual float GetCurrentRenderFps() { return GetCurrentFps(); }
 	};
 
 	/**********************************************************
@@ -81,24 +86,23 @@ namespace gstd {
 	**********************************************************/
 	class AutoSkipFpsController : public FpsController {
 	protected:
-		float fpsCurrentWork_;	//実際のfps
+		float fpsCurrentWork_;		//実際のfps
 		float fpsCurrentRender_;	//実際のfps
-		int timePrevious_;//前回Waitしたときの時間
+		int timePrevious_;			//前回Waitしたときの時間
 		int timePreviousWork_;
 		int timePreviousRender_;
-		int timeError_;//持ち越し時間(誤差)
-		int timeCurrentFpsUpdate_;//1秒を測定するための時間保持
+		int timeError_;				//持ち越し時間(誤差)
+		int timeCurrentFpsUpdate_;	//1秒を測定するための時間保持
 		std::list<int> listFpsWork_;
 		std::list<int> listFpsRender_;
-		double countSkip_;//連続描画スキップ数
-		int countSkipMax_;//最大連続描画スキップ数
-
+		double countSkip_;		//連続描画スキップ数
+		int countSkipMax_;		//最大連続描画スキップ数
 	public:
 		AutoSkipFpsController();
 		~AutoSkipFpsController();
 
 		virtual void Wait();
-		virtual bool IsSkip();
+		virtual bool IsSkip() { return countSkip_ > 0; }
 		virtual void SetCriticalFrame() { bCriticalFrame_ = true; timeError_ = 0; countSkip_ = 0; }
 
 		virtual float GetCurrentFps() { return GetCurrentWorkFps(); }

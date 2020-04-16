@@ -1182,9 +1182,12 @@ gstd::value StgStageScript::Func_GetIntersectionRegistedEnemyID(gstd::script_mac
 	std::vector<double> listLD;
 	std::vector<StgIntersectionTargetPoint>* listPoint = interSectionManager->GetAllEnemyTargetPoint();
 	for (int iPoint = 0; iPoint < listPoint->size(); ++iPoint) {
-		StgIntersectionTargetPoint& target = listPoint->at(iPoint);
-		int id = target.GetObjectID()->GetObjectID();
-		listLD.push_back(id);
+		StgIntersectionTargetPoint& target = (*listPoint)[iPoint];
+
+		if (target.GetObjectRef()) {
+			int id = target.GetObjectRef()->GetObjectID();
+			listLD.push_back(id);
+		}
 	}
 
 	return script->CreateRealArrayValue(listLD);
@@ -1197,14 +1200,19 @@ gstd::value StgStageScript::Func_GetAllEnemyIntersectionPosition(gstd::script_ma
 	std::vector<gstd::value> listV;
 	std::vector<StgIntersectionTargetPoint>* listPoint = interSectionManager->GetAllEnemyTargetPoint();
 	for (int iPoint = 0; iPoint < listPoint->size(); ++iPoint) {
-		StgIntersectionTargetPoint& target = listPoint->at(iPoint);
-		if (!target.GetObjectID()->GetEnableGetIntersectionPosition()) continue;
-		POINT pos = target.GetPoint();
-		std::vector<double> listLD;
-		listLD.push_back(pos.x);
-		listLD.push_back(pos.y);
-		gstd::value v = script->CreateRealArrayValue(listLD);
-		listV.push_back(v);
+		StgIntersectionTargetPoint& target = (*listPoint)[iPoint];
+
+		if (target.GetObjectRef()) {
+			if (!target.GetObjectRef()->GetEnableGetIntersectionPosition()) continue;
+
+			POINT pos = target.GetPoint();
+			std::vector<double> listLD;
+			listLD.push_back(pos.x);
+			listLD.push_back(pos.y);
+
+			gstd::value v = script->CreateRealArrayValue(listLD);
+			listV.push_back(v);
+		}
 	}
 	return script->CreateValueArrayValue(listV);
 }
@@ -1222,16 +1230,19 @@ gstd::value StgStageScript::Func_GetEnemyIntersectionPosition(gstd::script_machi
 	std::map<int64_t, POINT> mapPos;
 
 	for (int iPoint = 0; iPoint < listPoint->size(); ++iPoint) {
-		StgIntersectionTargetPoint& target = listPoint->at(iPoint);
-		if (!target.GetObjectID()->GetEnableGetIntersectionPosition()) continue;
+		StgIntersectionTargetPoint& target = (*listPoint)[iPoint];
 
-		POINT pos = target.GetPoint();
+		if (target.GetObjectRef()) {
+			if (!target.GetObjectRef()->GetEnableGetIntersectionPosition()) continue;
 
-		double dx = pos.x - cenX;
-		double dy = pos.y - cenY;
+			POINT pos = target.GetPoint();
 
-		int64_t dist = dx * dx + dy * dy;
-		mapPos[dist] = pos;
+			double dx = pos.x - cenX;
+			double dy = pos.y - cenY;
+
+			int64_t dist = dx * dx + dy * dy;
+			mapPos[dist] = pos;
+		}
 	}
 
 	for (auto itr = mapPos.begin(); (itr != mapPos.end()) && (countRes > 0); ++itr) {
@@ -1263,17 +1274,20 @@ gstd::value StgStageScript::Func_GetEnemyIntersectionPositionByIdA1(gstd::script
 		StgIntersectionManager* interSectionManager = stageController->GetIntersectionManager();
 		std::vector<StgIntersectionTargetPoint>* listPoint = interSectionManager->GetAllEnemyTargetPoint();
 		for (int iPoint = 0; iPoint < listPoint->size(); ++iPoint) {
-			StgIntersectionTargetPoint& target = listPoint->at(iPoint);
-			if (!target.GetObjectID()->GetEnableGetIntersectionPosition()) continue;
-			if (target.GetObjectID()->GetObjectID() != id) continue;
+			StgIntersectionTargetPoint& target = (*listPoint)[iPoint];
 
-			POINT pos = target.GetPoint();
+			if (target.GetObjectRef()) {
+				if (!target.GetObjectRef()->GetEnableGetIntersectionPosition()) continue;
+				if (target.GetObjectRef()->GetObjectID() != id) continue;
 
-			double dx = pos.x - enemyX;
-			double dy = pos.y - enemyY;
+				POINT pos = target.GetPoint();
 
-			int64_t dist = dx * dx + dy * dy;
-			mapPos[dist] = pos;
+				double dx = pos.x - enemyX;
+				double dy = pos.y - enemyY;
+
+				int64_t dist = dx * dx + dy * dy;
+				mapPos[dist] = pos;
+			}
 		}
 
 		std::map<int64_t, POINT>::iterator itr = mapPos.begin();
@@ -1307,17 +1321,20 @@ gstd::value StgStageScript::Func_GetEnemyIntersectionPositionByIdA2(gstd::script
 		StgIntersectionManager* interSectionManager = stageController->GetIntersectionManager();
 		std::vector<StgIntersectionTargetPoint>* listPoint = interSectionManager->GetAllEnemyTargetPoint();
 		for (int iPoint = 0; iPoint < listPoint->size(); iPoint++) {
-			StgIntersectionTargetPoint& target = listPoint->at(iPoint);
-			if (!target.GetObjectID()->GetEnableGetIntersectionPosition()) continue;
-			if (target.GetObjectID()->GetObjectID() != id) continue;
+			StgIntersectionTargetPoint& target = (*listPoint)[iPoint];
 
-			POINT pos = target.GetPoint();
+			if (target.GetObjectRef()) {
+				if (!target.GetObjectRef()->GetEnableGetIntersectionPosition()) continue;
+				if (target.GetObjectRef()->GetObjectID() != id) continue;
 
-			double dx = pos.x - tX;
-			double dy = pos.y - tY;
+				POINT pos = target.GetPoint();
 
-			int64_t dist = dx * dx + dy * dy;
-			mapPos[dist] = pos;
+				double dx = pos.x - tX;
+				double dy = pos.y - tY;
+
+				int64_t dist = dx * dx + dy * dy;
+				mapPos[dist] = pos;
+			}
 		}
 
 		std::map<int64_t, POINT>::iterator itr = mapPos.begin();

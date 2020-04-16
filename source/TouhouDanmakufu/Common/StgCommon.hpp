@@ -50,7 +50,9 @@ public:
 	void SetSpeedY(double speedY);
 
 	std::shared_ptr<StgMovePattern> GetPattern() { return pattern_; }
-	void SetPattern(std::shared_ptr<StgMovePattern> pattern);
+	void SetPattern(std::shared_ptr<StgMovePattern> pattern) {
+		pattern_ = pattern;
+	}
 	void AddPattern(int frameDelay, std::shared_ptr<StgMovePattern> pattern);
 };
 
@@ -90,8 +92,8 @@ public:
 
 	int GetType() { return typeMove_; }
 
-	virtual double GetSpeed() = 0;
-	virtual double GetDirectionAngle() = 0;
+	virtual inline double GetSpeed() = 0;
+	virtual inline double GetDirectionAngle() = 0;
 	int GetShotDataID() { return idShotData_; }
 	void SetShotDataID(int id) { idShotData_ = id; }
 
@@ -113,8 +115,8 @@ public:
 	StgMovePattern_Angle(StgMoveObject* target);
 	virtual void Move();
 
-	virtual double GetSpeed() { return speed_; }
-	virtual double GetDirectionAngle() { return angDirection_; }
+	virtual inline double GetSpeed() { return speed_; }
+	virtual inline double GetDirectionAngle() { return angDirection_; }
 
 	void SetSpeed(double speed) { speed_ = speed; }
 	void SetDirectionAngle(double angle);
@@ -123,8 +125,12 @@ public:
 	void SetAngularVelocity(double av) { angularVelocity_ = av; }
 	void SetRelativeObjectID(int id) { idRalativeID_ = id; }
 
-	virtual double GetSpeedX();
-	virtual double GetSpeedY();
+	virtual inline double GetSpeedX() {
+		return (speed_ * c_);
+	}
+	virtual inline double GetSpeedY() {
+		return (speed_ * s_);
+	}
 };
 
 class StgMovePattern_XY : public StgMovePattern {
@@ -138,8 +144,8 @@ public:
 	StgMovePattern_XY(StgMoveObject* target);
 	virtual void Move();
 
-	virtual double GetSpeed();
-	virtual double GetDirectionAngle();
+	virtual inline double GetSpeed() { return sqrt(c_ * c_ + s_ * s_); }
+	virtual inline double GetDirectionAngle() { return atan2(s_, c_); }
 
 	virtual double GetSpeedX() { return c_; }
 	virtual double GetSpeedY() { return s_; }
@@ -171,8 +177,8 @@ protected:
 public:
 	StgMovePattern_Line(StgMoveObject* target);
 	virtual void Move();
-	virtual double GetSpeed() { return speed_; }
-	virtual double GetDirectionAngle() { return angDirection_; }
+	virtual inline double GetSpeed() { return speed_; }
+	virtual inline double GetDirectionAngle() { return angDirection_; }
 
 	void SetAtSpeed(double tx, double ty, double speed);
 	void SetAtFrame(double tx, double ty, double frame);

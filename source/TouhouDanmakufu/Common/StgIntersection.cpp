@@ -147,7 +147,7 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 			if (objEnemy) {
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
-				tp.SetObjectID(objEnemy);
+				tp.SetObjectRef(objEnemy);
 				tp.SetPoint(pos);
 				listEnemyTargetPointNext_.push_back(tp);
 			}
@@ -181,7 +181,7 @@ void StgIntersectionManager::AddEnemyTargetToShot(StgIntersectionTarget::ptr tar
 			if (objEnemy) {
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
-				tp.SetObjectID(objEnemy);
+				tp.SetObjectRef(objEnemy);
 				tp.SetPoint(pos);
 				listEnemyTargetPointNext_.push_back(tp);
 			}
@@ -312,24 +312,6 @@ bool StgIntersectionSpace::RegistTarget(int type, StgIntersectionTarget::ptr& ta
 	return true;
 }
 
-void StgIntersectionSpace::ClearTarget() {
-	/*
-	for (int iType = 0; iType < listCell_.size(); ++iType) {
-		listCell_[iType].clear();
-	}
-	*/
-
-	listCell_[0].clear();
-	listCell_[1].clear();
-}
-StgIntersectionCheckList* StgIntersectionSpace::CreateIntersectionCheckList(StgIntersectionManager* manager, size_t& total) {
-	StgIntersectionCheckList* res = listCheck_;
-	res->Clear();
-
-	total += _WriteIntersectionCheckList(manager, res);
-
-	return res;
-}
 size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager* manager, StgIntersectionCheckList*& listCheck)
 //	std::vector<std::vector<StgIntersectionTarget*>> &listStack) 
 {
@@ -573,10 +555,6 @@ int StgIntersectionObject::GetDxScriptObjectID() {
 StgIntersectionTarget::StgIntersectionTarget() {
 	//mortonNo_ = -1;
 	ZeroMemory(&intersectionSpace_, sizeof(RECT));
-}
-void StgIntersectionTarget::ClearObjectIntersectedIdList() {
-	if (obj_)
-		obj_->ClearIntersectedIdList();
 }
 std::wstring StgIntersectionTarget::GetInfoAsString() {
 	std::wstring res;

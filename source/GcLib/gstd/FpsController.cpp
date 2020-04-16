@@ -36,11 +36,8 @@ void FpsController::_Sleep(int msec) {
 			::Sleep(1);
 	*/
 }
-void FpsController::AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) {
-	listFpsControlObject_.push_back(obj);
-}
 void FpsController::RemoveFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) {
-	std::list<ref_count_weak_ptr<FpsControlObject> >::iterator itr = listFpsControlObject_.begin();;
+	std::list<ref_count_weak_ptr<FpsControlObject>>::iterator itr = listFpsControlObject_.begin();;
 	for (; itr != listFpsControlObject_.end(); itr++) {
 		ref_count_weak_ptr<FpsControlObject> tObj = (*itr);
 		if (obj.GetPointer() == tObj.GetPointer()) {
@@ -51,13 +48,13 @@ void FpsController::RemoveFpsControlObject(ref_count_weak_ptr<FpsControlObject> 
 }
 int FpsController::GetControlObjectFps() {
 	int res = fps_;
-	std::list<ref_count_weak_ptr<FpsControlObject> >::iterator itr = listFpsControlObject_.begin();;
+	std::list<ref_count_weak_ptr<FpsControlObject>>::iterator itr = listFpsControlObject_.begin();;
 	for (; itr != listFpsControlObject_.end(); ) {
 		ref_count_weak_ptr<FpsControlObject> obj = (*itr);
 		if (obj.IsExists()) {
 			int fps = obj->GetFps();
 			res = std::min(res, fps);
-			itr++;
+			++itr;
 		}
 		else
 			itr = listFpsControlObject_.erase(itr);
@@ -123,7 +120,7 @@ void StaticFpsController::Wait() {
 
 		timeCurrentFpsUpdate_ = _GetTime();
 	}
-	countSkip_++;
+	++countSkip_;
 
 	int rateSkip = rateSkip_;
 	if (bFastMode_)rateSkip = FAST_MODE_SKIP_RATE;
@@ -137,21 +134,6 @@ bool StaticFpsController::IsSkip() {
 	if (countSkip_ % (rateSkip + 1) != 0)
 		return true;
 	return false;
-}
-void StaticFpsController::SetSkipRate(int value) {
-	rateSkip_ = value;
-	countSkip_ = 0;
-}
-float StaticFpsController::GetCurrentFps() {
-	float fps = fpsCurrent_ / (rateSkip_ + 1);
-	return fps;
-}
-float StaticFpsController::GetCurrentWorkFps() {
-	return fpsCurrent_;
-}
-float StaticFpsController::GetCurrentRenderFps() {
-	float fps = fpsCurrent_ / (rateSkip_ + 1);
-	return fps;
 }
 
 /**********************************************************
@@ -200,7 +182,7 @@ void AutoSkipFpsController::Wait() {
 			countSkip_ = countSkipMax_;
 	}
 
-	countSkip_--;
+	--countSkip_;
 	bCriticalFrame_ = false;
 
 	{
@@ -244,7 +226,4 @@ void AutoSkipFpsController::Wait() {
 
 		timeCurrentFpsUpdate_ = _GetTime();
 	}
-}
-bool AutoSkipFpsController::IsSkip() {
-	return countSkip_ > 0;
 }
