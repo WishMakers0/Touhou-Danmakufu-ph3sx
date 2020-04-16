@@ -135,11 +135,10 @@ std::wstring value::as_string() const {
 	case type_data::type_kind::tk_array:
 	{
 		type_data* elem = data->type->get_element();
-		if (length_as_array() > 0 && elem != nullptr && elem->get_kind() == type_data::type_kind::tk_char) {
-			std::wstring result = L"\"";
+		if (elem != nullptr && elem->get_kind() == type_data::type_kind::tk_char) {
+			std::wstring result = L"";
 			for (size_t i = 0; i < data->array_value.size(); ++i)
 				result += data->array_value[i].as_char();
-			result += L"\"";
 			return result;
 		}
 		else {
@@ -1162,7 +1161,6 @@ value index(script_machine* machine, int argc, value const* argv) {
 		machine->raise_error(error);
 		return value();
 	}
-
 	if (index < 0 || index >= argv[0].length_as_array()) {
 		std::wstring error = L"Array index out of bounds.\r\n";
 		machine->raise_error(error);
@@ -1190,7 +1188,6 @@ value index_writable(script_machine* machine, int argc, value const* argv) {
 		machine->raise_error(error);
 		return value();
 	}
-
 	if (index < 0 || index >= argv[0].length_as_array()) {
 		std::wstring error = L"Array index out of bounds.\r\n";
 		machine->raise_error(error);
@@ -1198,6 +1195,7 @@ value index_writable(script_machine* machine, int argc, value const* argv) {
 	}
 
 	const value& result = argv[0].index_as_array(index);
+	result.unique();
 	return const_cast<value&>(result);
 }
 
@@ -2131,7 +2129,7 @@ void parser::parse_logic(script_engine::block* block, scanner* lex) {
 			script_engine::command_kind::pc_case_if_not : script_engine::command_kind::pc_case_if;
 		lex->advance();
 
-		block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup));
+		block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup_n, 1));
 		block->codes.push_back(code(lex->line, script_engine::command_kind::pc_case_begin));
 		block->codes.push_back(code(lex->line, cmd));
 		block->codes.push_back(code(lex->line, script_engine::command_kind::pc_pop));
@@ -2383,7 +2381,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			lex->advance();
 			if (lex->next == token_kind::tk_close_par) lex->advance();
 
-			script_engine::block* forBlock = engine->new_block(block->level + 1, script_engine::block_kind::bk_loop);
+			script_engine::block* forBlock = engine->new_block(block->level + 1, script_engine::block_kind::bk_normal);
 
 			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_call, forBlock, 0));
 
@@ -2419,10 +2417,10 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 						forBlock->codes.push_back(code(lex_s2.line, script_engine::command_kind::pc_loop_if));
 
 						//Parse the code contained inside the for loop
-						parse_inline_block(forBlock, script_engine::block_kind::bk_normal);
+						parse_inline_block(forBlock, script_engine::block_kind::bk_loop);
 					}
 					else {
-						parse_inline_block(forBlock, script_engine::block_kind::bk_normal);
+						parse_inline_block(forBlock, script_engine::block_kind::bk_loop);
 					}
 				}
 
@@ -2438,7 +2436,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			need_semicolon = false;
 		}
 		else if (lex->next == token_kind::tk_ASCENT || lex->next == token_kind::tk_DESCENT) {
-			bool isDescent = lex->next == token_kind::tk_DESCENT;
+			bool isAscent = lex->next == token_kind::tk_ASCENT;
 			lex->advance();
 
 			if (lex->next != token_kind::tk_open_par) {
@@ -2456,7 +2454,8 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				throw parser_error(error);
 			}
 
-			std::string s = lex->word;
+			std::string counterName = lex->word;
+			std::string counterNameInternal = "!" + lex->word;
 
 			lex->advance();
 
@@ -2466,57 +2465,106 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			}
 			lex->advance();
 
-			parse_expression(block, lex);	//First value
+			script_engine::block* containerBlock = engine->new_block(block->level + 1, script_engine::block_kind::bk_normal);
+			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_call, containerBlock, 0));
+			frame.push_back(scope_t(containerBlock->kind));
+			{
+				{	//This is the actual counter
+					symbol s;
+					s.level = containerBlock->level;
+					s.sub = nullptr;
+					s.variable = 0;
+					s.can_overload = false;
+					frame.back().singular_insert(counterName, s);
+				}
+				{	//An internal value, inaccessible to scripters
+					symbol s;
+					s.level = containerBlock->level;
+					s.sub = nullptr;
+					s.variable = 1;
+					s.can_overload = false;
+					frame.back().singular_insert(counterNameInternal, s);
+				}
 
-			if (lex->next != token_kind::tk_range) {
-				std::wstring error = L"\"..\" is required.\r\n";
-				throw parser_error(error);
-			}
-			lex->advance();
+				parse_expression(containerBlock, lex);	//First value, to s_0 if ascent
+				containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
+					containerBlock->level, (int)(!isAscent), counterName));
 
-			parse_expression(block, lex);	//Second value
-
-			if (lex->next != token_kind::tk_close_par) {
-				std::wstring error = L"\")\" is required.\r\n";
-				throw parser_error(error);
-			}
-			lex->advance();
-
-			if (lex->next == token_kind::tk_LOOP) {
+				if (lex->next != token_kind::tk_range) {
+					std::wstring error = L"\"..\" is required.\r\n";
+					throw parser_error(error);
+				}
 				lex->advance();
+
+				parse_expression(containerBlock, lex);	//Second value, to s_0 if descent
+				containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
+					containerBlock->level, (int)(isAscent), counterNameInternal));
+
+				if (lex->next != token_kind::tk_close_par) {
+					std::wstring error = L"\")\" is required.\r\n";
+					throw parser_error(error);
+				}
+				lex->advance();
+
+				if (lex->next == token_kind::tk_LOOP) {
+					lex->advance();
+				}
+
+				int ip = containerBlock->codes.size();
+
+				{
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
+						containerBlock->level, 0, counterName));
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
+						containerBlock->level, 1, counterNameInternal));
+
+					write_operation(containerBlock, lex, "compare", 2);
+					containerBlock->codes.push_back(code(lex->line, isAscent ? script_engine::command_kind::pc_loop_ascent :
+						script_engine::command_kind::pc_loop_descent));
+
+					if (!isAscent) {
+						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
+							containerBlock->level, 0, counterName));
+						write_operation(containerBlock, lex, "predecessor", 1);
+						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
+							containerBlock->level, 0, counterName));
+					}
+
+					//Parse the code contained inside the loop
+					parse_inline_block(containerBlock, script_engine::block_kind::bk_loop);
+					/*
+					{	
+						if (lex->next != token_kind::tk_open_cur) {
+							std::wstring error = L"\"{\" is required.\r\n";
+							throw parser_error(error);
+						}
+						lex->advance();
+
+						scan_current_scope(containerBlock->level, nullptr, false, 2);
+						parse_statements(containerBlock, lex);
+
+						if (lex->next != token_kind::tk_close_cur) {
+							std::wstring error = L"\"}\" is required.\r\n";
+							throw parser_error(error);
+						}
+						lex->advance();
+					}
+					*/
+
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_continue_marker));
+
+					if (isAscent) {
+						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
+							containerBlock->level, 0, counterName));
+						write_operation(containerBlock, lex, "successor", 1);
+						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
+							containerBlock->level, 0, counterName));
+					}
+
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_loop_back, ip));
+				}
 			}
-
-			if (!isDescent) block->codes.push_back(code(lex->line, script_engine::command_kind::pc_swap));
-
-			int ip = block->codes.size();
-
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup2));
-			write_operation(block, lex, "compare", 2);
-
-			block->codes.push_back(code(lex->line, isDescent ? script_engine::command_kind::pc_loop_descent :
-				script_engine::command_kind::pc_loop_ascent));
-
-			if (isDescent) {
-				write_operation(block, lex, "predecessor", 1);
-			}
-
-			script_engine::block* loopBlock = engine->new_block(block->level + 1, script_engine::block_kind::bk_loop);
-			std::vector<std::string> counter;
-			counter.push_back(s);
-			parse_block(loopBlock, lex, &counter, false);
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup));
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_call, loopBlock, 1));
-
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_continue_marker));
-
-			if (!isDescent) {
-				write_operation(block, lex, "successor", 1);
-			}
-
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_loop_back, ip));
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_pop));
-			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_pop));
-
+			frame.pop_back();
 			need_semicolon = false;
 		}
 		else if (lex->next == token_kind::tk_IF) {
@@ -2559,11 +2607,11 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				do {
 					lex->advance();
 
-					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup));
+					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup_n, 1));
 					parse_expression(block, lex);
 					write_operation(block, lex, "compare", 2);
 					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_compare_e));
-					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup));
+					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_dup_n, 1));
 					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_case_if));
 					block->codes.push_back(code(lex->line, script_engine::command_kind::pc_pop));
 
@@ -3107,6 +3155,7 @@ void script_machine::advance() {
 					}
 					case script_engine::block_kind::bk_microthread:	//Prevents catastrophes.
 					case script_engine::block_kind::bk_function:
+					//case script_engine::block_kind::bk_normal:
 						exit = true;
 					default:
 						break;
@@ -3194,6 +3243,68 @@ void script_machine::advance() {
 
 			break;
 		}
+		/*
+		case script_engine::command_kind::pc_call_and_assign:
+		{
+			stack_t& current_stack = current->stack;
+			if (current_stack.size() < c->arguments) {
+				std::wstring error = StringUtility::FormatToWide(
+					"Unexpected script error: Stack size[%d] is less than the number of arguments[%d].\r\n",
+					current_stack.size(), c->arguments);
+				raise_error(error);
+			}
+
+			if (c->sub->func != nullptr) {
+				std::wstring error = StringUtility::FormatToWide(
+					"Invalid function for pc_call_and_assign. [%s]\r\n", c->sub->name);
+				raise_error(error);
+			}
+			else {
+				size_t sizePrev = current_stack.size();
+
+				value* argv = nullptr;
+				if (sizePrev > 0 && c->arguments > 0)
+					argv = current_stack.at + (sizePrev - c->arguments);
+				value ret = c->sub->func(this, c->arguments, argv);
+
+				if (stopped) --(current->ip);
+				else {
+					resuming = false;
+
+					//Erase the passed arguments from the stack
+					for (size_t i = 0; i < c->arguments; ++i) current_stack.pop_back();
+
+					{
+						for (environment* i = current; i != nullptr; i = i->parent) {
+							if (i->sub->level == c->level) {
+								variables_t& vars = i->variables;
+
+								if (vars.length <= c->variable) {
+									vars.resize(c->variable + 2);
+									vars.length = c->variable + 1;
+								}
+
+								value* dest = &(vars[c->variable]);
+
+								if (dest->has_data() && dest->get_type() != ret.get_type()
+									&& !(dest->get_type()->get_kind() == type_data::type_kind::tk_array
+										&& ret.get_type()->get_kind() == type_data::type_kind::tk_array
+										&& (dest->length_as_array() > 0 || ret.length_as_array() > 0))) {
+									std::wstring error = L"A variable cannot change its value type.\r\n";
+									raise_error(error);
+								}
+
+								*dest = ret;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			break;
+		}
+		*/
 		case script_engine::command_kind::pc_case_begin:
 		case script_engine::command_kind::pc_case_end:
 			break;
@@ -3273,20 +3384,12 @@ next:
 
 			break;
 		}
-		case script_engine::command_kind::pc_dup:
-		{
-			stack_t& stack = current->stack;
-			assert(stack.size() >= 1);
-			stack.push_back(stack.back());
-			break;
-		}
-		case script_engine::command_kind::pc_dup2:
+		case script_engine::command_kind::pc_dup_n:
 		{
 			stack_t& stack = current->stack;
 			size_t len = stack.size();
-			assert(len >= 2);
-			stack.push_back(stack[len - 2]);
-			stack.push_back(stack[len - 1]);
+			assert(c->ip <= len);
+			stack.push_back(stack[len - c->ip]);
 			break;
 		}
 		case script_engine::command_kind::pc_swap:
@@ -3306,7 +3409,7 @@ next:
 		{
 			stack_t& stack = current->stack;
 			value* i = &stack.back();
-			if (i->as_real() <= 0) {
+			if (i->as_real() >= 0) {
 				do
 					++(current->ip);
 				while (current->sub->codes[current->ip - 1].command != script_engine::command_kind::pc_loop_back);
@@ -3319,7 +3422,7 @@ next:
 		{
 			stack_t& stack = current->stack;
 			value* i = &stack.back();
-			if (i->as_real() >= 0) {
+			if (i->as_real() <= 0) {
 				do
 					++(current->ip);
 				while (current->sub->codes[current->ip - 1].command != script_engine::command_kind::pc_loop_back);
@@ -3371,8 +3474,12 @@ next:
 					variables_t& vars = i->variables;
 
 					if (vars.size() <= c->variable || !(vars[c->variable].has_data())) {
-						std::wstring error = StringUtility::FormatToWide("Variable hasn't been initialized: %s\r\n", 
-							c->var_name.c_str());
+						std::wstring error = L"Variable hasn't been initialized";
+#ifdef _DEBUG
+						error += StringUtility::FormatToWide(": %s\r\n", c->var_name.c_str());
+#else
+						error += L".\r\n";
+#endif	
 						raise_error(error);
 					}
 					else {

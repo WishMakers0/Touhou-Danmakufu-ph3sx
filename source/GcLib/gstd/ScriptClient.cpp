@@ -46,7 +46,6 @@ bool ScriptEngineCache::IsExists(std::wstring name) {
 /**********************************************************
 //ScriptClientBase
 **********************************************************/
-script_type_manager ScriptClientBase::typeManagerDefault_;
 function const commonFunction[] =
 {
 	//共通関数：スクリプト引数結果
@@ -178,6 +177,10 @@ ScriptClientBase::ScriptClientBase() {
 	mainThreadID_ = -1;
 	idScript_ = ID_SCRIPT_FREE;
 	valueRes_ = value();
+
+	pTypeManager_ = script_type_manager::get_instance();
+	if (pTypeManager_ == nullptr)
+		pTypeManager_ = new script_type_manager;
 
 	commonDataManager_ = new ScriptCommonDataManager();
 
@@ -657,7 +660,7 @@ bool ScriptClientBase::_CreateEngine() {
 
 	std::vector<char>& source = engine_->GetSource();
 
-	ref_count_ptr<script_engine> engine = new script_engine(&typeManagerDefault_, source, func_.size(), &func_[0]);
+	ref_count_ptr<script_engine> engine = new script_engine(source, func_.size(), &func_[0]);
 	engine_->SetEngine(engine);
 	return true;
 }
@@ -1712,7 +1715,7 @@ void ScriptCommonData::ReadRecord(gstd::RecordBuffer& record) {
 	}
 }
 gstd::value ScriptCommonData::_ReadRecord(gstd::ByteBuffer &buffer) {
-	script_type_manager* scriptTypeManager = ScriptClientBase::GetDefaultScriptTypeManager();
+	script_type_manager* scriptTypeManager = script_type_manager::get_instance();
 	gstd::value res;
 
 	type_data::type_kind kind;

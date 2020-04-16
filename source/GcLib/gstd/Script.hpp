@@ -405,11 +405,14 @@ namespace gstd {
 
 		//中間コード
 		enum class command_kind : uint8_t {
-			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, pc_call, pc_call_and_push_result, pc_case_begin,
-			pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
-			pc_compare_le, pc_compare_ne, pc_dup, pc_dup2,
+			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, 
+			pc_call, pc_call_and_push_result, pc_call_and_assign,
+			pc_case_begin, pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, 
+			pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
+			pc_compare_le, pc_compare_ne, 
+			pc_dup_n,
 			pc_for,
-			pc_loop_ascent, pc_loop_back, pc_loop_count, pc_loop_descent, pc_loop_if, pc_loop_continue, pc_continue_marker,
+			pc_loop_ascent, pc_loop_descent, pc_loop_count, pc_loop_if, pc_loop_continue, pc_continue_marker, pc_loop_back,
 			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait
 		};
 
@@ -420,19 +423,27 @@ namespace gstd {
 			int line;	//ソースコード上の行
 			value data;	//pc_push_valueでpushするデータ
 
+#ifdef _DEBUG
 			std::string var_name;	//For assign/push_variable
+#endif
 
 			union {
-				struct {
-					int level;	//assign/push_variableの変数の環境位置
-					size_t variable;	//assign/push_variableの変数のインデックス
+				struct {	//assign/push_variable
+					int level;
+					size_t variable;
 				};
-				struct {
-					block* sub;	//call/call_and_push_resultの飛び先
-					size_t arguments;	//call/call_and_push_resultの引数の数
+				struct {	//call/call_and_push_result
+					block* sub;
+					size_t arguments;
 				};
-				struct {
-					int ip;	//loop_backの戻り先
+				struct {	//loop_back
+					int ip;
+				};
+				struct {	//call_and_assign
+					block* sub;
+					size_t arguments;
+					size_t variable;
+					int level;
 				};
 			};
 
@@ -441,7 +452,12 @@ namespace gstd {
 			code(int the_line, command_kind the_command) : line(the_line), command(the_command) {}
 
 			code(int the_line, command_kind the_command, int the_level, size_t the_variable, std::string the_name) : line(the_line),
-				command(the_command), level(the_level), variable(the_variable), var_name(the_name) {}
+				command(the_command), level(the_level), variable(the_variable)
+			{
+#ifdef _DEBUG
+				var_name = the_name;
+#endif
+			}
 
 			code(int the_line, command_kind the_command, block* the_sub, int the_arguments) : line(the_line), command(the_command), sub(the_sub),
 				arguments(the_arguments) {

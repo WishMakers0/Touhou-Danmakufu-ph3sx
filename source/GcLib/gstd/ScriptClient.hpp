@@ -66,15 +66,13 @@ namespace gstd {
 	//ScriptBase
 	**********************************************************/
 	class ScriptClientBase {
-	private:
-		static script_type_manager typeManagerDefault_;
 	public:
 		enum {
 			ID_SCRIPT_FREE = -1,
 		};
-		static script_type_manager* GetDefaultScriptTypeManager() { return &typeManagerDefault_; }
-
 	protected:
+		script_type_manager* pTypeManager_;
+
 		bool bError_;
 		gstd::ref_count_ptr<ScriptEngineCache> cache_;
 		gstd::ref_count_ptr<ScriptEngineData> engine_;
@@ -110,6 +108,8 @@ namespace gstd {
 		virtual bool SetSourceFromFile(std::wstring path);
 		virtual void SetSource(std::vector<char>& source);
 		virtual void SetSource(std::string source);
+
+		script_type_manager* GetDefaultScriptTypeManager() { return pTypeManager_; }
 
 		std::wstring GetPath() { return engine_->GetPath(); }
 		void SetPath(std::wstring path) { engine_->SetPath(path); }
