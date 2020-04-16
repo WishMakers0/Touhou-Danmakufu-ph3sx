@@ -98,7 +98,7 @@ void FileLogger::_CreateFile(File& file) {
 	file.WriteCharacter((unsigned char)0xFE);
 }
 void FileLogger::_Write(SYSTEMTIME& time, std::wstring str) {
-	if (!bEnable_)return;
+	if (!bEnable_) return;
 
 	{
 		Lock lock(lock_);
@@ -155,7 +155,7 @@ WindowLogger::~WindowLogger() {
 }
 bool WindowLogger::Initialize(bool bEnable) {
 	bEnable_ = bEnable;
-	if (!bEnable)return true;
+	//if (!bEnable)return true;
 
 	loggerParentGlobal_ = this;
 
@@ -174,7 +174,7 @@ bool WindowLogger::Initialize(bool bEnable) {
 	wndInfoPanel_ = new InfoPanel();
 	this->AddPanel(wndInfoPanel_, L"Info");
 
-	windowState_ = STATE_RUNNING;
+	windowState_ = bEnable ? STATE_RUNNING : STATE_CLOSED;
 
 	return true;
 }
@@ -418,7 +418,7 @@ bool WindowLogger::AddPanel(ref_count_ptr<Panel> panel, std::wstring name) {
 	return true;
 }
 void WindowLogger::ShowLogWindow() {
-	if (!bEnable_) return;
+	//if (!bEnable_) return;
 	windowState_ = STATE_RUNNING;
 	ShowWindow(hWnd_, SW_SHOW);
 }

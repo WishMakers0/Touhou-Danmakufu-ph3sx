@@ -95,10 +95,8 @@ bool EApplication::_Initialize() {
 	gstd::ref_count_ptr<ScriptInfoPanel> panelScript = new ScriptInfoPanel();
 	logger->AddPanel(panelScript, L"Script");
 
-	if (config->IsLogWindow()) {
-		logger->LoadState();
-		logger->SetWindowVisible(true);
-	}
+	logger->LoadState();
+	logger->SetWindowVisible(config->IsLogWindow());
 
 	SystemController* systemController = SystemController::CreateInstance();
 	systemController->Reset();
@@ -164,14 +162,11 @@ bool EApplication::_Loop() {
 
 	//‚‘¬“®ì
 	int fastModeKey = fpsController->GetFastModeKey();
-	if (input->GetKeyState(fastModeKey) == KEY_HOLD) {
-		if (!fpsController->IsFastMode())
-			fpsController->SetFastMode(true);
-	}
-	else if (input->GetKeyState(fastModeKey) == KEY_PULL || input->GetKeyState(fastModeKey) == KEY_FREE) {
-		if (fpsController->IsFastMode())
-			fpsController->SetFastMode(false);
-	}
+	if (input->GetKeyState(fastModeKey) == KEY_HOLD)
+		fpsController->SetFastMode(true);
+	else if (input->GetKeyState(fastModeKey) == KEY_PULL || input->GetKeyState(fastModeKey) == KEY_FREE)
+		fpsController->SetFastMode(false);
+
 	return true;
 }
 bool EApplication::_Finalize() {
