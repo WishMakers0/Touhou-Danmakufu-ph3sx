@@ -1350,8 +1350,8 @@ void StgNormalShotObject::RenderOnShotManager() {
 	double scaleX = 1.0;
 	double scaleY = 1.0;
 
-	RECT rcSrc;
-	RECT rcDest;
+	RECT* rcSrc;
+	RECT* rcDest;
 	D3DCOLOR color;
 
 	if (delay_ > 0) {
@@ -1371,8 +1371,8 @@ void StgNormalShotObject::RenderOnShotManager() {
 		scaleY = scale_.y;
 
 		StgShotData::AnimationData* anime = shotData->GetData(frameWork_);
-		rcSrc = anime->rcSrc_;
-		rcDest = anime->rcDst_;
+		rcSrc = anime->GetSource();
+		rcDest = anime->GetDest();
 
 		color = color_;
 		double alpha = shotData->GetAlpha() / 255.0;
@@ -1392,16 +1392,21 @@ void StgNormalShotObject::RenderOnShotManager() {
 	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//ÚGƒeƒXƒg
 
 	VERTEX_TLX verts[4];
-	int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-	int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-	int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
+	/*
+	int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
+	int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
+	int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
+	int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
+	*/
+	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+	LONG* ptrDst = reinterpret_cast<LONG*>(rcDest);
+
 //#pragma omp parallel for
-	for (int iVert = 0; iVert < 4; iVert++) {
+	for (size_t iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
-		_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-		_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+		_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 		_SetVertexColorARGB(vt, color);
 
 		double px = vt.position.x * scaleX;
@@ -1737,7 +1742,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	double renderC = 1.0;
 	double renderS = 0.0;
 
-	RECT rcSrc;
+	RECT* rcSrc;
 	RECT rcDest;
 
 	D3DCOLOR color;
@@ -1753,7 +1758,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 		renderS = s_;
 
 		rcSrc = shotData->GetDelayRect();
-		rcDest = shotData->GetDelayDest();
+		rcDest = *shotData->GetDelayDest();
 
 		color = shotData->GetDelayColor();
 	}
@@ -1769,7 +1774,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 		renderS = dy / radius;
 
 		StgShotData::AnimationData* anime = shotData->GetData(frameWork_);
-		rcSrc = anime->rcSrc_;
+		rcSrc = anime->GetSource();
 
 		color = color_;
 		double alpha = shotData->GetAlpha() / 255.0;
@@ -1793,16 +1798,20 @@ void StgLooseLaserObject::RenderOnShotManager() {
 
 
 	VERTEX_TLX verts[4];
-	int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-	int destY[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-	int destX[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
+	/*
+	int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
+	int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
+	int destY[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
+	int destX[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
+	*/
+	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+	LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
+
 	for (int iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
-		_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-		_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+		_SetVertexPosition(vt, ptrDst[iVert | 0b1], ptrDst[(iVert & 0b1) << 1]);
 		_SetVertexColorARGB(vt, color);
 
 		double px = vt.position.x * scaleX;
@@ -2018,12 +2027,12 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		}
 		if (renderer == nullptr)return;
 
-		RECT rcSrc;
+		RECT* rcSrc;
 		RECT rcDest;
 		D3DCOLOR color;
 
 		StgShotData::AnimationData* anime = shotData->GetData(frameWork_);
-		rcSrc = anime->rcSrc_;
+		rcSrc = anime->GetSource();
 		//rcDest = anime->rcDst_;
 
 		color = color_;
@@ -2048,16 +2057,20 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		SetRect(&rcDest, -widthRender_ / 2, length_, widthRender_ / 2, 0);
 
 		VERTEX_TLX verts[4];
-		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
-		for (int iVert = 0; iVert < 4; iVert++) {
+		/*
+		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
+		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
+		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
+		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
+		*/
+		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+		LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
+
+		for (size_t iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-			_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
 			double px = vt.position.x * scaleX_ * scale_.x;
@@ -2087,7 +2100,7 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		}
 		if (renderer == nullptr)return;
 
-		RECT rcSrc;
+		RECT* rcSrc;
 		RECT rcDest;
 		D3DCOLOR color;
 
@@ -2098,16 +2111,20 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		SetRect(&rcDest, -sourceWidth, -sourceWidth, sourceWidth, sourceWidth);
 
 		VERTEX_TLX verts[4];
-		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
-		for (int iVert = 0; iVert < 4; iVert++) {
+		/*
+		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
+		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
+		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
+		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
+		*/
+		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+		LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
+
+		for (size_t iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-			_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
 			double px = vt.position.x;
@@ -2347,8 +2364,8 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		}
 		if (renderer == nullptr)return;
 
-		RECT rcSrc = shotData->GetDelayRect();
-		RECT rcDest = shotData->GetDelayDest();
+		RECT* rcSrc = shotData->GetDelayRect();
+		RECT* rcDest = shotData->GetDelayDest();
 
 		double expa = 0.5f + (double)delay_ / 30.0f * 2;
 		if (expa > 3.5)expa = 3.5;
@@ -2359,16 +2376,20 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		D3DCOLOR color = shotData->GetDelayColor();
 
 		VERTEX_TLX verts[4];
-		int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
-		int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
-		int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
-		int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
-		for (int iVert = 0; iVert < 4; iVert++) {
+		/*
+		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
+		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
+		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
+		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
+		*/
+		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+		LONG* ptrDst = reinterpret_cast<LONG*>(rcDest);
+
+		for (size_t iVert = 0; iVert < 4; iVert++) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-			_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
 			double px = vt.position.x * expa;
@@ -2409,11 +2430,11 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
 		int baseColorA = ColorAccess::GetColorA(color_);
 
-		RECT& rcSrcOrg = shotData->GetData(frameWork_)->rcSrc_;
-		double rcInc = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / countRect;
-		double rectV = rcSrcOrg.top;
+		RECT* rcSrcOrg = shotData->GetData(frameWork_)->GetSource();
+		double rcInc = (double)(rcSrcOrg->bottom - rcSrcOrg->top) / countRect;
+		double rectV = rcSrcOrg->top;
 
-		double srcX[] = { (double)rcSrcOrg.left, (double)rcSrcOrg.right };
+		double srcX[] = { (double)rcSrcOrg->left, (double)rcSrcOrg->right };
 
 		VERTEX_TLX oldVerts[2];
 		std::list<LaserNode>::iterator itr = listPosition_.begin();
@@ -2437,18 +2458,19 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 			LaserNode& posCurr = *itr;
 			LaserNode& posNext = *itrNext;
-			Position& vTL = posCurr.vertOff[0];
-			Position& vBL = posCurr.vertOff[1];
-			Position& vTR = posNext.vertOff[0];
-			Position& vBR = posNext.vertOff[1];
 
 			VERTEX_TLX verts[4];
-			Position* destPos[] = { &vTL, &vBL, &vTR, &vBR };
+			Position* destPos[] = { 
+				&posCurr.vertOff[0], &posCurr.vertOff[1], 
+				&posNext.vertOff[0], &posNext.vertOff[1]
+			};
 			for (size_t iVert = (iPos > 0U ? 2U : 0U); iVert < 4U; ++iVert) {
 				VERTEX_TLX vt;
+
 				_SetVertexUV(vt, srcX[iVert % 2U], rectV + iVert / 2U * rcInc);
 				_SetVertexPosition(vt, destPos[iVert]->x, destPos[iVert]->y, position_.z);
 				_SetVertexColorARGB(vt, thisColor);
+
 				verts[iVert] = vt;
 			}
 

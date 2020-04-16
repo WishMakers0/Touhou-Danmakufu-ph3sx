@@ -128,6 +128,9 @@ public:
 		RECT rcSrc_;
 		RECT rcDst_;
 		int frame_;
+
+		RECT* GetSource() { return &rcSrc_; }
+		RECT* GetDest() { return &rcDst_; }
 	};
 private:
 	StgShotDataList* listShotData_;
@@ -148,7 +151,6 @@ private:
 	double angularVelocityMin_;
 	double angularVelocityMax_;
 	bool bFixedAngle_;
-
 public:
 	StgShotData(StgShotDataList* listShotData);
 	virtual ~StgShotData();
@@ -157,8 +159,8 @@ public:
 	int GetRenderType() { return typeRender_; }
 	int GetDelayRenderType() { return typeDelayRender_; }
 	AnimationData* GetData(int frame);
-	RECT& GetDelayRect() { return rcDelay_; }
-	RECT& GetDelayDest() { return rcDstDelay_; }
+	RECT* GetDelayRect() { return &rcDelay_; }
+	RECT* GetDelayDest() { return &rcDstDelay_; }
 	int GetAlpha() { return alpha_; }
 	D3DCOLOR GetDelayColor() { return colorDelay_; }
 	DxCircle* GetIntersectionCircleList() { return &listCol_; }
