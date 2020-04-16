@@ -81,7 +81,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DNH_PROJ_VIEWER;WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>_temp/DnhViewer/Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>R:/temp/DnhViewer/Debug\DnhViewer.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>_temp/DnhViewer/Debug\</ObjectFileName>
@@ -123,7 +123,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DNH_PROJ_VIEWER;WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>_temp/DnhViewer/Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>R:/temp/DnhViewer/Release\DnhViewer.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>_temp/DnhViewer/Release\</ObjectFileName>
@@ -158,6 +158,9 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>DNH_PROJ_VIEWER;</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\GcLib\directx\DirectGraphics.cpp" />

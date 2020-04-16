@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 
 #define GAME_VERSION_TCL
-#define GAME_VERSION_SP
+//#define GAME_VERSION_SP
 
 //------------------------------------------------------------------------------
 
@@ -134,15 +134,19 @@
 #include <omp.h>
 
 //zlib
-#include <zlib/zlib.h>
-#pragma comment(lib, "zlibstatic.lib")
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
+	#include <zlib/zlib.h>
+	#pragma comment(lib, "zlibstatic.lib")
+#endif
 
 //libogg + libvorbis
-#include <vorbis/codec.h>
-#include <vorbis/vorbisfile.h>
-#pragma comment(lib, "ogg_static.lib")
-#pragma comment(lib, "vorbis_static.lib")
-#pragma comment(lib, "vorbisfile_static.lib")
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
+	#include <vorbis/codec.h>
+	#include <vorbis/vorbisfile.h>
+	#pragma comment(lib, "ogg_static.lib")
+	#pragma comment(lib, "vorbis_static.lib")
+	#pragma comment(lib, "vorbisfile_static.lib")
+#endif
 
 //----------------------------------------------
 
@@ -164,6 +168,15 @@ namespace stdfs = std::filesystem;
 using path_t = stdfs::path;
 #endif
 
+//#define __L_XNAMATH
+#ifdef __L_XNAMATH
+#pragma warning (push)
+#pragma warning (disable : 6011 26495)
+#include "../../DirectX9c/DirectXMath/DirectXMath.h"
+#pragma warning (pop)
+#endif
+
+//Pointer utilities
 template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
 	if (ptr) delete ptr;
 	ptr = nullptr;

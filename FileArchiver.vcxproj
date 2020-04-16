@@ -63,7 +63,7 @@
     <OutDir>.\bin_ext\</OutDir>
     <IntDir>FileArchiver/Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\Visual Studio 2017\Projects\.External Source\zlib</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\source\GcLib\ext</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;.\library</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
@@ -81,7 +81,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DNH_PROJ_FILEARCHIVER;WIN32;_DEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>FileArchiver/Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>FileArchiver/Debug\</ObjectFileName>
@@ -126,7 +126,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DNH_PROJ_FILEARCHIVER;WIN32;NDEBUG;_WINDOWS;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>FileArchiver/Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>FileArchiver/Release\</ObjectFileName>
@@ -170,6 +170,7 @@
     <ClCompile>
       <PrecompiledHeaderFile>source/GcLib/pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>FileArchiver/Release/FileArchiver.pch</PrecompiledHeaderOutputFile>
+      <PreprocessorDefinitions>DNH_PROJ_FILEARCHIVER;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
