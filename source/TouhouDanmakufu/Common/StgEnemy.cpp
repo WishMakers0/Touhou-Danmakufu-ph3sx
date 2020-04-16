@@ -66,6 +66,8 @@ StgEnemyObject::StgEnemyObject(StgStageController* stageController) : StgMoveObj
 	rateDamageShot_ = 100;
 	rateDamageSpell_ = 100;
 	intersectedPlayerShotCount_ = 0;
+
+	bEnableGetIntersectionPositionFetch_ = true;
 }
 StgEnemyObject:: ~StgEnemyObject() {
 }

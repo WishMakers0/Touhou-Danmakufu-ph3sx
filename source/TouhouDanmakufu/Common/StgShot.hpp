@@ -565,12 +565,11 @@ inline void StgShotObject::_SetVertexColorARGB(VERTEX_TLX& vertex, D3DCOLOR colo
 	vertex.diffuse_color = color;
 }
 inline void StgShotObject::SetAlpha(int alpha) {
-	color_ = ColorAccess::SetColorA(color_, alpha);
+	color_ = (color_ & 0x00ffffff) | ((byte)alpha << 24);
 }
 inline void StgShotObject::SetColor(int r, int g, int b) {
-	color_ = ColorAccess::SetColorR(color_, r);
-	color_ = ColorAccess::SetColorG(color_, g);
-	color_ = ColorAccess::SetColorB(color_, b);
+	D3DCOLOR dc = D3DCOLOR_ARGB(0, r, g, b);
+	color_ = (color_ & 0xff000000) | dc;
 }
 #pragma endregion StgShotObject_impl
 

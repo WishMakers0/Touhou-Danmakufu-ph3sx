@@ -1241,6 +1241,7 @@ gstd::value StgStageScript::Func_GetEnemyIntersectionPosition(gstd::script_machi
 		listPosRes.push_back(pos.y);
 		gstd::value v = script->CreateRealArrayValue(listPosRes);
 		listV.push_back(v);
+		--countRes;
 	}
 
 	return script->CreateValueArrayValue(listV);
