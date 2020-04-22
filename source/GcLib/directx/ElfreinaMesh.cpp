@@ -938,9 +938,11 @@ gstd::ref_count_ptr<Matrices> ElfreinaMesh::CreateAnimationMatrix(std::wstring n
 	if (data_ == NULL)return NULL;
 
 	ElfreinaMeshData* data = (ElfreinaMeshData*)data_.GetPointer();
+
+	auto itr = data->anime_.find(nameAnime);
 	bool bExist = data->anime_.find(nameAnime) != data->anime_.end();
-	if (!bExist)return NULL;
-	gstd::ref_count_ptr<ElfreinaMeshData::AnimationData> anime = data->anime_[nameAnime];
+	if (itr == data->anime_.end()) return NULL;
+	gstd::ref_count_ptr<ElfreinaMeshData::AnimationData> anime = itr->second;
 
 	//ループ有無で時間を計算する
 	time = _CalcFrameToTime(time, anime);

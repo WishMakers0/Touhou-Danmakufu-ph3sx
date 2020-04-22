@@ -10,10 +10,10 @@ using namespace directx;
 //TextureData
 **********************************************************/
 TextureData::TextureData() {
-	manager_ = NULL;
-	pTexture_ = NULL;
-	lpRenderSurface_ = NULL;
-	lpRenderZ_ = NULL;
+	manager_ = nullptr;
+	pTexture_ = nullptr;
+	lpRenderSurface_ = nullptr;
+	lpRenderZ_ = nullptr;
 	bLoad_ = true;
 
 	useMipMap_ = false;
@@ -25,9 +25,9 @@ TextureData::TextureData() {
 	type_ = TYPE_TEXTURE;
 }
 TextureData::~TextureData() {
-	if (pTexture_ != NULL)pTexture_->Release();
-	if (lpRenderSurface_ != NULL)lpRenderSurface_->Release();
-	if (lpRenderZ_ != NULL) lpRenderZ_->Release();
+	if (pTexture_ != nullptr)pTexture_->Release();
+	if (lpRenderSurface_ != nullptr)lpRenderSurface_->Release();
+	if (lpRenderZ_ != nullptr) lpRenderZ_->Release();
 }
 
 /**********************************************************
@@ -46,16 +46,16 @@ Texture::~Texture() {
 void Texture::Release() {
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL) {
+		if (data_ != nullptr) {
 			TextureManager* manager = data_->manager_;
-			if (manager != NULL && manager->IsDataExists(data_->name_)) {
+			if (manager != nullptr && manager->IsDataExists(data_->name_)) {
 				int countRef = data_.GetReferenceCount();
 				//自身とTextureManager内の数だけになったら削除
 				if (countRef == 2) {
 					manager->_ReleaseTextureData(data_->name_);
 				}
 			}
-			data_ = NULL;
+			data_ = nullptr;
 		}
 	}
 }
@@ -63,7 +63,7 @@ std::wstring Texture::GetName() {
 	std::wstring res = L"";
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)res = data_->GetName();
+		if (data_ != nullptr)res = data_->GetName();
 	}
 	return res;
 }
@@ -73,13 +73,13 @@ bool Texture::CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPower
 	bool res = false;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)Release();
+		if (data_ != nullptr)Release();
 		TextureManager* manager = TextureManager::GetBase();
 		ref_count_ptr<Texture> texture = manager->CreateFromFile(path, genMipmap, flgNonPowerOfTwo);
-		if (texture != NULL) {
+		if (texture != nullptr) {
 			data_ = texture->data_;
 		}
-		res = data_ != NULL;
+		res = data_ != nullptr;
 	}
 
 	return res;
@@ -89,13 +89,13 @@ bool Texture::CreateRenderTarget(std::wstring name, size_t width, size_t height)
 	bool res = false;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)Release();
+		if (data_ != nullptr)Release();
 		TextureManager* manager = TextureManager::GetBase();
 		ref_count_ptr<Texture> texture = manager->CreateRenderTarget(name, width, height);
-		if (texture != NULL) {
+		if (texture != nullptr) {
 			data_ = texture->data_;
 		}
-		res = data_ != NULL;
+		res = data_ != nullptr;
 	}
 	return res;
 }
@@ -105,13 +105,13 @@ bool Texture::CreateFromFileInLoadThread(std::wstring path, bool genMipmap, bool
 	bool res = false;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)Release();
+		if (data_ != nullptr)Release();
 		TextureManager* manager = TextureManager::GetBase();
 		ref_count_ptr<Texture> texture = manager->CreateFromFileInLoadThread(path, bLoadImageInfo, genMipmap, flgNonPowerOfTwo);
-		if (texture != NULL) {
+		if (texture != nullptr) {
 			data_ = texture->data_;
 		}
-		res = data_ != NULL;
+		res = data_ != nullptr;
 	}
 
 	return res;
@@ -119,7 +119,7 @@ bool Texture::CreateFromFileInLoadThread(std::wstring path, bool genMipmap, bool
 void Texture::SetTexture(IDirect3DTexture9 *pTexture) {
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)Release();
+		if (data_ != nullptr)Release();
 		TextureData* textureData = new TextureData();
 		textureData->pTexture_ = pTexture;
 		D3DSURFACE_DESC desc;
@@ -136,13 +136,13 @@ void Texture::SetTexture(IDirect3DTexture9 *pTexture) {
 }
 
 IDirect3DTexture9* Texture::GetD3DTexture() {
-	IDirect3DTexture9* res = NULL;
+	IDirect3DTexture9* res = nullptr;
 	{
 		bool bWait = true;
 		int time = timeGetTime();
 		while (bWait) {
 			Lock lock(TextureManager::GetBase()->GetLock());
-			if (data_ != NULL) {
+			if (data_ != nullptr) {
 				bWait = !data_->bLoad_;
 				if (!bWait)
 					res = _GetTextureData()->pTexture_;
@@ -165,19 +165,19 @@ IDirect3DTexture9* Texture::GetD3DTexture() {
 	return res;
 }
 IDirect3DSurface9* Texture::GetD3DSurface() {
-	IDirect3DSurface9* res = NULL;
+	IDirect3DSurface9* res = nullptr;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)
+		if (data_ != nullptr)
 			res = _GetTextureData()->lpRenderSurface_;
 	}
 	return res;
 }
 IDirect3DSurface9* Texture::GetD3DZBuffer() {
-	IDirect3DSurface9* res = NULL;
+	IDirect3DSurface9* res = nullptr;
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
-		if (data_ != NULL)
+		if (data_ != nullptr)
 			res = _GetTextureData()->lpRenderZ_;
 	}
 	return res;
@@ -187,7 +187,7 @@ int Texture::GetWidth() {
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
 		TextureData* data = _GetTextureData();
-		if (data != NULL)res = data->infoImage_.Width;
+		if (data != nullptr)res = data->infoImage_.Width;
 	}
 	return res;
 }
@@ -196,7 +196,7 @@ int Texture::GetHeight() {
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
 		TextureData* data = _GetTextureData();
-		if (data != NULL)res = data->infoImage_.Height;
+		if (data != nullptr)res = data->infoImage_.Height;
 	}
 	return res;
 }
@@ -205,7 +205,7 @@ int Texture::GetType() {
 	{
 		Lock lock(TextureManager::GetBase()->GetLock());
 		TextureData* data = _GetTextureData();
-		if (data != NULL) res = data->type_;
+		if (data != nullptr) res = data->type_;
 	}
 	return res;
 }
@@ -240,7 +240,7 @@ size_t Texture::GetFormatBPP(D3DFORMAT format) {
 //TextureManager
 **********************************************************/
 const std::wstring TextureManager::TARGET_TRANSITION = L"__RENDERTARGET_TRANSITION__";
-TextureManager* TextureManager::thisBase_ = NULL;
+TextureManager* TextureManager::thisBase_ = nullptr;
 TextureManager::TextureManager() {
 
 }
@@ -251,11 +251,11 @@ TextureManager::~TextureManager() {
 
 	FileManager::GetBase()->RemoveLoadThreadListener(this);
 
-	panelInfo_ = NULL;
-	thisBase_ = NULL;
+	panelInfo_ = nullptr;
+	thisBase_ = nullptr;
 }
 bool TextureManager::Initialize() {
-	if (thisBase_ != NULL)return false;
+	if (thisBase_ != nullptr)return false;
 
 	thisBase_ = this;
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -296,9 +296,9 @@ void TextureManager::ReleaseDxResource() {
 			std::wstring name = itrMap->first;
 			TextureData* data = (itrMap->second).GetPointer();
 			if (data->type_ == TextureData::TYPE_RENDER_TARGET) {
-				if (data->pTexture_ != NULL)data->pTexture_->Release();
-				if (data->lpRenderSurface_ != NULL)data->lpRenderSurface_->Release();
-				if (data->lpRenderZ_ != NULL)data->lpRenderZ_->Release();
+				if (data->pTexture_ != nullptr)data->pTexture_->Release();
+				if (data->lpRenderSurface_ != nullptr)data->lpRenderSurface_->Release();
+				if (data->lpRenderZ_ != nullptr)data->lpRenderZ_->Release();
 			}
 		}
 	}
@@ -317,14 +317,14 @@ void TextureManager::RestoreDxResource() {
 
 				HRESULT hr;
 				// Zバッファ生成
-				hr = graphics->GetDevice()->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, FALSE, &data->lpRenderZ_, NULL);
+				hr = graphics->GetDevice()->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, FALSE, &data->lpRenderZ_, nullptr);
 				//テクスチャ作成
 				D3DFORMAT fmt;
 				if (graphics->GetScreenMode() == DirectGraphics::SCREENMODE_FULLSCREEN)
 					fmt = graphics->GetFullScreenPresentParameter().BackBufferFormat;
 				else fmt = graphics->GetWindowPresentParameter().BackBufferFormat;
 
-				hr = graphics->GetDevice()->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT, &data->pTexture_, NULL);
+				hr = graphics->GetDevice()->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT, &data->pTexture_, nullptr);
 				data->pTexture_->GetSurfaceLevel(0, &data->lpRenderSurface_);
 			}
 		}
@@ -339,7 +339,7 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 	//まだ作成されていないなら、作成
 	try {
 		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
-		if (reader == NULL)throw gstd::wexception("File not found.");
+		if (reader == nullptr)throw gstd::wexception("File not found.");
 		if (!reader->Open())throw gstd::wexception("Cannot open file for reading.");
 
 		int size = reader->GetFileSize();
@@ -370,8 +370,8 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 			D3DX_FILTER_BOX,
 			D3DX_DEFAULT,
 			colorKey,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			&data->pTexture_);
 		if (FAILED(hr)) {
 			throw gstd::wexception("D3DXCreateTextureFromFileInMemoryEx failure.");
@@ -437,12 +437,12 @@ bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t
 
 		HRESULT hr;
 		hr = device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE,
-			0, FALSE, &data->lpRenderZ_, NULL);
+			0, FALSE, &data->lpRenderZ_, nullptr);
 		if (FAILED(hr))throw false;
 
 		D3DFORMAT fmt = D3DFMT_A8R8G8B8;
 		hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT,
-			&data->pTexture_, NULL);
+			&data->pTexture_, nullptr);
 
 		if (FAILED(hr)) {
 			//テクスチャを正方形にする
@@ -450,12 +450,12 @@ bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t
 			else if (height > width)width = height;
 
 			hr = device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE,
-				0, FALSE, &data->lpRenderZ_, NULL);
+				0, FALSE, &data->lpRenderZ_, nullptr);
 			if (FAILED(hr))throw false;
 
 			D3DFORMAT fmt = D3DFMT_A8R8G8B8;
 			hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT,
-				&data->pTexture_, NULL);
+				&data->pTexture_, nullptr);
 			if (FAILED(hr))throw false;
 		}
 		data->pTexture_->GetSurfaceLevel(0, &data->lpRenderSurface_);
@@ -547,7 +547,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 				if (bLoadImageInfo) {
 					try {
 						ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
-						if (reader == NULL)throw gstd::wexception("Texture released.");
+						if (reader == nullptr)throw gstd::wexception("Texture released.");
 						if (!reader->Open())throw gstd::wexception("File not found.");
 
 						int size = reader->GetFileSize();
@@ -601,10 +601,10 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 	{
 		Lock lock(lock_);
 		ref_count_ptr<Texture> texture = ref_count_ptr<Texture>::DownCast(event->GetSource());
-		if (texture == NULL)return;
+		if (texture == nullptr)return;
 
 		ref_count_ptr<TextureData> data = texture->data_;
-		if (data == NULL || data->bLoad_)return;
+		if (data == nullptr || data->bLoad_)return;
 
 		int countRef = data.GetReferenceCount();
 		//自身とTextureManager内の数だけになったら読み込まない。
@@ -615,7 +615,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 
 		try {
 			ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
-			if (reader == NULL)throw gstd::wexception("Texture released.");
+			if (reader == nullptr)throw gstd::wexception("Texture released.");
 			if (!reader->Open())throw gstd::wexception("File not found.");
 
 			int size = reader->GetFileSize();
@@ -640,8 +640,8 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 				D3DX_FILTER_BOX,
 				D3DX_DEFAULT,
 				colorKey,
-				NULL,
-				NULL,
+				nullptr,
+				nullptr,
 				&data->pTexture_);
 			if (FAILED(hr)) {
 				throw gstd::wexception("D3DXCreateTextureFromFileInMemoryEx failure.");
@@ -754,7 +754,7 @@ void TextureInfoPanel::LocateParts() {
 void TextureInfoPanel::_Run() {
 	while (GetStatus() == RUN) {
 		TextureManager* manager = TextureManager::GetBase();
-		if (manager != NULL)
+		if (manager != nullptr)
 			Update(manager);
 		Sleep(timeUpdateInterval_);
 	}

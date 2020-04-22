@@ -56,14 +56,16 @@ void ScriptManager::Render() {
 	//ここではオブジェクトの描画を行わない。
 }
 ref_count_ptr<ManagedScript> ScriptManager::GetScript(int64_t id) {
-	ref_count_ptr<ManagedScript> res = NULL;
+	ref_count_ptr<ManagedScript> res = nullptr;
 	{
 		Lock lock(lock_);
-		if (mapScriptLoad_.find(id) != mapScriptLoad_.end()) {
-			res = mapScriptLoad_[id];
+
+		auto itr = mapScriptLoad_.find(id);
+		if (itr != mapScriptLoad_.end()) {
+			res = itr->second;
 		}
 		else {
-			std::list<ref_count_ptr<ManagedScript> >::iterator itr = listScriptRun_.begin();
+			std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 			for (; itr != listScriptRun_.end(); itr++) {
 				if ((*itr)->GetScriptID() == id) {
 					res = (*itr);
@@ -75,12 +77,14 @@ ref_count_ptr<ManagedScript> ScriptManager::GetScript(int64_t id) {
 	return res;
 }
 void ScriptManager::StartScript(int64_t id) {
-	ref_count_ptr<ManagedScript> script = NULL;
+	ref_count_ptr<ManagedScript> script = nullptr;
+	std::map<int64_t, gstd::ref_count_ptr<ManagedScript>>::iterator itrMap;
 	{
 		Lock lock(lock_);
-		if (mapScriptLoad_.find(id) == mapScriptLoad_.end())return;
 
-		script = mapScriptLoad_[id];
+		itrMap = mapScriptLoad_.find(id);
+		if (itrMap == mapScriptLoad_.end()) return;
+		script = itrMap->second;
 	}
 
 	if (!script->IsLoad()) {
@@ -95,11 +99,11 @@ void ScriptManager::StartScript(int64_t id) {
 
 	{
 		Lock lock(lock_);
-		mapScriptLoad_.erase(id);
+		mapScriptLoad_.erase(itrMap);
 		listScriptRun_.push_back(script);
 	}
 
-	if (script != NULL && !IsError()) {
+	if (script != nullptr && !IsError()) {
 		if (script->IsEventExists("Initialize"))
 			script->Run("Initialize");
 	}
@@ -121,17 +125,18 @@ void ScriptManager::StartScript(ref_count_ptr<ManagedScript> id) {
 		listScriptRun_.push_back(id);
 	}
 
-	if (id != NULL && !IsError()) {
+	if (id != nullptr && !IsError()) {
 		if (id->IsEventExists("Initialize"))
 			id->Run("Initialize");
 	}
 }
 void ScriptManager::CloseScript(int64_t id) {
-	std::list<ref_count_ptr<ManagedScript> >::iterator itr = listScriptRun_.begin();
+	std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 	for (; itr != listScriptRun_.end(); itr++) {
 		ref_count_ptr<ManagedScript> script = (*itr);
 		if (script->GetScriptID() == id) {
 			script->SetEndScript();
+
 			mapClosedScriptResult_[id] = script->GetResultValue();
 			if (mapClosedScriptResult_.size() > MAX_CLOSED_SCRIPT_RESULT) {
 				int64_t targetID = mapClosedScriptResult_.begin()->first;
@@ -147,6 +152,7 @@ void ScriptManager::CloseScript(int64_t id) {
 }
 void ScriptManager::CloseScript(ref_count_ptr<ManagedScript> id) {
 	id->SetEndScript();
+
 	mapClosedScriptResult_[id->GetScriptID()] = id->GetResultValue();
 	if (mapClosedScriptResult_.size() > MAX_CLOSED_SCRIPT_RESULT) {
 		int64_t targetID = mapClosedScriptResult_.begin()->first;
@@ -157,11 +163,12 @@ void ScriptManager::CloseScript(ref_count_ptr<ManagedScript> id) {
 		id->GetObjectManager()->DeleteObjectByScriptID(id->GetScriptID());
 }
 void ScriptManager::CloseScriptOnType(int type) {
-	std::list<ref_count_ptr<ManagedScript> >::iterator itr = listScriptRun_.begin();
+	std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 	for (; itr != listScriptRun_.end(); itr++) {
 		ref_count_ptr<ManagedScript> script = (*itr);
 		if (script->GetScriptType() == type) {
 			script->SetEndScript();
+
 			int64_t id = script->GetScriptID();
 			mapClosedScriptResult_[id] = script->GetResultValue();
 			if (mapClosedScriptResult_.size() > MAX_CLOSED_SCRIPT_RESULT) {
@@ -176,14 +183,14 @@ void ScriptManager::CloseScriptOnType(int type) {
 }
 bool ScriptManager::IsCloseScript(int64_t id) {
 	ref_count_ptr<ManagedScript> script = GetScript(id);
-	bool res = script == NULL || script->IsEndScript();
+	bool res = script == nullptr || script->IsEndScript();
 	return res;
 }
 int ScriptManager::GetAllScriptThreadCount() {
 	int res = 0;
 	{
 		Lock lock(lock_);
-		std::list<ref_count_ptr<ManagedScript> >::iterator itr = listScriptRun_.begin();
+		std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 		for (; itr != listScriptRun_.end(); itr++) {
 			res += (*itr)->GetThreadCount();
 		}
@@ -193,7 +200,7 @@ int ScriptManager::GetAllScriptThreadCount() {
 void ScriptManager::TerminateScriptAll(std::wstring message) {
 	{
 		Lock lock(lock_);
-		std::list<ref_count_ptr<ManagedScript> >::iterator itr = listScriptRun_.begin();
+		std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 		for (; itr != listScriptRun_.end(); itr++) {
 			(*itr)->Terminate(message);
 		}
@@ -253,7 +260,7 @@ void ScriptManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::Lo
 	std::wstring path = event->GetPath();
 
 	ref_count_ptr<ManagedScript> script = ref_count_ptr<ManagedScript>::DownCast(event->GetSource());
-	if (script == NULL || script->IsLoad())return;
+	if (script == nullptr || script->IsLoad())return;
 
 	try {
 		_LoadScript(path, script);
@@ -266,7 +273,7 @@ void ScriptManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::Lo
 }
 void ScriptManager::RequestEventAll(int type, std::vector<gstd::value>& listValue) {
 	{
-		std::list<ref_count_ptr<ManagedScript> >::iterator itrScript = listScriptRun_.begin();
+		std::list<ref_count_ptr<ManagedScript>>::iterator itrScript = listScriptRun_.begin();
 		for (; itrScript != listScriptRun_.end(); itrScript++) {
 			ref_count_ptr<ManagedScript> script = (*itrScript);
 			if (script->IsEndScript())continue;
@@ -297,12 +304,13 @@ void ScriptManager::RequestEventAll(int type, std::vector<gstd::value>& listValu
 gstd::value ScriptManager::GetScriptResult(int64_t idScript) {
 	gstd::value res;
 	ref_count_ptr<ManagedScript> script = GetScript(idScript);
-	if (script != NULL) {
+	if (script) {
 		res = script->GetResultValue();
 	}
 	else {
-		if (mapClosedScriptResult_.find(idScript) != mapClosedScriptResult_.end()) {
-			res = mapClosedScriptResult_[idScript];
+		auto itr = mapClosedScriptResult_.find(idScript);
+		if (itr != mapClosedScriptResult_.end()) {
+			res = itr->second;
 		}
 	}
 

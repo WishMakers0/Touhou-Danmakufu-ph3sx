@@ -199,9 +199,9 @@ std::set<std::string> ReplayInformation::StageData::GetCommonDataAreaList() {
 }
 ScriptCommonData::ptr ReplayInformation::StageData::GetCommonData(std::string area) {
 	ScriptCommonData::ptr res = new ScriptCommonData();
-	if (mapCommonData_.find(area) != mapCommonData_.end()) {
-		ref_count_ptr<RecordBuffer> record = mapCommonData_[area];
-		res->ReadRecord(*record);
+	auto itr = mapCommonData_.find(area);
+	if (itr != mapCommonData_.end()) {
+		res->ReadRecord(*itr->second);
 	}
 	return res;
 }
@@ -339,6 +339,7 @@ std::vector<int> ReplayInformationManager::GetIndexList() {
 	return res;
 }
 ref_count_ptr<ReplayInformation> ReplayInformationManager::GetInformation(int index) {
-	if (mapInfo_.find(index) == mapInfo_.end())return nullptr;
-	return mapInfo_[index];
+	auto itr = mapInfo_.find(index);
+	if (itr == mapInfo_.end())return nullptr;
+	return itr->second;
 }

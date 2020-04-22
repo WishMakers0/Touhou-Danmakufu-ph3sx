@@ -511,32 +511,33 @@ void StgStageInformation::SetStgFrameRect(RECT rect, bool bUpdateFocusResetValue
 int PseudoSlowInformation::GetFps() {
 	int fps = STANDARD_FPS;
 	int target = TARGET_ALL;
-	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
-		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = std::min(fps, data->GetFps());
-	}
-	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
-		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = std::min(fps, data->GetFps());
-	}
+
+	auto itrPlayer = mapDataPlayer_.find(target);
+	if (itrPlayer != mapDataPlayer_.end())
+		fps = std::min(fps, itrPlayer->second->GetFps());
+
+	auto itrEnemy = mapDataEnemy_.find(target);
+	if (itrEnemy != mapDataEnemy_.end())
+		fps = std::min(fps, itrEnemy->second->GetFps());
+
 	return fps;
 }
 bool PseudoSlowInformation::IsValidFrame(int target) {
-	bool res = mapValid_.find(target) == mapValid_.end() ||
-		mapValid_[target];
+	auto itr = mapValid_.find(target);
+	bool res = itr == mapValid_.end() || itr->second;
 	return res;
 }
 void PseudoSlowInformation::Next() {
 	int fps = STANDARD_FPS;
 	int target = TARGET_ALL;
-	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
-		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = std::min(fps, data->GetFps());
-	}
-	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
-		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = std::min(fps, data->GetFps());
-	}
+
+	auto itrPlayer = mapDataPlayer_.find(target);
+	if (itrPlayer != mapDataPlayer_.end())
+		fps = std::min(fps, itrPlayer->second->GetFps());
+
+	auto itrEnemy = mapDataEnemy_.find(target);
+	if (itrEnemy != mapDataEnemy_.end())
+		fps = std::min(fps, itrEnemy->second->GetFps());
 
 	bool bValid = false;
 	if (fps == STANDARD_FPS) {

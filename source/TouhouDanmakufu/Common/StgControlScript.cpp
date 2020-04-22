@@ -496,8 +496,9 @@ gstd::value StgControlScript::Func_GetScriptInfoA1(gstd::script_machine* machine
 	int type = (int)argv[1].as_real();
 
 	ref_count_ptr<ScriptInformation> infoScript = NULL;
-	if (script->mapScriptInfo_.find(path) != script->mapScriptInfo_.end())
-		infoScript = script->mapScriptInfo_[path];
+	auto itr = script->mapScriptInfo_.find(path);
+	if (itr != script->mapScriptInfo_.end())
+		infoScript = itr->second;
 	else {
 		infoScript = ScriptInformation::CreateScriptInformation(path, true);
 		script->mapScriptInfo_[path] = infoScript;

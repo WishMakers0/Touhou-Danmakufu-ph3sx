@@ -130,15 +130,17 @@ bool EApplication::_Loop() {
 		systemController->Reset();
 	}
 
-	taskManager->CallWorkFunction();
+	{
+		taskManager->CallWorkFunction();
 
-	if (!fpsController->IsSkip()) {
-		graphics->BeginScene();
-		taskManager->CallRenderFunction();
-		graphics->EndScene();
+		if (!fpsController->IsSkip()) {
+			graphics->BeginScene();
+			taskManager->CallRenderFunction();
+			graphics->EndScene();
+		}
+
+		fpsController->Wait();
 	}
-
-	fpsController->Wait();
 
 	//ƒƒOŠÖ˜A
 	if (logger->IsWindowVisible()) {

@@ -333,7 +333,7 @@ void ScriptSelectScene::Render() {
 			dxTextInfo.SetLinePitch(9);
 			dxTextInfo.SetText(text);
 			dxTextInfo.SetPosition(24, 288);
-			dxTextInfo.SetMaxWidth(320);
+			dxTextInfo.SetMaxWidth(texture == nullptr ? 620 : 320);
 			dxTextInfo.Render();
 
 		}

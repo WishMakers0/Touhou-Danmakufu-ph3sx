@@ -323,9 +323,9 @@ namespace gstd {
 			TYPE_INTEGER = 2,
 			TYPE_FLOAT = 3,
 			TYPE_DOUBLE = 4,
-			TYPE_STRING_A = 5,
+			TYPE_STRING_A = 5,	//char string
 			TYPE_RECORD = 6,
-			TYPE_STRING_W = 7,
+			TYPE_STRING_W = 7,	//wchar_t string
 		};
 
 	private:
