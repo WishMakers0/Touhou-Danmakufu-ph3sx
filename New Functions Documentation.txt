@@ -271,12 +271,6 @@ bit_right
 	Description:
 		Rounds and clamps the value and performs a bitwise right shift operation.
 
-isNull
-	Arguments:
-		1) (any) value
-	Description:
-		Returns a boolean value of whether the given value/variable has been assigned a value.
-
 __DEBUG_BREAK
 	Description:
 		Triggers a debug break. For developers.
@@ -475,11 +469,12 @@ ClearRenderTargetA3
 SaveRenderedTextureA3
 	Arguments:
 		1) (string) name
-		2) rectangle left
-		3) rectangle top
-		4) rectangle right
-		5) rectangle bottom
-		6) (struct) format
+		2) (string) path
+		3) rectangle left
+		4) rectangle top
+		5) rectangle right
+		6) rectangle bottom
+		7) (struct) format
 	Description:
 		SaveRenderedTextureA2, with the added ability of image format specification.
 		Available formats are:
@@ -771,7 +766,7 @@ ObjEnemy_SetEnableIntersectionPositionFetching
 		1) object ID
 		2) (bool) enable
 	Description:
-		Sets whether the enemy object's hitboxes will be ignored by the following functions:
+		If set to false, the following functions will not include the specified enemy object's hitboxes.
 			GetEnemyIntersectionPosition
 			GetEnemyIntersectionPositionByIdA1
 			GetEnemyIntersectionPositionByIdA2
