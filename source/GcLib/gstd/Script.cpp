@@ -2173,7 +2173,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			scope_t* resScope = nullptr;
 			symbol* s = search(name, &resScope);
 			if (s == nullptr) {
-				std::wstring error = StringUtility::FormatToWide("%s is not defined.\r\n", lex->word.c_str());
+				std::wstring error = StringUtility::FormatToWide("%s is not defined.\r\n", name.c_str());
 				throw parser_error(error);
 			}
 
@@ -2265,7 +2265,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				s = search_in(resScope, name, argc);
 				if (s == nullptr) {
 					std::wstring error = StringUtility::FormatToWide("No matching overload for %s with %d arguments was found.\r\n", 
-						s->sub->name.c_str(), argc);
+						name.c_str(), argc);
 					throw parser_error(error);
 				}
 
@@ -2455,7 +2455,6 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			}
 
 			std::string counterName = lex->word;
-			std::string counterNameInternal = "!" + lex->word;
 
 			lex->advance();
 
@@ -2469,26 +2468,22 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			block->codes.push_back(code(lex->line, script_engine::command_kind::pc_call, containerBlock, 0));
 			frame.push_back(scope_t(containerBlock->kind));
 			{
-				{	//This is the actual counter
+				auto InsertSymbol = [&](size_t var, std::string name) {
 					symbol s;
 					s.level = containerBlock->level;
 					s.sub = nullptr;
-					s.variable = 0;
+					s.variable = var;
 					s.can_overload = false;
-					frame.back().singular_insert(counterName, s);
-				}
-				{	//An internal value, inaccessible to scripters
-					symbol s;
-					s.level = containerBlock->level;
-					s.sub = nullptr;
-					s.variable = 1;
-					s.can_overload = false;
-					frame.back().singular_insert(counterNameInternal, s);
-				}
+					frame.back().singular_insert(name, s);
+				};
+
+				InsertSymbol(0, "!0");			//An internal value, inaccessible to scripters (value copied to s_2 in each loop)
+				InsertSymbol(1, "!1");			//An internal value, inaccessible to scripters
+				InsertSymbol(2, counterName);	//The actual counter
 
 				parse_expression(containerBlock, lex);	//First value, to s_0 if ascent
 				containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
-					containerBlock->level, (int)(!isAscent), counterName));
+					containerBlock->level, (int)(!isAscent), "!0"));
 
 				if (lex->next != token_kind::tk_range) {
 					std::wstring error = L"\"..\" is required.\r\n";
@@ -2498,7 +2493,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 				parse_expression(containerBlock, lex);	//Second value, to s_0 if descent
 				containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
-					containerBlock->level, (int)(isAscent), counterNameInternal));
+					containerBlock->level, (int)(isAscent), "!1"));
 
 				if (lex->next != token_kind::tk_close_par) {
 					std::wstring error = L"\")\" is required.\r\n";
@@ -2514,21 +2509,26 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 				{
 					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
-						containerBlock->level, 0, counterName));
+						containerBlock->level, 0, "!0"));
 					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
-						containerBlock->level, 1, counterNameInternal));
-
+						containerBlock->level, 1, "!1"));
 					write_operation(containerBlock, lex, "compare", 2);
 					containerBlock->codes.push_back(code(lex->line, isAscent ? script_engine::command_kind::pc_loop_ascent :
 						script_engine::command_kind::pc_loop_descent));
 
 					if (!isAscent) {
 						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
-							containerBlock->level, 0, counterName));
+							containerBlock->level, 0, "!0"));
 						write_operation(containerBlock, lex, "predecessor", 1);
 						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
-							containerBlock->level, 0, counterName));
+							containerBlock->level, 0, "!0"));
 					}
+
+					//Copy s_0 to s_2
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
+						containerBlock->level, 0, "!0"));
+					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
+						containerBlock->level, 2, counterName));
 
 					//Parse the code contained inside the loop
 					parse_inline_block(containerBlock, script_engine::block_kind::bk_loop);
@@ -2555,10 +2555,10 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 					if (isAscent) {
 						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_push_variable,
-							containerBlock->level, 0, counterName));
+							containerBlock->level, 0, "!0"));
 						write_operation(containerBlock, lex, "successor", 1);
 						containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_assign,
-							containerBlock->level, 0, counterName));
+							containerBlock->level, 0, "!0"));
 					}
 
 					containerBlock->codes.push_back(code(lex->line, script_engine::command_kind::pc_loop_back, ip));
