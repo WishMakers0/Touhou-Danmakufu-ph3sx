@@ -20,13 +20,16 @@ FpsController::~FpsController() {
 int FpsController::_GetTime() {
 	//	int res = ::timeGetTime();
 
+	/*
 	LARGE_INTEGER nFreq;
 	LARGE_INTEGER nCounter;
 	QueryPerformanceFrequency(&nFreq);
 	QueryPerformanceCounter(&nCounter);
 	int res = (DWORD)(nCounter.QuadPart * 1000 / nFreq.QuadPart);
+	*/
 
-	return res;
+	auto ms = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch();
+	return std::chrono::duration_cast<std::chrono::milliseconds>(ms).count();
 }
 void FpsController::_Sleep(int msec) {
 	::Sleep(msec);
