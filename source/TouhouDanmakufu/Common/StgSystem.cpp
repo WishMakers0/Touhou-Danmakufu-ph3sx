@@ -203,7 +203,7 @@ void StgSystemController::RenderScriptObject() {
 	}
 	else {
 		bool bReplay = false;
-		int countRender = 0;
+		size_t countRender = 0;
 		if (scene == StgSystemInformation::SCENE_STG && stageController_ != nullptr) {
 			auto objectManagerStage = stageController_->GetMainObjectManager();
 			countRender = std::max(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
@@ -412,7 +412,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 			UINT cPass = 1;
 			if (shader != nullptr) {
 				effect = shader->GetEffect();
-				//shader->_SetupParameter();
+				shader->LoadParameter();
 				effect->Begin(&cPass, 0);
 			}
 
@@ -463,7 +463,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 			UINT cPass = 1;
 			if (shader != nullptr) {
 				effect = shader->GetEffect();
-				//shader->_SetupParameter();
+				shader->LoadParameter();
 				effect->Begin(&cPass, 0);
 			}
 

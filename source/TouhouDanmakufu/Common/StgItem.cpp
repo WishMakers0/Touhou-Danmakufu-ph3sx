@@ -35,7 +35,7 @@ StgItemManager::StgItemManager(StgStageController* stageController) {
 	_SetVertexBuffer(256 * 256);
 
 	{
-		RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+		RenderShaderManager* shaderManager_ = ShaderManager::GetBase()->GetRenderLib();
 		effectLayer_ = shaderManager_->GetRender2DShader();
 		handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 	}
@@ -180,7 +180,7 @@ void StgItemManager::Render(int targetPriority) {
 		effectLayer_->SetMatrix(handleEffectWorld_, &matProj);
 	}
 
-	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+	RenderShaderManager* shaderManager_ = ShaderManager::GetBase()->GetRenderLib();
 
 	device->SetFVF(VERTEX_TLX::fvf);
 
@@ -584,10 +584,6 @@ StgItemRenderer::StgItemRenderer() {
 StgItemRenderer::~StgItemRenderer() {
 
 }
-size_t StgItemRenderer::GetVertexCount() {
-	size_t res = std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
-	return res;
-}
 void StgItemRenderer::Render(StgItemManager* manager) {
 	if (countRenderVertex_ < 3)
 		return;
@@ -608,7 +604,7 @@ void StgItemRenderer::Render(StgItemManager* manager) {
 	IDirect3DVertexBuffer9* vBuffer = manager->GetVertexBuffer();
 
 	vBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-	memcpy(tmp, vertex_.GetPointer(), countRenderVertex_ * sizeof(VERTEX_TLX));
+	memcpy(tmp, vertex_.data(), countRenderVertex_ * sizeof(VERTEX_TLX));
 	vBuffer->Unlock();
 
 	device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
@@ -635,15 +631,7 @@ void StgItemRenderer::AddVertex(VERTEX_TLX& vertex) {
 	}
 
 	SetVertex(countRenderVertex_, vertex);
-	countRenderVertex_++;
-}
-void StgItemRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
-	AddVertex(listVertex[0]);
-	AddVertex(listVertex[2]);
-	AddVertex(listVertex[1]);
-	AddVertex(listVertex[1]);
-	AddVertex(listVertex[2]);
-	AddVertex(listVertex[3]);
+	++countRenderVertex_;
 }
 
 /**********************************************************

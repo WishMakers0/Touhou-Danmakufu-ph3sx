@@ -182,15 +182,12 @@ namespace directx {
 		"}";
 
 	class RenderShaderManager {
-		static RenderShaderManager* thisBase_;
 	public:
 		enum {
 			MAX_MATRIX = 30
 		};
 		RenderShaderManager();
 		~RenderShaderManager();
-
-		static RenderShaderManager* GetBase() { return thisBase_; }
 
 		void Initialize();
 		void Release();

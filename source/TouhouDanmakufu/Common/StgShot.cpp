@@ -58,7 +58,7 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	}
 	*/
 
-	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+	RenderShaderManager* shaderManager_ = ShaderManager::GetBase()->GetRenderLib();
 	effectLayer_ = shaderManager_->GetRender2DShader();
 	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 }
@@ -160,7 +160,7 @@ void StgShotManager::Render(int targetPriority) {
 		DirectGraphics::MODE_BLEND_ALPHA
 	};
 
-	RenderShaderManager* shaderManager_ = RenderShaderManager::GetBase();
+	RenderShaderManager* shaderManager_ = ShaderManager::GetBase()->GetRenderLib();
 
 	device->SetFVF(VERTEX_TLX::fvf);
 	device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
@@ -819,7 +819,7 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 	IDirect3DVertexBuffer9* vBuffer = manager->GetVertexBuffer();
 
 	vBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-	memcpy(tmp, vertex_.GetPointer(), countRenderVertex_ * sizeof(VERTEX_TLX));
+	memcpy(tmp, vertex_.data(), countRenderVertex_ * sizeof(VERTEX_TLX));
 	vBuffer->Unlock();
 
 	device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
@@ -1099,9 +1099,11 @@ void StgShotObject::DeleteImmediate() {
 //StgShotObject::ReserveShotList
 ref_count_ptr<StgShotObject::ReserveShotList::ListElement>::unsync StgShotObject::ReserveShotList::GetNextFrameData() {
 	ref_count_ptr<ListElement>::unsync res = nullptr;
-	if (mapData_.find(frame_) != mapData_.end()) {
-		res = mapData_[frame_];
-		mapData_.erase(frame_);
+
+	auto itr = mapData_.find(frame_);
+	if (itr != mapData_.end()) {
+		res = itr->second;
+		mapData_.erase(itr);
 	}
 
 	frame_++;

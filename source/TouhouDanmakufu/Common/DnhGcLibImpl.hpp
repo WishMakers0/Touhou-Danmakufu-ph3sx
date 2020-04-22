@@ -110,7 +110,7 @@ class EMeshManager : public Singleton<EMeshManager>, public DxMeshManager {
 /**********************************************************
 //EMeshManager
 **********************************************************/
-class EShaderManager : public Singleton<EShaderManager>, public RenderShaderManager {
+class EShaderManager : public Singleton<EShaderManager>, public ShaderManager {
 
 };
 

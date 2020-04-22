@@ -228,7 +228,7 @@ public:
 		return std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
 	}
 	virtual void SetVertexCount(size_t count) {
-		vertex_.SetSize(count * strideVertexStreamZero_);
+		vertex_.resize(count * strideVertexStreamZero_);
 	}
 };
 

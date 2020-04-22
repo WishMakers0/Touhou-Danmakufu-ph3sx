@@ -146,13 +146,23 @@ class StgItemRenderer : public RenderObjectTLX {
 public:
 	StgItemRenderer();
 	~StgItemRenderer();
-	virtual size_t GetVertexCount();
+	
 	virtual void Render(StgItemManager* manager);
 	void AddVertex(VERTEX_TLX& vertex);
-	void AddSquareVertex(VERTEX_TLX* listVertex);
+	void AddSquareVertex(VERTEX_TLX* listVertex) {
+		AddVertex(listVertex[0]);
+		AddVertex(listVertex[2]);
+		AddVertex(listVertex[1]);
+		AddVertex(listVertex[1]);
+		AddVertex(listVertex[2]);
+		AddVertex(listVertex[3]);
+	}
 
+	virtual size_t GetVertexCount() {
+		return std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
+	}
 	virtual void SetVertexCount(size_t count) {
-		vertex_.SetSize(count * strideVertexStreamZero_);
+		vertex_.resize(count * strideVertexStreamZero_);
 	}
 };
 
