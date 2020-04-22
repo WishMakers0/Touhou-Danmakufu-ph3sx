@@ -79,7 +79,9 @@ namespace directx {
 	public:
 		RenderObject() {};
 		virtual ~RenderObject() {};
-		virtual void Render();
+		virtual void Render() {
+		}
+		void Render(D3DXMATRIX* matTransform);
 	};
 
 	class MetasequoiaMesh : public DxMesh {

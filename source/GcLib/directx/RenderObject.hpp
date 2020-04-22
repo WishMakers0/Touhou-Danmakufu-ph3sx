@@ -120,14 +120,14 @@ namespace directx {
 	public:
 		Matrices() {};
 		virtual ~Matrices() {};
-		void SetSize(int size) { 
+		void SetSize(size_t size) { 
 			matrix_.resize(size); 
-			for (int iMat = 0; iMat < size; iMat++)
+			for (size_t iMat = 0; iMat < size; iMat++)
 				D3DXMatrixIdentity(&matrix_[iMat]);
 		}
-		int GetSize() { return matrix_.size(); }
-		void SetMatrix(int index, D3DXMATRIX& mat) { matrix_[index] = mat; }
-		D3DXMATRIX& GetMatrix(int index) { return matrix_[index]; }
+		size_t GetSize() { return matrix_.size(); }
+		void SetMatrix(size_t index, D3DXMATRIX& mat) { matrix_[index] = mat; }
+		D3DXMATRIX& GetMatrix(size_t index) { return matrix_[index]; }
 	};
 
 	/**********************************************************
@@ -143,9 +143,10 @@ namespace directx {
 
 		D3DPRIMITIVETYPE typePrimitive_;//
 		size_t strideVertexStreamZero_;//1頂点のサイズ
-		gstd::ByteBuffer vertex_;//頂点
+
+		std::vector<byte> vertex_;//頂点
 		std::vector<uint16_t> vertexIndices_;
-		std::vector<gstd::ref_count_ptr<Texture> > texture_;//テクスチャ
+		std::vector<gstd::ref_count_ptr<Texture>> texture_;//テクスチャ
 		D3DXVECTOR3 posWeightCenter_;//重心
 
 		D3DTEXTUREFILTERTYPE filterMin_;
@@ -161,6 +162,7 @@ namespace directx {
 		gstd::ref_count_ptr<Shader> shader_;
 
 		bool disableMatrixTransform_;
+		bool bVertexShaderMode_;
 
 		void _SetTextureStageCount(size_t count) { 
 			texture_.resize(count); 
@@ -200,8 +202,8 @@ namespace directx {
 		D3DPRIMITIVETYPE GetPrimitiveType() { return typePrimitive_; }
 		virtual void SetVertexCount(size_t count) {
 			count = std::min(count, 65536U);
-			vertex_.SetSize(count * strideVertexStreamZero_);
-			ZeroMemory(vertex_.GetPointer(), vertex_.size());
+			vertex_.resize(count * strideVertexStreamZero_);
+			ZeroMemory(vertex_.data(), vertex_.size());
 		}
 		virtual size_t GetVertexCount() { return vertex_.size() / strideVertexStreamZero_; }
 		void SetVertexIndicies(std::vector<uint16_t>& indices) { vertexIndices_ = indices; }
@@ -223,6 +225,7 @@ namespace directx {
 		void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
 
 		void SetDisableMatrixTransformation(bool b) { disableMatrixTransform_ = b; }
+		void SetVertexShaderRendering(bool b) { bVertexShaderMode_ = b; }
 
 		void SetFilteringMin(D3DTEXTUREFILTERTYPE filter) { filterMin_ = filter; }
 		void SetFilteringMag(D3DTEXTUREFILTERTYPE filter) { filterMag_ = filter; }
@@ -243,7 +246,7 @@ namespace directx {
 	class RenderObjectTLX : public RenderObject {
 	protected:
 		bool bPermitCamera_;
-		gstd::ByteBuffer vertCopy_;
+		std::vector<byte> vertCopy_;
 	public:
 		RenderObjectTLX();
 		~RenderObjectTLX();
@@ -277,12 +280,12 @@ namespace directx {
 	inline VERTEX_TLX* RenderObjectTLX::GetVertex(size_t index) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size()) return nullptr;
-		return (VERTEX_TLX*)vertex_.GetPointer(pos);
+		return (VERTEX_TLX*)&vertex_[pos];
 	}
 	inline void RenderObjectTLX::SetVertex(size_t index, VERTEX_TLX& vertex) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size()) return;
-		memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
+		memcpy(&vertex_[pos], &vertex, strideVertexStreamZero_);
 	}
 	inline void RenderObjectTLX::SetVertexPosition(size_t index, float x, float y, float z, float w) {
 		VERTEX_TLX* vertex = GetVertex(index);
@@ -373,12 +376,12 @@ namespace directx {
 	inline VERTEX_LX* RenderObjectLX::GetVertex(size_t index) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return nullptr;
-		return (VERTEX_LX*)vertex_.GetPointer(pos);
+		return (VERTEX_LX*)&vertex_[pos];
 	}
 	inline void RenderObjectLX::SetVertex(size_t index, VERTEX_LX& vertex) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return;
-		memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
+		memcpy(&vertex_[pos], &vertex, strideVertexStreamZero_);
 	}
 	inline void RenderObjectLX::SetVertexPosition(size_t index, float x, float y, float z) {
 		VERTEX_LX* vertex = GetVertex(index);
@@ -448,6 +451,7 @@ namespace directx {
 		RenderObjectNX();
 		~RenderObjectNX();
 		virtual void Render();
+		virtual void Render(D3DXMATRIX* matTransform);
 
 		//頂点設定
 		VERTEX_NX* GetVertex(size_t index);
@@ -461,12 +465,12 @@ namespace directx {
 	inline VERTEX_NX* RenderObjectNX::GetVertex(size_t index) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return nullptr;
-		return (VERTEX_NX*)vertex_.GetPointer(pos);
+		return (VERTEX_NX*)&vertex_[pos];
 	}
 	inline void RenderObjectNX::SetVertex(size_t index, VERTEX_NX& vertex) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return;
-		memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
+		memcpy(&vertex_[pos], &vertex, strideVertexStreamZero_);
 	}
 	inline void RenderObjectNX::SetVertexPosition(size_t index, float x, float y, float z) {
 		VERTEX_NX* vertex = GetVertex(index);
@@ -560,12 +564,12 @@ namespace directx {
 	inline VERTEX_B2NX* RenderObjectB2NX::GetVertex(size_t index) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return nullptr;
-		return (VERTEX_B2NX*)vertex_.GetPointer(pos);
+		return (VERTEX_B2NX*)&vertex_[pos];
 	}
 	inline void RenderObjectB2NX::SetVertex(size_t index, VERTEX_B2NX& vertex) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return;
-		memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
+		memcpy(&vertex_[pos], &vertex, strideVertexStreamZero_);
 	}
 	inline void RenderObjectB2NX::SetVertexPosition(size_t index, float x, float y, float z) {
 		VERTEX_B2NX* vertex = GetVertex(index);
@@ -631,12 +635,12 @@ namespace directx {
 	inline VERTEX_B4NX* RenderObjectB4NX::GetVertex(size_t index) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return nullptr;
-		return (VERTEX_B4NX*)vertex_.GetPointer(pos);
+		return (VERTEX_B4NX*)&vertex_[pos];
 	}
 	inline void RenderObjectB4NX::SetVertex(size_t index, VERTEX_B4NX& vertex) {
 		size_t pos = index * strideVertexStreamZero_;
 		if (pos >= vertex_.size())return;
-		memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
+		memcpy(&vertex_[pos], &vertex, strideVertexStreamZero_);
 	}
 	inline void RenderObjectB4NX::SetVertexPosition(size_t index, float x, float y, float z) {
 		VERTEX_B4NX* vertex = GetVertex(index);
@@ -825,6 +829,11 @@ namespace directx {
 		bool bCoordinate2D_;//2D座標指定
 		gstd::ref_count_ptr<Shader> shader_;
 
+		D3DTEXTUREFILTERTYPE filterMin_;
+		D3DTEXTUREFILTERTYPE filterMag_;
+		D3DTEXTUREFILTERTYPE filterMip_;
+		bool bVertexShaderMode_;
+
 		gstd::ref_count_ptr<DxMeshData> data_;
 		gstd::ref_count_ptr<DxMeshData> _GetFromManager(std::wstring name);
 		void _AddManager(std::wstring name, gstd::ref_count_ptr<DxMeshData> data);
@@ -861,6 +870,11 @@ namespace directx {
 		inline void SetAlpha(int alpha) {
 			color_ = (color_ & 0x00ffffff) | ((byte)alpha << 24);
 		}
+
+		void SetFilteringMin(D3DTEXTUREFILTERTYPE filter) { filterMin_ = filter; }
+		void SetFilteringMag(D3DTEXTUREFILTERTYPE filter) { filterMag_ = filter; }
+		void SetFilteringMip(D3DTEXTUREFILTERTYPE filter) { filterMip_ = filter; }
+		void SetVertexShaderRendering(bool b) { bVertexShaderMode_ = b; }
 
 		bool IsCoordinate2D() { return bCoordinate2D_; }
 		void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }

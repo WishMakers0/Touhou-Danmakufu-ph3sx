@@ -105,6 +105,11 @@ namespace directx {
 
 		D3DCOLOR color_;
 
+		D3DTEXTUREFILTERTYPE filterMin_;
+		D3DTEXTUREFILTERTYPE filterMag_;
+		D3DTEXTUREFILTERTYPE filterMip_;
+		bool bVertexShaderMode_;
+
 		int idRelative_;
 		std::wstring nameRelativeBone_;
 	public:
@@ -127,6 +132,11 @@ namespace directx {
 		void SetPosition(D3DXVECTOR3 pos) { position_ = pos; }
 		void SetAngle(D3DXVECTOR3 angle) { angle_ = angle; }
 		void SetScale(D3DXVECTOR3 scale) { scale_ = scale; }
+
+		void SetFilteringMin(D3DTEXTUREFILTERTYPE filter) { filterMin_ = filter; }
+		void SetFilteringMag(D3DTEXTUREFILTERTYPE filter) { filterMag_ = filter; }
+		void SetFilteringMip(D3DTEXTUREFILTERTYPE filter) { filterMip_ = filter; }
+		void SetVertexShaderRendering(bool b) { bVertexShaderMode_ = b; }
 
 		int GetBlendType() { return typeBlend_; }
 		void SetRelativeObject(int id, std::wstring bone) { idRelative_ = id; nameRelativeBone_ = bone; }
@@ -574,9 +584,9 @@ namespace directx {
 	protected:
 		int64_t totalObjectCreateCount_;
 		std::list<int> listUnusedIndex_;
-		std::vector<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > obj_;//オブジェクト
-		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > listActiveObject_;
-		std::unordered_map<std::wstring, gstd::ref_count_ptr<SoundInfo> > mapReservedSound_;
+		std::vector<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> obj_;		//オブジェクト
+		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> listActiveObject_;
+		std::unordered_map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapReservedSound_;
 
 		//フォグ
 		bool bFogEnable_;
@@ -584,28 +594,34 @@ namespace directx {
 		float fogStart_;
 		float fogEnd_;
 
-		std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > > objRender_;//描画バケットソート
-		std::vector<gstd::ref_count_ptr<Shader> > listShader_;
+		std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>> objRender_;//描画バケットソート
+		std::vector<gstd::ref_count_ptr<Shader>> listShader_;
 
 		void _SetObjectID(DxScriptObjectBase* obj, int index) { obj->idObject_ = index; obj->manager_ = this; }
 		void _ArrangeActiveObjectList();
 	public:
 		DxScriptObjectManager();
 		virtual ~DxScriptObjectManager();
-		int GetMaxObject() { return obj_.size(); }
-		void SetMaxObject(int max);
-		int GetAliveObjectCount() { return obj_.size() - listUnusedIndex_.size(); }
-		int GetRenderBucketCapacity() { return objRender_.size(); }
-		void SetRenderBucketCapacity(int capacity);
+
+		size_t GetMaxObject() { return obj_.size(); }
+		void SetMaxObject(size_t max);
+		size_t GetAliveObjectCount() { return listActiveObject_.size(); }
+		size_t GetRenderBucketCapacity() { return objRender_.size(); }
+		void SetRenderBucketCapacity(size_t capacity);
+
 		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
-		void AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
+		//void AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
 		void ActivateObject(int id, bool bActivate);
+
 		gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { 
 			return ((id < 0 || id >= obj_.size()) ? nullptr : obj_[id]); 
 		}
+
 		std::vector<int> GetValidObjectIdentifier();
+
 		DxScriptObjectBase* GetObjectPointer(int id);
 		virtual void DeleteObject(int id);
+
 		void ClearObject();
 		void DeleteObjectByScriptID(int64_t idScript);
 		void AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj);//要フレームごとに登録
@@ -844,6 +860,7 @@ namespace directx {
 		static gstd::value Func_ObjRender_SetTextureFilterMin(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjRender_SetTextureFilterMag(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ObjRender_SetTextureFilterMip(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_ObjRender_SetVertexShaderRenderingMode(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dx関数：オブジェクト操作(ShaderObject)
 		static gstd::value Func_ObjShader_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);

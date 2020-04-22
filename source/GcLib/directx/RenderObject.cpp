@@ -641,9 +641,9 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 		size_t countVertex = GetVertexCount();
 
 //#pragma omp for if(flgUseVertexBufferMode_)
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
 			size_t pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
+			VERTEX_TLX* vert = (VERTEX_TLX*)&vertCopy_[pos];
 			D3DXVECTOR4* vPos = &vert->position;
 
 			D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matTransform);
@@ -663,7 +663,7 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 
 				vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
 				if (bUseIndex) {
-					memcpy(tmp, vertCopy_.GetPointer(), countPrim * sizeof(VERTEX_TLX));
+					memcpy(tmp, vertCopy_.data(), countPrim * sizeof(VERTEX_TLX));
 					vertexBuffer->Unlock();
 
 					indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
@@ -673,7 +673,7 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 					device->SetIndices(indexBuffer);
 				}
 				else {
-					memcpy(tmp, vertCopy_.GetPointer(), countVertex * sizeof(VERTEX_TLX));
+					memcpy(tmp, vertCopy_.data(), countVertex * sizeof(VERTEX_TLX));
 					vertexBuffer->Unlock();
 				}
 
@@ -685,7 +685,30 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 				ID3DXEffect* effect = nullptr;
 				if (shader_ != nullptr) {
 					effect = shader_->GetEffect();
-					//shader_->_SetupParameter();
+
+					if (bVertexShaderMode_) {
+						RenderShaderManager* shaderLib = ShaderManager::GetBase()->GetRenderLib();
+
+						device->SetVertexDeclaration(shaderLib->GetVertexDeclarationTLX());
+
+						D3DXHANDLE handle = nullptr;
+						if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
+							effect->SetMatrix(handle, &matTransform);
+						if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION")) {
+							D3DVIEWPORT9 viewPort;
+							device->GetViewport(&viewPort);
+
+							D3DXMATRIX matProj = camera3D->GetIdentity();
+							matProj._11 = 2.0f / viewPort.Width;
+							matProj._22 = -2.0f / viewPort.Height;
+							matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+							matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+							effect->SetMatrix(handle, &matProj);
+						}
+					}
+
+					shader_->LoadParameter();
 					effect->Begin(&countPass, 0);
 				}
 				for (UINT iPass = 0; iPass < countPass; ++iPass) {
@@ -698,9 +721,9 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 					else {
 						if (bUseIndex)
 							device->DrawIndexedPrimitiveUP(typePrimitive_, 0, countVertex, countPrim,
-								vertexIndices_.data(), D3DFMT_INDEX16, vertCopy_.GetPointer(), strideVertexStreamZero_);
+								vertexIndices_.data(), D3DFMT_INDEX16, vertCopy_.data(), strideVertexStreamZero_);
 						else
-							device->DrawPrimitiveUP(typePrimitive_, countPrim, vertCopy_.GetPointer(), strideVertexStreamZero_);
+							device->DrawPrimitiveUP(typePrimitive_, countPrim, vertCopy_.data(), strideVertexStreamZero_);
 					}
 
 					if (effect != nullptr) effect->EndPass();
@@ -709,6 +732,7 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 			}
 
 			device->SetIndices(nullptr);
+			device->SetVertexDeclaration(nullptr);
 		}
 	}
 }
@@ -884,7 +908,7 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 			void* tmp;
 			vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
 			if (bUseIndex) {
-				memcpy(tmp, vertex_.GetPointer(), countPrim * sizeof(VERTEX_LX));
+				memcpy(tmp, vertex_.data(), countPrim * sizeof(VERTEX_LX));
 				vertexBuffer->Unlock();
 				indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
 				memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
@@ -893,7 +917,7 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 				device->SetIndices(indexBuffer);
 			}
 			else {
-				memcpy(tmp, vertex_.GetPointer(), countVertex * sizeof(VERTEX_LX));
+				memcpy(tmp, vertex_.data(), countVertex * sizeof(VERTEX_LX));
 				vertexBuffer->Unlock();
 			}
 
@@ -904,7 +928,33 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		ID3DXEffect* effect = nullptr;
 		if (shader_ != nullptr) {
 			effect = shader_->GetEffect();
-			//shader_->_SetupParameter();
+			shader_->LoadParameter();
+
+			if (bVertexShaderMode_) {
+				RenderShaderManager* shaderLib = ShaderManager::GetBase()->GetRenderLib();
+				auto camera = DirectGraphics::GetBase()->GetCamera();
+
+				device->SetVertexDeclaration(shaderLib->GetVertexDeclarationLX());
+
+				D3DXHANDLE handle = nullptr;
+				if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
+					effect->SetMatrix(handle, &matWorld);
+				if (handle = effect->GetParameterBySemantic(nullptr, "VIEW"))
+					effect->SetMatrix(handle, &camera->GetViewMatrix());
+				if (handle = effect->GetParameterBySemantic(nullptr, "PROJECTION")) {
+					D3DVIEWPORT9 viewPort;
+					device->GetViewport(&viewPort);
+
+					D3DXMATRIX matProj = camera->GetIdentity();
+					matProj._11 = 2.0f / viewPort.Width;
+					matProj._22 = -2.0f / viewPort.Height;
+					matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+					matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+					effect->SetMatrix(handle, &matProj);
+				}
+			}
+
 			effect->Begin(&countPass, 0);
 		}
 		for (UINT iPass = 0; iPass < countPass; ++iPass) {
@@ -917,9 +967,9 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 			else {
 				if (bUseIndex)
 					device->DrawIndexedPrimitiveUP(typePrimitive_, 0, countVertex, countPrim,
-						vertexIndices_.data(), D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
+						vertexIndices_.data(), D3DFMT_INDEX16, vertex_.data(), strideVertexStreamZero_);
 				else
-					device->DrawPrimitiveUP(typePrimitive_, countPrim, vertex_.GetPointer(), strideVertexStreamZero_);
+					device->DrawPrimitiveUP(typePrimitive_, countPrim, vertex_.data(), strideVertexStreamZero_);
 			}
 
 			if (effect != nullptr) effect->EndPass();
@@ -927,6 +977,7 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		if (effect != nullptr) effect->End();
 
 		device->SetIndices(nullptr);
+		device->SetVertexDeclaration(nullptr);
 	}
 }
 
@@ -947,6 +998,9 @@ RenderObjectNX::~RenderObjectNX() {
 	ptr_release(pIndexBuffer_);
 }
 void RenderObjectNX::Render() {
+	RenderObjectNX::Render(nullptr);
+}
+void RenderObjectNX::Render(D3DXMATRIX* matTransform) {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
 
@@ -984,7 +1038,37 @@ void RenderObjectNX::Render() {
 			ID3DXEffect* effect = nullptr;
 			if (shader_ != nullptr) {
 				effect = shader_->GetEffect();
-				//shader_->_SetupParameter();
+				shader_->LoadParameter();
+
+				if (bVertexShaderMode_) {
+					RenderShaderManager* shaderLib = ShaderManager::GetBase()->GetRenderLib();
+					auto camera = DirectGraphics::GetBase()->GetCamera();
+
+					device->SetVertexDeclaration(shaderLib->GetVertexDeclarationNX());
+
+					D3DXHANDLE handle = nullptr;
+					if (handle = effect->GetParameterBySemantic(nullptr, "WORLD")) {
+						if (matTransform) effect->SetMatrix(handle, matTransform);
+					}
+					if (handle = effect->GetParameterBySemantic(nullptr, "VIEW")) {
+						D3DXMATRIX matView;
+						device->GetTransform(D3DTS_VIEW, &matView);
+						effect->SetMatrix(handle, &matView);
+					}
+					if (handle = effect->GetParameterBySemantic(nullptr, "PROJECTION")) {
+						D3DVIEWPORT9 viewPort;
+						device->GetViewport(&viewPort);
+
+						D3DXMATRIX matProj = camera->GetIdentity();
+						matProj._11 = 2.0f / viewPort.Width;
+						matProj._22 = -2.0f / viewPort.Height;
+						matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+						matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+						effect->SetMatrix(handle, &matProj);
+					}
+				}
+
 				effect->Begin(&countPass, 0);
 			}
 			for (UINT iPass = 0; iPass < countPass; ++iPass) {
@@ -1000,6 +1084,7 @@ void RenderObjectNX::Render() {
 			if (effect != nullptr) effect->End();
 
 			device->SetIndices(nullptr);
+			device->SetVertexDeclaration(nullptr);
 		}
 	}
 }
@@ -1085,18 +1170,18 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 
 		device->SetFVF(VERTEX_B2NX::fvf);
 		if (vertexIndices_.size() == 0) {
-			device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
+			device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.data(), strideVertexStreamZero_);
 		}
 		else {
 			device->DrawIndexedPrimitiveUP(typePrimitive_, 0, GetVertexCount(), _GetPrimitiveCount(),
-				&vertexIndices_[0], D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
+				&vertexIndices_[0], D3DFMT_INDEX16, vertex_.data(), strideVertexStreamZero_);
 		}
 
 		device->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
 		device->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_DISABLE);
 	}
 	else {
-		RenderShaderManager* shaderManager = RenderShaderManager::GetBase();
+		RenderShaderManager* shaderManager = ShaderManager::GetBase()->GetRenderLib();
 
 		ID3DXEffect* shader = shaderManager->GetSkinnedMeshShader();
 
@@ -1437,7 +1522,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 		size_t countVertex = GetVertexCount();
 
 		/*
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
 			int pos = iVert * strideVertexStreamZero_;
 			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
 			D3DXVECTOR3* vPos = (D3DXVECTOR3*)&vert->position;
@@ -1466,9 +1551,9 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
 
 //#pragma omp for
-		for (int iVert = 0; iVert < countVertex; ++iVert) {
+		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
 			size_t pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
+			VERTEX_TLX* vert = (VERTEX_TLX*)&vertCopy_[pos];
 			D3DXVECTOR4* vPos = &vert->position;
 
 			if (bCloseVertexList_)
@@ -1489,7 +1574,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 				bool bUseIndex = vertexIndices_.size() > 0;
 				vertexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
 				if (bUseIndex) {
-					memcpy(tmp, vertCopy_.GetPointer(), countPrim * sizeof(VERTEX_TLX));
+					memcpy(tmp, vertCopy_.data(), countPrim * sizeof(VERTEX_TLX));
 					vertexBuffer->Unlock();
 					indexBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
 					memcpy(tmp, &vertexIndices_[0], countVertex * sizeof(uint16_t));
@@ -1498,7 +1583,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 					device->SetIndices(indexBuffer);
 				}
 				else {
-					memcpy(tmp, vertCopy_.GetPointer(), countVertex * sizeof(VERTEX_TLX));
+					memcpy(tmp, vertCopy_.data(), countVertex * sizeof(VERTEX_TLX));
 					vertexBuffer->Unlock();
 				}
 
@@ -1508,7 +1593,36 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 				ID3DXEffect* effect = nullptr;
 				if (shader_ != nullptr) {
 					effect = shader_->GetEffect();
-					//shader_->_SetupParameter();
+					shader_->LoadParameter();
+
+					if (bVertexShaderMode_) {
+						RenderShaderManager* shaderLib = ShaderManager::GetBase()->GetRenderLib();
+
+						device->SetVertexDeclaration(shaderLib->GetVertexDeclarationTLX());
+
+						D3DXHANDLE handle = nullptr;
+						if (handle = effect->GetParameterBySemantic(nullptr, "WORLD")) {
+							if (bCloseVertexList_)
+								effect->SetMatrix(handle, &matWorld);
+							else if (bCamera)
+								effect->SetMatrix(handle, &camera->GetMatrix());
+							else
+								effect->SetMatrix(handle, &camera3D->GetIdentity());
+						}
+						if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION")) {
+							D3DVIEWPORT9 viewPort;
+							device->GetViewport(&viewPort);
+
+							D3DXMATRIX matProj = camera3D->GetIdentity();
+							matProj._11 = 2.0f / viewPort.Width;
+							matProj._22 = -2.0f / viewPort.Height;
+							matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+							matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+							effect->SetMatrix(handle, &matProj);
+						}
+					}
+
 					effect->Begin(&countPass, 0);
 				}
 				for (UINT iPass = 0; iPass < countPass; ++iPass) {
@@ -1524,6 +1638,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 				if (effect != nullptr) effect->End();
 
 				device->SetIndices(nullptr);
+				device->SetVertexDeclaration(nullptr);
 			}
 		}
 
@@ -1533,7 +1648,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 			ID3DXEffect* effect = nullptr;
 			if (shader_ != nullptr) {
 				effect = shader_->GetEffect();
-				//shader_->_SetupParameter();
+				shader_->LoadParameter();
 				effect->Begin(&countPass, 0);
 			}
 			for (UINT iPass = 0; iPass < countPass; ++iPass) {
@@ -1564,7 +1679,7 @@ void SpriteList2D::_AddVertex(VERTEX_TLX& vertex) {
 	if (countRenderVertex_ >= count) {
 		//ÉäÉTÉCÉY
 		size_t newCount = std::max(10U, (size_t)(count * 1.5));
-		vertex_.SetSize(newCount * strideVertexStreamZero_);
+		vertex_.resize(newCount * strideVertexStreamZero_);
 	}
 	SetVertex(countRenderVertex_, vertex);
 	++countRenderVertex_;
@@ -1588,22 +1703,26 @@ void SpriteList2D::AddVertex(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 
 	VERTEX_TLX verts[4];
+	/*
 	float srcX[] = { (float)rcSrc_.left, (float)rcSrc_.right, (float)rcSrc_.left, (float)rcSrc_.right };
 	float srcY[] = { (float)rcSrc_.top, (float)rcSrc_.top, (float)rcSrc_.bottom, (float)rcSrc_.bottom };
 	int destX[] = { (int)rcDest_.left, (int)rcDest_.right, (int)rcDest_.left, (int)rcDest_.right };
 	int destY[] = { (int)rcDest_.top, (int)rcDest_.top, (int)rcDest_.bottom, (int)rcDest_.bottom };
+	*/
+	double* ptrSrc = reinterpret_cast<double*>(&rcSrc_);
+	double* ptrDst = reinterpret_cast<double*>(&rcDest_);
 
 //#pragma omp for
-	for (int iVert = 0; iVert < 4; ++iVert) {
+	for (size_t iVert = 0; iVert < 4; ++iVert) {
 		VERTEX_TLX vt;
-		vt.texcoord.x = srcX[iVert] / width;
-		vt.texcoord.y = srcY[iVert] / height;
+		vt.texcoord.x = ptrSrc[(iVert & 0b1) << 1] / width;
+		vt.texcoord.y = ptrSrc[iVert | 0b1] / height;
 
 		D3DXVECTOR4 vPos;
 
 		constexpr float bias = -0.5f;
-		vPos.x = destX[iVert] + bias;
-		vPos.y = destY[iVert] + bias;
+		vPos.x = ptrDst[(iVert & 0b1) << 1] + bias;
+		vPos.y = ptrDst[iVert | 0b1] + bias;
 		vPos.z = 1.0f;
 		vPos.w = 1.0f;
 		/*
@@ -1687,18 +1806,44 @@ void Sprite3D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ) {
 		ID3DXEffect* effect = nullptr;
 		if (shader_ != nullptr) {
 			effect = shader_->GetEffect();
-			//shader_->_SetupParameter();
+			shader_->LoadParameter();
+
+			if (bVertexShaderMode_) {
+				RenderShaderManager* shaderLib = ShaderManager::GetBase()->GetRenderLib();
+				auto camera = DirectGraphics::GetBase()->GetCamera();
+
+				device->SetVertexDeclaration(shaderLib->GetVertexDeclarationLX());
+
+				D3DXHANDLE handle = nullptr;
+				if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
+					effect->SetMatrix(handle, &matWorld);
+				if (handle = effect->GetParameterBySemantic(nullptr, "VIEW"))
+					effect->SetMatrix(handle, &camera->GetViewMatrix());
+				if (handle = effect->GetParameterBySemantic(nullptr, "PROJECTION")) {
+					D3DVIEWPORT9 viewPort;
+					device->GetViewport(&viewPort);
+
+					D3DXMATRIX matProj = camera->GetIdentity();
+					matProj._11 = 2.0f / viewPort.Width;
+					matProj._22 = -2.0f / viewPort.Height;
+					matProj._41 = -(float)(viewPort.Width + viewPort.X * 2.0f) / viewPort.Width;
+					matProj._42 = (float)(viewPort.Height + viewPort.Y * 2.0f) / viewPort.Height;
+
+					effect->SetMatrix(handle, &matProj);
+				}
+			}
+
 			effect->Begin(&countPass, 0);
 		}
 		for (UINT iPass = 0; iPass < countPass; ++iPass) {
 			if (effect != nullptr) effect->BeginPass(iPass);
 
 			if (vertexIndices_.size() == 0) {
-				device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
+				device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.data(), strideVertexStreamZero_);
 			}
 			else {
 				device->DrawIndexedPrimitiveUP(typePrimitive_, 0, GetVertexCount(), _GetPrimitiveCount(),
-					&vertexIndices_[0], D3DFMT_INDEX16, vertex_.GetPointer(), strideVertexStreamZero_);
+					&vertexIndices_[0], D3DFMT_INDEX16, vertex_.data(), strideVertexStreamZero_);
 			}
 
 			if (effect != nullptr) effect->EndPass();

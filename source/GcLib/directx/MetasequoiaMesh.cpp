@@ -330,7 +330,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 	}
 }
 
-void MetasequoiaMeshData::RenderObject::Render() {
+void MetasequoiaMeshData::RenderObject::Render(D3DXMATRIX* matTransform) {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	if (material_ != nullptr) {
 		if (material_->texture_ != nullptr)
@@ -339,7 +339,7 @@ void MetasequoiaMeshData::RenderObject::Render() {
 		device->SetMaterial(&tMaterial);
 	}
 
-	RenderObjectNX::Render();
+	RenderObjectNX::Render(matTransform);
 }
 
 //MetasequoiaMesh
@@ -408,11 +408,18 @@ void MetasequoiaMesh::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			angX, angY, angZ, &camera->GetIdentity(), bCoordinate2D_);
 		device->SetTransform(D3DTS_WORLD, &mat);
 
-		size_t i = 0;
-		for (auto render : data->renderList_) {
-			render->SetShader(shader_);
-			render->SetColor(color_);
-			render->Render();
+		{
+			size_t i = 0;
+			for (auto render : data->renderList_) {
+				render->SetVertexShaderRendering(bVertexShaderMode_);
+				render->SetFilteringMin(filterMin_);
+				render->SetFilteringMag(filterMag_);
+				render->SetFilteringMip(filterMip_);
+
+				render->SetShader(shader_);
+				render->SetColor(color_);
+				render->Render(&mat);
+			}
 		}
 
 		if (bCoordinate2D_) {

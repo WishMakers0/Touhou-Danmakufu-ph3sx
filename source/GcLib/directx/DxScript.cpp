@@ -46,6 +46,11 @@ DxScriptRenderObject::DxScriptRenderObject() {
 	scale_ = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 	
 	color_ = 0xffffffff;
+
+	filterMin_ = D3DTEXF_LINEAR;
+	filterMag_ = D3DTEXF_LINEAR;
+	filterMip_ = D3DTEXF_NONE;
+	bVertexShaderMode_ = false;
 }
 
 /**********************************************************
@@ -124,6 +129,10 @@ void DxScriptPrimitiveObject2D::SetRenderState() {
 	graphics->SetZBufferEnable(false);
 	graphics->SetBlendMode(typeBlend_);
 	graphics->SetCullingMode(modeCulling_);
+	obj->SetFilteringMin(filterMin_);
+	obj->SetFilteringMag(filterMag_);
+	obj->SetFilteringMip(filterMip_);
+	obj->SetVertexShaderRendering(bVertexShaderMode_);
 }
 bool DxScriptPrimitiveObject2D::IsValidVertexIndex(int index) {
 	RenderObjectTLX* obj = GetObjectPointer();
@@ -324,7 +333,10 @@ void DxScriptPrimitiveObject3D::SetRenderState() {
 		graphics->SetFogEnable(bFogEnable_);
 	graphics->SetBlendMode(typeBlend_);
 	graphics->SetCullingMode(modeCulling_);
-
+	obj->SetFilteringMin(filterMin_);
+	obj->SetFilteringMag(filterMag_);
+	obj->SetFilteringMip(filterMip_);
+	obj->SetVertexShaderRendering(bVertexShaderMode_);
 }
 bool DxScriptPrimitiveObject3D::IsValidVertexIndex(int index) {
 	RenderObjectLX* obj = GetObjectPointer();
@@ -458,6 +470,10 @@ void DxScriptTrajectoryObject3D::SetRenderState() {
 	graphics->SetZBufferEnable(bZTest_);
 	graphics->SetBlendMode(typeBlend_);
 	graphics->SetCullingMode(modeCulling_);
+	obj->SetFilteringMin(filterMin_);
+	obj->SetFilteringMag(filterMag_);
+	obj->SetFilteringMip(filterMip_);
+	obj->SetVertexShaderRendering(bVertexShaderMode_);
 }
 void DxScriptTrajectoryObject3D::SetColor(int r, int g, int b) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -487,6 +503,11 @@ DxScriptMeshObject::DxScriptMeshObject() {
 	angX_ = D3DXVECTOR2(1, 0);
 	angY_ = D3DXVECTOR2(1, 0);
 	angZ_ = D3DXVECTOR2(1, 0);
+
+	filterMin_ = D3DTEXF_LINEAR;
+	filterMag_ = D3DTEXF_LINEAR;
+	filterMip_ = D3DTEXF_NONE;
+	bVertexShaderMode_ = false;
 }
 
 void DxScriptMeshObject::Render() {
@@ -517,6 +538,11 @@ void DxScriptMeshObject::SetRenderState() {
 		graphics->SetFogEnable(bFogEnable_);
 	graphics->SetBlendMode(typeBlend_);
 	graphics->SetCullingMode(modeCulling_);
+
+	mesh_->SetFilteringMin(filterMin_);
+	mesh_->SetFilteringMag(filterMag_);
+	mesh_->SetFilteringMip(filterMip_);
+	mesh_->SetVertexShaderRendering(bVertexShaderMode_);
 }
 void DxScriptMeshObject::SetColor(int r, int g, int b) {
 	int a = ColorAccess::GetColorA(color_);
@@ -585,6 +611,8 @@ void DxScriptTextObject::SetRenderState() {
 	graphics->SetZBufferEnable(false);
 	graphics->SetBlendMode(typeBlend_);
 	graphics->SetCullingMode(D3DCULL_NONE);
+	//obj->SetFilteringMin(filterMin_);
+	//obj->SetFilteringMag(filterMag_);
 }
 void DxScriptTextObject::_UpdateRenderer() {
 	if (bChange_) {
@@ -929,7 +957,7 @@ bool DxBinaryFileObject::IsReadableSize(int size) {
 //DxScriptObjectManager
 **********************************************************/
 DxScriptObjectManager::DxScriptObjectManager() {
-	SetMaxObject(256 * 256);
+	SetMaxObject(2048);
 	SetRenderBucketCapacity(101);
 	totalObjectCreateCount_ = 0;
 
@@ -941,22 +969,20 @@ DxScriptObjectManager::DxScriptObjectManager() {
 DxScriptObjectManager::~DxScriptObjectManager() {
 
 }
-void DxScriptObjectManager::SetMaxObject(int max) {
-	if (obj_.size() == max)return;
+void DxScriptObjectManager::SetMaxObject(size_t max) {
+	if (obj_.size() == max) return;
 
-	if (obj_.size() < max) {
-		listUnusedIndex_.clear();
-		for (int iObj = 0; iObj < obj_.size(); ++iObj) {
-			if (obj_[iObj] != nullptr)continue;
-			listUnusedIndex_.push_back(iObj);
-		}
+	if (obj_.size() == 0) {
+		obj_.resize(max, nullptr);
+		for (size_t i = 0U; i < max; ++i) listUnusedIndex_.push_back(i);
 	}
-	for (int iObj = obj_.size(); iObj < max; ++iObj) {
-		listUnusedIndex_.push_back(iObj);
+	else {
+		size_t oldSize = obj_.size();
+		for (size_t i = oldSize; i < max; ++i) listUnusedIndex_.push_back(i);
+		obj_.resize(max, nullptr);
 	}
-	obj_.resize(max);
 }
-void DxScriptObjectManager::SetRenderBucketCapacity(int capacity) {
+void DxScriptObjectManager::SetRenderBucketCapacity(size_t capacity) {
 	objRender_.resize(capacity);
 	listShader_.resize(capacity);
 }
@@ -964,21 +990,22 @@ void DxScriptObjectManager::_ArrangeActiveObjectList() {
 	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end();) {
 		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
-		if (obj == nullptr || obj->IsDeleted() || !obj->IsActive()) itr = listActiveObject_.erase(itr);
+		if (obj == nullptr || obj->IsDeleted() || !obj->IsActive())
+			itr = listActiveObject_.erase(itr);
 		else ++itr;
 	}
 }
 int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
 	int res = DxScript::ID_INVALID;
-	if (listUnusedIndex_.size() <= obj_.size() / 2) {
-		//空きがない(念のために空きが半分以下)ので拡張
-		int oldSize = obj_.size();
-		int newSize = oldSize * 1.5;
+
+	if (listUnusedIndex_.size() < 16) {
+		size_t oldSize = obj_.size();
+		size_t newSize = oldSize * 2;
 		SetMaxObject(newSize);
 		Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object buffer extension. [%d->%d]", oldSize, newSize));
 	}
 
-	if (listUnusedIndex_.size() != 0) {
+	{
 		res = listUnusedIndex_.front();
 		listUnusedIndex_.pop_front();
 
@@ -995,6 +1022,7 @@ int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::un
 
 	return res;
 }
+/*
 void DxScriptObjectManager::AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
 	obj_[id] = obj;
 	obj->idObject_ = id;
@@ -1013,6 +1041,7 @@ void DxScriptObjectManager::AddObject(int id, gstd::ref_count_ptr<DxScriptObject
 		}
 	}
 }
+*/
 void DxScriptObjectManager::ActivateObject(int id, bool bActivate) {
 	gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = GetObject(id);
 	if (obj == nullptr || obj->IsDeleted())return;
@@ -1043,16 +1072,17 @@ void DxScriptObjectManager::DeleteObject(int id) {
 
 	obj_[id]->bDeleted_ = true;
 	obj_[id] = nullptr;
-	//listUnusedIndex_.push_back(id);
+
+	listUnusedIndex_.push_back(id);
 }
 void DxScriptObjectManager::ClearObject() {
-	int size = obj_.size();
+	size_t size = obj_.size();
 	obj_.clear();
 	obj_.resize(size);
 	listActiveObject_.clear();
 
 	listUnusedIndex_.clear();
-	for (int iObj = 0; iObj < size; ++iObj) {
+	for (size_t iObj = 0; iObj < size; ++iObj) {
 		listUnusedIndex_.push_back(iObj);
 	}
 }
@@ -1115,6 +1145,7 @@ void DxScriptObjectManager::RenderObject() {
 		UINT cPass = 1;
 		if (shader != nullptr) {
 			effect = shader->GetEffect();
+			shader->LoadParameter();
 			effect->Begin(&cPass, 0);
 		}
 
@@ -1356,6 +1387,7 @@ function const dxFunction[] =
 	{ "ObjRender_SetTextureFilterMin", DxScript::Func_ObjRender_SetTextureFilterMin, 2 },
 	{ "ObjRender_SetTextureFilterMag", DxScript::Func_ObjRender_SetTextureFilterMag, 2 },
 	{ "ObjRender_SetTextureFilterMip", DxScript::Func_ObjRender_SetTextureFilterMip, 2 },
+	{ "ObjRender_SetVertexShaderRenderingMode", DxScript::Func_ObjRender_SetVertexShaderRenderingMode, 2 },
 
 	//Dx関数：オブジェクト操作(ShaderObject)
 	{ "ObjShader_Create", DxScript::Func_ObjShader_Create, 0 },
@@ -1744,8 +1776,9 @@ int DxScript::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, boo
 }
 gstd::ref_count_ptr<Texture> DxScript::_GetTexture(std::wstring name) {
 	gstd::ref_count_ptr<Texture> res;
-	if (mapTexture_.find(name) != mapTexture_.end()) {
-		res = mapTexture_[name];
+	auto itr = mapTexture_.find(name);
+	if (itr != mapTexture_.end()) {
+		res = itr->second;
 	}
 	return res;
 }
@@ -1976,11 +2009,12 @@ value DxScript::Func_RemoveSound(script_machine* machine, int argc, const value*
 
 	std::wstring path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
-	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
-	player->Delete();
-	script->mapSoundPlayer_.erase(path);
+	auto itr = script->mapSoundPlayer_.find(path);
+	if (itr == script->mapSoundPlayer_.end())return value();
+
+	itr->second->Delete();
+	script->mapSoundPlayer_.erase(itr);
 
 	return value();
 }
@@ -1990,12 +2024,14 @@ value DxScript::Func_PlayBGM(script_machine* machine, int argc, const value* arg
 
 	std::wstring path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
-	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
+
+	auto itr = script->mapSoundPlayer_.find(path);
+	if (itr == script->mapSoundPlayer_.end())return value();
 
 	double loopStart = argv[1].as_real();
 	double loopEnd = argv[2].as_real();
 
-	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	gstd::ref_count_ptr<SoundPlayer> player = itr->second;
 	player->SetSoundDivision(SoundDivision::DIVISION_BGM);
 
 	SoundPlayer::PlayStyle style;
@@ -2013,9 +2049,11 @@ gstd::value DxScript::Func_PlaySE(gstd::script_machine* machine, int argc, const
 
 	std::wstring path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
-	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	auto itr = script->mapSoundPlayer_.find(path);
+	if (itr == script->mapSoundPlayer_.end())return value();
+
+	gstd::ref_count_ptr<SoundPlayer> player = itr->second;
 	player->SetSoundDivision(SoundDivision::DIVISION_SE);
 
 	SoundPlayer::PlayStyle style;
@@ -2030,9 +2068,11 @@ value DxScript::Func_StopSound(script_machine* machine, int argc, const value* a
 
 	std::wstring path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
-	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())return value();
 
-	gstd::ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	auto itr = script->mapSoundPlayer_.find(path);
+	if (itr == script->mapSoundPlayer_.end())return value();
+
+	gstd::ref_count_ptr<SoundPlayer> player = itr->second;
 	player->Stop();
 	script->GetObjectManager()->DeleteReservedSound(player);
 
@@ -3376,9 +3416,9 @@ value DxScript::Func_ObjRender_SetTextureFilterMin(gstd::script_machine* machine
 	type = std::max(type, (int)D3DTEXF_NONE);
 	type = std::min(type, (int)D3DTEXF_ANISOTROPIC);
 
-	DxScriptPrimitiveObject2D* obj = dynamic_cast<DxScriptPrimitiveObject2D*>(script->GetObjectPointer(id));
+	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != nullptr)
-		obj->GetObjectPointer()->SetFilteringMin((D3DTEXTUREFILTERTYPE)type);
+		obj->SetFilteringMin((D3DTEXTUREFILTERTYPE)type);
 
 	return value();
 }
@@ -3390,9 +3430,9 @@ value DxScript::Func_ObjRender_SetTextureFilterMag(gstd::script_machine* machine
 	type = std::max(type, (int)D3DTEXF_NONE);
 	type = std::min(type, (int)D3DTEXF_ANISOTROPIC);
 
-	DxScriptPrimitiveObject2D* obj = dynamic_cast<DxScriptPrimitiveObject2D*>(script->GetObjectPointer(id));
+	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != nullptr)
-		obj->GetObjectPointer()->SetFilteringMag((D3DTEXTUREFILTERTYPE)type);
+		obj->SetFilteringMag((D3DTEXTUREFILTERTYPE)type);
 
 	return value();
 }
@@ -3404,9 +3444,19 @@ value DxScript::Func_ObjRender_SetTextureFilterMip(gstd::script_machine* machine
 	type = std::max(type, (int)D3DTEXF_NONE);
 	type = std::min(type, (int)D3DTEXF_ANISOTROPIC);
 
-	DxScriptPrimitiveObject2D* obj = dynamic_cast<DxScriptPrimitiveObject2D*>(script->GetObjectPointer(id));
+	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
 	if (obj != nullptr)
-		obj->GetObjectPointer()->SetFilteringMip((D3DTEXTUREFILTERTYPE)type);
+		obj->SetFilteringMip((D3DTEXTUREFILTERTYPE)type);
+
+	return value();
+}
+value DxScript::Func_ObjRender_SetVertexShaderRenderingMode(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+
+	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
+	if (obj != nullptr)
+		obj->SetVertexShaderRendering(argv[1].as_boolean());
 
 	return value();
 }
@@ -3415,7 +3465,6 @@ value DxScript::Func_ObjRender_SetTextureFilterMip(gstd::script_machine* machine
 gstd::value DxScript::Func_ObjShader_Create(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
-	int type = (int)argv[0].as_real();
 	ref_count_ptr<DxScriptShaderObject>::unsync obj = new DxScriptShaderObject();
 
 	int id = ID_INVALID;
@@ -3444,7 +3493,7 @@ gstd::value DxScript::Func_ObjShader_SetShaderF(gstd::script_machine* machine, i
 		obj->SetShader(shader);
 
 		if (!res) {
-			std::wstring error = Shader::GetLastError();
+			std::wstring error = ShaderManager::GetBase()->GetLastError();
 			script->RaiseError(error);
 		}
 	}
@@ -3486,9 +3535,7 @@ gstd::value DxScript::Func_ObjShader_SetTechnique(gstd::script_machine* machine,
 	if (shader == nullptr)return value();
 
 	std::string aPath = StringUtility::ConvertWideToMulti(argv[1].as_string());
-	//shader->SetTechnique(aPath);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetTechnique(aPath.c_str());
+	shader->SetTechnique(aPath);
 
 	return value();
 }
@@ -3505,21 +3552,19 @@ gstd::value DxScript::Func_ObjShader_SetMatrix(gstd::script_machine* machine, in
 	const gstd::value& sMatrix = argv[2];
 	type_data::type_kind kind = sMatrix.get_type()->get_kind();
 	if (kind != type_data::type_kind::tk_array)return value();
-	int arrayLength = sMatrix.length_as_array();
+
+	size_t arrayLength = sMatrix.length_as_array();
 	if (arrayLength != 16)return value();
 
 	D3DXMATRIX matrix;
-	for (int iRow = 0; iRow < 4; iRow++) {
-		for (int iCol = 0; iCol < 4; iCol++) {
-			int index = iRow * 4 + iCol;
+	for (size_t iRow = 0; iRow < 4; iRow++) {
+		for (size_t iCol = 0; iCol < 4; iCol++) {
+			size_t index = iRow * 4 + iCol;
 			const value& arrayValue = sMatrix.index_as_array(index);
-			double fValue = arrayValue.as_real();
-			matrix.m[iRow][iCol] = fValue;
+			matrix.m[iRow][iCol] = arrayValue.as_real();
 		}
 	}
-	//shader->SetMatrix(name, matrix);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetMatrix(name.c_str(), &matrix);
+	shader->SetMatrix(name, matrix);
 
 	return value();
 }
@@ -3537,29 +3582,27 @@ gstd::value DxScript::Func_ObjShader_SetMatrixArray(gstd::script_machine* machin
 	type_data::type_kind kind = array.get_type()->get_kind();
 	if (kind != type_data::type_kind::tk_array)return value();
 
-	int dataLength = array.length_as_array();
+	size_t dataLength = array.length_as_array();
 	std::vector<D3DXMATRIX> listMatrix;
-	for (int iArray = 0; iArray < dataLength; ++iArray) {
+	for (size_t iArray = 0; iArray < dataLength; ++iArray) {
 		const value& sMatrix = array.index_as_array(iArray);
 		type_data::type_kind kind = sMatrix.get_type()->get_kind();
 		if (kind != type_data::type_kind::tk_array)return value();
-		int arrayLength = sMatrix.length_as_array();
+
+		size_t arrayLength = sMatrix.length_as_array();
 		if (arrayLength != 16)return value();
 
 		D3DXMATRIX matrix;
-		for (int iRow = 0; iRow < 4; ++iRow) {
-			for (int iCol = 0; iCol < 4; ++iCol) {
-				int index = iRow * 4 + iCol;
+		for (size_t iRow = 0; iRow < 4; ++iRow) {
+			for (size_t iCol = 0; iCol < 4; ++iCol) {
+				size_t index = iRow * 4 + iCol;
 				const value& arrayValue = sMatrix.index_as_array(index);
-				double fValue = arrayValue.as_real();
-				matrix.m[iRow][iCol] = fValue;
+				matrix.m[iRow][iCol] = arrayValue.as_real();
 			}
 		}
 		listMatrix.push_back(matrix);
 	}
-	//shader->SetMatrixArray(name, listMatrix);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetMatrixArray(name.c_str(), &listMatrix[0], listMatrix.size());
+	shader->SetMatrixArray(name, listMatrix);
 
 	return value();
 }
@@ -3574,14 +3617,12 @@ gstd::value DxScript::Func_ObjShader_SetVector(gstd::script_machine* machine, in
 
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
 	D3DXVECTOR4 vect4;
-	vect4.x = (float)argv[2].as_real();
-	vect4.y = (float)argv[3].as_real();
-	vect4.z = (float)argv[4].as_real();
-	vect4.w = (float)argv[5].as_real();
+	vect4.x = (FLOAT)argv[2].as_real();
+	vect4.y = (FLOAT)argv[3].as_real();
+	vect4.z = (FLOAT)argv[4].as_real();
+	vect4.w = (FLOAT)argv[5].as_real();
 
-	//shader->SetVector(name, vect4);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetVector(name.c_str(), &vect4);
+	shader->SetVector(name, vect4);
 
 	return value();
 }
@@ -3595,10 +3636,7 @@ gstd::value DxScript::Func_ObjShader_SetFloat(gstd::script_machine* machine, int
 	if (shader == nullptr)return value();
 
 	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
-	double vValue = (double)argv[2].as_real();
-	//shader->SetFloat(name, vValue);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetFloat(name.c_str(), (float)vValue);
+	shader->SetFloat(name, (FLOAT)argv[2].as_real());
 
 	return value();
 }
@@ -3616,16 +3654,13 @@ gstd::value DxScript::Func_ObjShader_SetFloatArray(gstd::script_machine* machine
 	type_data::type_kind kind = array.get_type()->get_kind();
 	if (kind != type_data::type_kind::tk_array)return value();
 
-	int dataLength = array.length_as_array();
-	std::vector<float> listFloat;
-	for (int iArray = 0; iArray < dataLength; ++iArray) {
+	size_t dataLength = array.length_as_array();
+	std::vector<FLOAT> listFloat;
+	for (size_t iArray = 0; iArray < dataLength; ++iArray) {
 		const value& aValue = array.index_as_array(iArray);
-		float fValue = (float)aValue.as_real();
-		listFloat.push_back(fValue);
+		listFloat.push_back((FLOAT)aValue.as_real());
 	}
-	//shader->SetFloatArray(name, listFloat);
-	ID3DXEffect* effect = shader->GetEffect();
-	effect->SetFloatArray(name.c_str(), &listFloat[0], listFloat.size());
+	shader->SetFloatArray(name, listFloat);
 
 	return value();
 }
@@ -3642,8 +3677,9 @@ gstd::value DxScript::Func_ObjShader_SetTexture(gstd::script_machine* machine, i
 	std::wstring path = argv[2].as_string();
 	path = PathProperty::GetUnique(path);
 
-	if (script->mapTexture_.find(path) != script->mapTexture_.end()) {
-		shader->SetTexture(name, script->mapTexture_[path]);
+	auto itr = script->mapTexture_.find(path);
+	if (itr != script->mapTexture_.end()) {
+		shader->SetTexture(name, itr->second);
 	}
 	else {
 		ref_count_ptr<Texture> texture = new Texture();
@@ -3720,8 +3756,10 @@ value DxScript::Func_ObjPrimitive_SetTexture(script_machine* machine, int argc, 
 
 	std::wstring path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
-	if (script->mapTexture_.find(path) != script->mapTexture_.end()) {
-		obj->SetTexture(script->mapTexture_[path]);
+
+	auto itr = script->mapTexture_.find(path);
+	if (itr != script->mapTexture_.end()) {
+		obj->SetTexture(itr->second);
 	}
 	else {
 		ref_count_ptr<Texture> texture = new Texture();
