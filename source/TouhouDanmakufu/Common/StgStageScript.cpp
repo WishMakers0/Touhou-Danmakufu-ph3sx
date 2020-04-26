@@ -80,7 +80,7 @@ void StgStageScriptManager::SetShotScript(ref_count_ptr<ManagedScript> id) {
 **********************************************************/
 StgStageScriptObjectManager::StgStageScriptObjectManager(StgStageController* stageController) {
 	stageController_ = stageController;
-	SetMaxObject(256 * 256);
+	SetMaxObject(2048U);
 
 	idObjPleyer_ = DxScript::ID_INVALID;
 }
@@ -3630,7 +3630,7 @@ gstd::value StgStageScript::Func_ObjShot_GetDelay(gstd::script_machine* machine,
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
 	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
-	if (obj == nullptr)return value();
+	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	int res = obj->GetDelay();
 	return value(machine->get_engine()->get_real_type(), (double)res);
@@ -3640,7 +3640,7 @@ gstd::value StgStageScript::Func_ObjShot_GetDamage(gstd::script_machine* machine
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
 	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
-	if (obj == nullptr)return value();
+	if (obj == nullptr) return value(machine->get_engine()->get_real_type(), 0.0);
 
 	int res = obj->GetDamage();
 	return value(machine->get_engine()->get_real_type(), (double)res);
@@ -3660,7 +3660,7 @@ gstd::value StgStageScript::Func_ObjShot_IsSpellResist(gstd::script_machine* mac
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
 	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
-	if (obj == nullptr)return value();
+	if (obj == nullptr) return value(machine->get_engine()->get_boolean_type(), false);
 
 	bool res = obj->GetLife() == StgShotObject::LIFE_SPELL_REGIST;
 	return value(machine->get_engine()->get_boolean_type(), res);
@@ -3671,7 +3671,7 @@ gstd::value StgStageScript::Func_ObjShot_GetImageID(gstd::script_machine* machin
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
 	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
-	if (obj == nullptr)return value();
+	if (obj == nullptr) value(machine->get_engine()->get_real_type(), 0.0);
 
 	int res = obj->GetShotDataID();
 	return value(machine->get_engine()->get_real_type(), (double)res);
