@@ -42,7 +42,7 @@ protected:
 	StgStageController* stageController_;
 	StgShotDataList* listPlayerShotData_;
 	StgShotDataList* listEnemyShotData_;
-	std::vector<ref_count_ptr<StgShotObject>::unsync> listObj_;
+	std::list<ref_count_ptr<StgShotObject>::unsync> listObj_;
 
 	std::bitset<BIT_EV_DELETE_COUNT> listDeleteEventEnable_;
 
@@ -567,9 +567,13 @@ inline void StgShotObject::_SetVertexColorARGB(VERTEX_TLX& vertex, D3DCOLOR colo
 	vertex.diffuse_color = color;
 }
 inline void StgShotObject::SetAlpha(int alpha) {
+	ColorAccess::ClampColor(alpha);
 	color_ = (color_ & 0x00ffffff) | ((byte)alpha << 24);
 }
 inline void StgShotObject::SetColor(int r, int g, int b) {
+	ColorAccess::ClampColor(r);
+	ColorAccess::ClampColor(g);
+	ColorAccess::ClampColor(b);
 	D3DCOLOR dc = D3DCOLOR_ARGB(0, r, g, b);
 	color_ = (color_ & 0xff000000) | dc;
 }

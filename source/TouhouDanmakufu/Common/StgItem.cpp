@@ -29,7 +29,7 @@ StgItemManager::StgItemManager(StgStageController* stageController) {
 	bDefaultBonusItemEnable_ = true;
 	bAllItemToPlayer_ = false;
 
-	listObj_.reserve(ITEM_MAX);
+	//listObj_.reserve(ITEM_MAX);
 
 	vertexBuffer_ = nullptr;
 	_SetVertexBuffer(256 * 256);
@@ -55,9 +55,10 @@ void StgItemManager::Work() {
 	pr *= pr;
 	int pAutoItemCollectY = objPlayer->GetAutoItemCollectY();
 
-	std::vector<ref_count_ptr<StgItemObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); ) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
+	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end();) {
+		ref_count_ptr<StgItemObject>::unsync obj = *itr;
+
 		if (obj->IsDeleted()) {
 			//obj->Clear();
 			itr = listObj_.erase(itr);
@@ -71,9 +72,12 @@ void StgItemManager::Work() {
 				double dx = px - ix;
 				double dy = py - iy;
 
+				//if (obj->GetItemType() == StgItemObject::ITEM_SCORE && obj->GetFrameWork() > 60 * 15)
+				//	obj->Intersect(nullptr, nullptr);
+
 				double radius = dx * dx + dy * dy;
 				if (radius <= 16 * 16) {
-					obj->Intersect(NULL, NULL);
+					obj->Intersect(nullptr, nullptr);
 				}
 				else if (radius <= pr && obj->IsPermitMoveToPlayer()) {
 					obj->SetMoveToPlayer(true);
@@ -127,7 +131,7 @@ void StgItemManager::Work() {
 				obj->SetMoveToPlayer(false);
 			}
 
-			itr++;
+			++itr;
 		}
 	}
 	listItemTypeToPlayer_.clear();
@@ -157,9 +161,9 @@ void StgItemManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::vector<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
+	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgItemObject>::unsync obj = *itr;
 		if (obj->IsDeleted())continue;
 		if (obj->GetRenderPriorityI() != targetPriority)continue;
 
@@ -203,14 +207,13 @@ void StgItemManager::Render(int targetPriority) {
 
 		device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
 
-		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+		for (size_t iBlend = 0; iBlend < countBlendType; iBlend++) {
 			graphics->SetBlendMode(blendMode[iBlend]);
 
 			std::vector<StgItemRenderer*>* listRenderer =
 				listItemData_->GetRendererList(blendMode[iBlend] - 1);
 
-			int iRender = 0;
-			for (iRender = 0; iRender < listRenderer->size(); iRender++)
+			for (size_t iRender = 0; iRender < listRenderer->size(); iRender++)
 				(*listRenderer)[iRender]->Render(this);
 		}
 
@@ -237,14 +240,10 @@ void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::vector<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
-
-//#pragma omp for
-	for (int iObj = 0; iObj < GetItemCount(); ++iObj) {
-		ref_count_ptr<StgItemObject>::unsync obj = *(itr + iObj);
-
+	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgItemObject>::unsync obj = *itr;
 		if (obj->IsDeleted()) continue;
-
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
 	}
@@ -315,7 +314,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 	if (!bReload && listReadPath_.find(path) != listReadPath_.end())return true;
 
 	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
-	if (reader == NULL) throw gstd::wexception(ErrorUtility::GetFileNotFoundErrorMessage(path));
+	if (reader == nullptr) throw gstd::wexception(ErrorUtility::GetFileNotFoundErrorMessage(path));
 	if (!reader->Open())throw gstd::wexception(ErrorUtility::GetFileNotFoundErrorMessage(path));
 	std::string source = reader->ReadAllString();
 
@@ -368,7 +367,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 		if (textureIndex < 0) {
 			textureIndex = listTexture_.size();
 			listTexture_.push_back(texture);
-			for (int iRender = 0; iRender < listRenderer_.size(); iRender++) {
+			for (size_t iRender = 0; iRender < listRenderer_.size(); iRender++) {
 				StgItemRenderer* render = new StgItemRenderer();
 				render->SetTexture(texture);
 				listRenderer_[iRender].push_back(render);
@@ -377,9 +376,9 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 
 		if (listData_.size() < listData.size())
 			listData_.resize(listData.size());
-		for (int iData = 0; iData < listData.size(); iData++) {
+		for (size_t iData = 0; iData < listData.size(); iData++) {
 			StgItemData* data = listData[iData];
-			if (data == NULL)continue;
+			if (data == nullptr)continue;
 			data->indexTexture_ = textureIndex;
 			listData_[iData] = data;
 		}
@@ -391,12 +390,12 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 	catch (gstd::wexception& e) {
 		std::wstring log = StringUtility::Format(L"Failed to load item data: [Line=%d] (%s)", scanner.GetCurrentLine(), e.what());
 		Logger::WriteTop(log);
-		res = NULL;
+		res = false;
 	}
 	catch (...) {
 		std::wstring log = StringUtility::Format(L"Failed to load item data: [Line=%d] (Unknown error.)", scanner.GetCurrentLine());
 		Logger::WriteTop(log);
-		res = NULL;
+		res = false;
 	}
 
 	return res;
@@ -428,12 +427,26 @@ void StgItemDataList::_ScanItem(std::vector<StgItemData*>& listData, Scanner& sc
 			}
 			else if (element == L"rect") {
 				std::vector<std::wstring> list = _GetArgumentList(scanner);
+
+				StgItemData::AnimationData anime;
+
 				RECT rect;
 				rect.left = StringUtility::ToInteger(list[0]);
 				rect.top = StringUtility::ToInteger(list[1]);
 				rect.right = StringUtility::ToInteger(list[2]);
 				rect.bottom = StringUtility::ToInteger(list[3]);
-				data->rcSrc_ = rect;
+				anime.rcSrc_ = rect;
+
+				int width = rect.right - rect.left;
+				int height = rect.bottom - rect.top;
+				RECT rcDest = { -width / 2, -height / 2, width / 2, height / 2 };
+				if (width % 2 == 1) rcDest.right += 1;
+				if (height % 2 == 1) rcDest.bottom += 1;
+				anime.rcDest_ = rcDest;
+
+				data->listAnime_.resize(1);
+				data->listAnime_[0] = anime;
+				data->totalAnimeFrame_ = 1;
 			}
 			else if (element == L"out") {
 				std::vector<std::wstring> list = _GetArgumentList(scanner);
@@ -442,7 +455,14 @@ void StgItemDataList::_ScanItem(std::vector<StgItemData*>& listData, Scanner& sc
 				rect.top = StringUtility::ToInteger(list[1]);
 				rect.right = StringUtility::ToInteger(list[2]);
 				rect.bottom = StringUtility::ToInteger(list[3]);
-				data->rcOut_ = rect;
+				data->rcOutSrc_ = rect;
+
+				int width = rect.right - rect.left;
+				int height = rect.bottom - rect.top;
+				RECT rcDest = { -width / 2, -height / 2, width / 2, height / 2 };
+				if (width % 2 == 1) rcDest.right += 1;
+				if (height % 2 == 1) rcDest.bottom += 1;
+				data->rcOutDest_ = rcDest;
 			}
 			else if (element == L"render") {
 				scanner.CheckType(scanner.Next(), Token::TK_EQUAL);
@@ -498,8 +518,15 @@ void StgItemDataList::_ScanAnimation(StgItemData* itemData, Scanner& scanner) {
 						StringUtility::ToInteger(list[4]),
 					};
 
+					int width = rcSrc.right - rcSrc.left;
+					int height = rcSrc.bottom - rcSrc.top;
+					RECT rcDest = { -width / 2, -height / 2, width / 2, height / 2 };
+					if (width % 2 == 1)rcDest.right += 1;
+					if (height % 2 == 1)rcDest.bottom += 1;
+
 					anime.frame_ = frame;
 					anime.rcSrc_ = rcSrc;
+					anime.rcDest_ = rcDest;
 
 					itemData->listAnime_.push_back(anime);
 					itemData->totalAnimeFrame_ += frame;
@@ -535,37 +562,27 @@ std::vector<std::wstring> StgItemDataList::_GetArgumentList(Scanner& scanner) {
 StgItemData::StgItemData(StgItemDataList* listItemData) {
 	listItemData_ = listItemData;
 	typeRender_ = DirectGraphics::MODE_BLEND_ALPHA;
-	SetRect(&rcSrc_, 0, 0, 0, 0);
-	SetRect(&rcOut_, 0, 0, 0, 0);
+	SetRect(&rcOutSrc_, 0, 0, 0, 0);
+	SetRect(&rcOutDest_, 0, 0, 0, 0);
 	alpha_ = 255;
 	totalAnimeFrame_ = 0;
 }
 StgItemData::~StgItemData() {}
-RECT StgItemData::GetRect(int frame) {
-	if (totalAnimeFrame_ == 0)
-		return rcSrc_;
+StgItemData::AnimationData* StgItemData::GetData(int frame) {
+	if (totalAnimeFrame_ <= 1)
+		return &listAnime_[0];
 
-	RECT res;
 	frame = frame % totalAnimeFrame_;
 	int total = 0;
+
 	std::vector<AnimationData>::iterator itr = listAnime_.begin();
 	for (; itr != listAnime_.end(); itr++) {
 		//AnimationData* anime = itr;
 		total += itr->frame_;
-		if (total >= frame) {
-			res = itr->rcSrc_;
-			break;
-		}
+		if (total >= frame)
+			return &(*itr);
 	}
-
-	return res;
-}
-ref_count_ptr<Texture> StgItemData::GetTexture() {
-	ref_count_ptr<Texture> res = listItemData_->GetTexture(indexTexture_);
-	return res;
-}
-StgItemRenderer* StgItemData::GetRenderer() {
-	return GetRenderer(typeRender_);
+	return &listAnime_[0];
 }
 StgItemRenderer* StgItemData::GetRenderer(int type) {
 	if (type < DirectGraphics::MODE_BLEND_ALPHA || type > DirectGraphics::MODE_BLEND_ADD_ARGB)
@@ -668,6 +685,8 @@ void StgItemObject::Work() {
 	SetY(posY_);
 
 	_DeleteInAutoClip();
+
+	++frameWork_;
 }
 void StgItemObject::RenderOnItemManager() {
 	StgItemManager* itemManager = stageController_->GetItemManager();
@@ -1057,15 +1076,18 @@ void StgItemObject_User::RenderOnItemManager() {
 	double s = 0.0;
 	double posy = position_.y;
 
-	RECT rcSrc;
+	StgItemData::AnimationData* frameData = itemData->GetData(frameWork_);
+
+	RECT* rcSrc = &frameData->rcSrc_;
+	RECT* rcDst = &frameData->rcDest_;
 	D3DCOLOR color;
 
 	{
 		bool bOutY = false;
-		rcSrc = itemData->GetRect(frameWork_);
-		if (position_.y + (rcSrc.bottom - rcSrc.top) / 2 <= 0) {
+		if (position_.y + (rcSrc->bottom - rcSrc->top) / 2 <= 0) {
 			bOutY = true;
-			rcSrc = itemData->GetOut();
+			rcSrc = itemData->GetOutSrc();
+			rcDst = itemData->GetOutDest();
 		}
 
 		if (!bOutY) {
@@ -1075,7 +1097,7 @@ void StgItemObject_User::RenderOnItemManager() {
 		else {
 			scaleX = 1.0;
 			scaleY = 1.0;
-			posy = (rcSrc.bottom - rcSrc.top) / 2;
+			posy = (rcSrc->bottom - rcSrc->top) / 2;
 		}
 
 		bool bBlendAddRGB = (objBlendType == DirectGraphics::MODE_BLEND_ADD_RGB);
@@ -1090,25 +1112,23 @@ void StgItemObject_User::RenderOnItemManager() {
 		}
 	}
 
-	int width = rcSrc.right - rcSrc.left;
-	int height = rcSrc.bottom - rcSrc.top;
-	RECT rcDest = { -width / 2, -height / 2, width / 2, height / 2 };
-	if (width % 2 == 1)rcDest.right += 1;
-	if (height % 2 == 1)rcDest.bottom += 1;
-
 	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//ê⁄êGÉeÉXÉg
 
 	VERTEX_TLX verts[4];
+	/*
 	int srcX[] = { rcSrc.left, rcSrc.right, rcSrc.left, rcSrc.right };
 	int srcY[] = { rcSrc.top, rcSrc.top, rcSrc.bottom, rcSrc.bottom };
 	int destX[] = { rcDest.left, rcDest.right, rcDest.left, rcDest.right };
 	int destY[] = { rcDest.top, rcDest.top, rcDest.bottom, rcDest.bottom };
-//#pragma omp parallel for
-	for (int iVert = 0; iVert < 4; iVert++) {
+	*/
+	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
+	LONG* ptrDst = reinterpret_cast<LONG*>(rcDst);
+
+	for (size_t iVert = 0; iVert < 4; iVert++) {
 		VERTEX_TLX vt;
 
-		_SetVertexUV(vt, srcX[iVert], srcY[iVert]);
-		_SetVertexPosition(vt, destX[iVert], destY[iVert]);
+		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+		_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 		_SetVertexColorARGB(vt, color);
 
 		double px = vt.position.x * scaleX;

@@ -22,7 +22,7 @@ class StgItemManager {
 	SpriteList2D* listSpriteDigit_;
 	StgItemDataList* listItemData_;
 
-	std::vector<ref_count_ptr<StgItemObject>::unsync> listObj_;
+	std::list<ref_count_ptr<StgItemObject>::unsync> listObj_;
 	std::set<int> listItemTypeToPlayer_;
 	std::list<DxCircle> listCircleToPlayer_;
 	bool bAllItemToPlayer_;
@@ -102,19 +102,20 @@ public:
 
 class StgItemData {
 	friend StgItemDataList;
-private:
+public:
 	struct AnimationData {
 		RECT rcSrc_;
+		RECT rcDest_;
 		int frame_;
 	};
-
+private:
 	StgItemDataList* listItemData_;
 	int indexTexture_;
 
 	int typeItem_;
 	int typeRender_;
-	RECT rcSrc_;
-	RECT rcOut_;
+	RECT rcOutSrc_;
+	RECT rcOutDest_;
 	int alpha_;
 
 	std::vector<AnimationData> listAnime_;
@@ -127,12 +128,13 @@ public:
 	int GetTextureIndex() { return indexTexture_; }
 	int GetItemType() { return typeItem_; }
 	int GetRenderType() { return typeRender_; }
-	RECT GetRect(int frame);
-	RECT GetOut() { return rcOut_; }
+	AnimationData* GetData(int frame);
+	RECT* GetOutSrc() { return &rcOutSrc_; }
+	RECT* GetOutDest() { return &rcOutDest_; }
 	int GetAlpha() { return alpha_; }
 
-	ref_count_ptr<Texture> GetTexture();
-	StgItemRenderer* GetRenderer();
+	ref_count_ptr<Texture> GetTexture() { return listItemData_->GetTexture(indexTexture_); }
+	StgItemRenderer* GetRenderer() { return GetRenderer(typeRender_); }
 	StgItemRenderer* GetRenderer(int type);
 };
 
@@ -198,6 +200,8 @@ protected:
 	bool bPermitMoveToPlayer_; //Ž©‹@Ž©“®‰ñŽû‹–‰Â
 	bool bChangeItemScore_;
 
+	int frameWork_;
+
 	void _DeleteInAutoClip();
 	void _CreateScoreItem();
 	void _NotifyEventToPlayerScript(std::vector<float>& listValue);
@@ -228,6 +232,8 @@ public:
 
 	int GetMoveType();
 	void SetMoveType(int type);
+
+	int GetFrameWork() { return frameWork_; }
 
 	int GetItemType() { return typeItem_; }
 	void SetItemType(int type) { typeItem_ = type; }

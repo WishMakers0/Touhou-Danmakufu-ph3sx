@@ -15,7 +15,7 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	listPlayerShotData_ = new StgShotDataList();
 	listEnemyShotData_ = new StgShotDataList();
 
-	listObj_.reserve(SHOT_MAX);
+	//listObj_.reserve(SHOT_MAX);
 
 	vertexBuffer_ = nullptr;
 	_SetVertexBuffer(256 * 256);
@@ -63,7 +63,7 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 }
 StgShotManager::~StgShotManager() {
-	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj != nullptr) {
@@ -86,7 +86,7 @@ StgShotManager::~StgShotManager() {
 	*/
 }
 void StgShotManager::Work() {
-	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj->IsDeleted()) {
@@ -123,8 +123,8 @@ void StgShotManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
-	for (; itr != listObj_.end(); itr++) {
+	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
 		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())continue;
 		if (!obj->IsActive())continue;
@@ -168,7 +168,7 @@ void StgShotManager::Render(int targetPriority) {
 	{
 		//Always render enemy shots above player shots, completely obliterates TAƒ°'s wet dream.
 
-		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+		for (size_t iBlend = 0; iBlend < countBlendType; iBlend++) {
 			graphics->SetBlendMode(blendMode[iBlend]);
 
 			std::vector<StgShotRenderer*>* listPlayer =
@@ -177,7 +177,7 @@ void StgShotManager::Render(int targetPriority) {
 			for (size_t iRender = 0U; iRender < listPlayer->size(); iRender++)
 				(*listPlayer)[iRender]->Render(this);
 		}
-		for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
+		for (size_t iBlend = 0; iBlend < countBlendType; iBlend++) {
 			graphics->SetBlendMode(blendMode[iBlend]);
 
 			std::vector<StgShotRenderer*>* listEnemy =
@@ -229,13 +229,10 @@ void StgShotManager::_SetVertexBuffer(size_t size) {
 }
 
 void StgShotManager::RegistIntersectionTarget() {
-	std::vector<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgShotObject>::unsync obj = *itr;
 
-//#pragma omp parallel for
-	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
-		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
-
-//#pragma omp critical(RegistIntersectionTarget)
 		if (!obj->IsDeleted() && obj->IsActive()) {
 			obj->ClearIntersectedIdList();
 			obj->RegistIntersectionTarget();
@@ -265,13 +262,11 @@ RECT StgShotManager::GetShotAutoDeleteClipRect() {
 }
 
 void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, int cx, int cy, double radius) {
-	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
-
 	double rd = radius * radius;
 
-//#pragma omp parallel for
-	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
-		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgShotObject>::unsync obj = *itr;
 
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
@@ -282,7 +277,6 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, i
 
 		double tr = sx * sx + sy * sy;
 
-//#pragma omp critical(DeleteInCircle)
 		if (tr <= rd) {
 			if (typeTo == TO_TYPE_IMMEDIATE) {
 				obj->DeleteImmediate();
@@ -321,13 +315,12 @@ void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, i
 
 std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy, int radius) {
 	std::vector<int> res;
-	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
 
 	double rd = radius * radius;
 
-//#pragma omp parallel for
-	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
-		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgShotObject>::unsync obj = *itr;
 
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
@@ -340,7 +333,6 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 		if (tr <= rd) {
 			int id = obj->GetObjectID();
 
-//#pragma omp critical(GetShotIdInCircle)
 			res.push_back(id);
 		}
 	}
@@ -348,16 +340,13 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 	return res;
 }
 size_t StgShotManager::GetShotCount(int typeOwner) {
-	std::atomic_uint res{ 0 };
-	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	size_t res = 0;
 
-//#pragma omp for
-	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
-		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
-
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgShotObject>::unsync obj = *itr;
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
-
 		++res;
 	}
 
@@ -369,14 +358,10 @@ void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::vector<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
-
-//#pragma omp for
-	for (int iObj = 0; iObj < GetShotCountAll(); ++iObj) {
-		ref_count_ptr<StgShotObject>::unsync obj = *(itr + iObj);
-
+	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	for (; itr != listObj_.end(); ++itr) {
+		ref_count_ptr<StgShotObject>::unsync obj = *itr;
 		if (obj->IsDeleted()) continue;
-
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
 	}
@@ -512,7 +497,7 @@ bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
 
 		if (listData_.size() < listData.size())
 			listData_.resize(listData.size());
-		for (int iData = 0; iData < listData.size(); iData++) {
+		for (size_t iData = 0; iData < listData.size(); iData++) {
 			StgShotData* data = listData[iData];
 			if (data == nullptr)continue;
 			data->indexTexture_ = textureIndex;
@@ -776,15 +761,14 @@ StgShotData::AnimationData* StgShotData::GetData(int frame) {
 
 	frame = frame % totalAnimeFrame_;
 	int total = 0;
+
 	std::vector<AnimationData>::iterator itr = listAnime_.begin();
 	for (; itr != listAnime_.end(); itr++) {
 		//AnimationData* anime = itr;
 		total += itr->frame_;
-		if (total >= frame) {
+		if (total >= frame)
 			return &(*itr);
-		}
 	}
-
 	return &listAnime_[0];
 }
 
