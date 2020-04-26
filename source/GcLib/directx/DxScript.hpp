@@ -176,22 +176,25 @@ namespace directx {
 		D3DXVECTOR2 angZ_;
 	public:
 		DxScriptPrimitiveObject();
-		void SetPrimitiveType(D3DPRIMITIVETYPE type);
-		D3DPRIMITIVETYPE GetPrimitiveType() { return objRender_->GetPrimitiveType(); };
-		void SetVertexCount(int count);
-		int GetVertexCount();
-		gstd::ref_count_ptr<Texture> GetTexture();
-		virtual void SetTexture(gstd::ref_count_ptr<Texture> texture);
 
-		virtual bool IsValidVertexIndex(int index) = 0;
-		virtual void SetVertexPosition(int index, float x, float y, float z) = 0;
-		virtual void SetVertexUV(int index, float u, float v) = 0;
-		virtual void SetVertexAlpha(int index, int alpha) = 0;
-		virtual void SetVertexColor(int index, int r, int g, int b) = 0;
-		virtual D3DXVECTOR3 GetVertexPosition(int index) = 0;
+		void SetPrimitiveType(D3DPRIMITIVETYPE type) { objRender_->SetPrimitiveType(type); }
+		D3DPRIMITIVETYPE GetPrimitiveType() { return objRender_->GetPrimitiveType(); }
 
-		virtual gstd::ref_count_ptr<Shader> GetShader();
-		virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+		void SetVertexCount(size_t count) { objRender_->SetVertexCount(count); }
+		size_t GetVertexCount() { return objRender_->GetVertexCount(); }
+
+		gstd::ref_count_ptr<Texture> GetTexture() { return objRender_->GetTexture(); }
+		virtual void SetTexture(gstd::ref_count_ptr<Texture> texture) { objRender_->SetTexture(texture); }
+
+		virtual bool IsValidVertexIndex(size_t index) = 0;
+		virtual void SetVertexPosition(size_t index, float x, float y, float z) = 0;
+		virtual void SetVertexUV(size_t index, float u, float v) = 0;
+		virtual void SetVertexAlpha(size_t index, int alpha) = 0;
+		virtual void SetVertexColor(size_t index, int r, int g, int b) = 0;
+		virtual D3DXVECTOR3 GetVertexPosition(size_t index) = 0;
+
+		virtual gstd::ref_count_ptr<Shader> GetShader() { return objRender_->GetShader(); }
+		virtual void SetShader(gstd::ref_count_ptr<Shader> shader) { objRender_->SetShader(shader); }
 
 		virtual void SetAngleX(double x) {
 			x = gstd::Math::DegreeToRadian(x);
@@ -230,15 +233,15 @@ namespace directx {
 		virtual void Render();
 		virtual void SetRenderState();
 		RenderObjectTLX* GetObjectPointer() { return (RenderObjectTLX*)objRender_.GetPointer(); }
-		virtual bool IsValidVertexIndex(int index);
+		virtual bool IsValidVertexIndex(size_t index);
 		virtual void SetColor(int r, int g, int b);
 		virtual void SetAlpha(int alpha);
-		virtual void SetVertexPosition(int index, float x, float y, float z);
-		virtual void SetVertexUV(int index, float u, float v);
-		virtual void SetVertexAlpha(int index, int alpha);
-		virtual void SetVertexColor(int index, int r, int g, int b);
+		virtual void SetVertexPosition(size_t index, float x, float y, float z);
+		virtual void SetVertexUV(size_t index, float u, float v);
+		virtual void SetVertexAlpha(size_t index, int alpha);
+		virtual void SetVertexColor(size_t index, int r, int g, int b);
 		void SetPermitCamera(bool bPermit);
-		virtual D3DXVECTOR3 GetVertexPosition(int index);
+		virtual D3DXVECTOR3 GetVertexPosition(size_t index);
 	};
 
 	/**********************************************************
@@ -274,14 +277,14 @@ namespace directx {
 		virtual void Render();
 		virtual void SetRenderState();
 		RenderObjectLX* GetObjectPointer() { return (RenderObjectLX*)objRender_.GetPointer(); }
-		virtual bool IsValidVertexIndex(int index);
+		virtual bool IsValidVertexIndex(size_t index);
 		virtual void SetColor(int r, int g, int b);
 		virtual void SetAlpha(int alpha);
-		virtual void SetVertexPosition(int index, float x, float y, float z);
-		virtual void SetVertexUV(int index, float u, float v);
-		virtual void SetVertexAlpha(int index, int alpha);
-		virtual void SetVertexColor(int index, int r, int g, int b);
-		virtual D3DXVECTOR3 GetVertexPosition(int index);
+		virtual void SetVertexPosition(size_t index, float x, float y, float z);
+		virtual void SetVertexUV(size_t index, float u, float v);
+		virtual void SetVertexAlpha(size_t index, int alpha);
+		virtual void SetVertexColor(size_t index, int r, int g, int b);
+		virtual D3DXVECTOR3 GetVertexPosition(size_t index);
 	};
 	/**********************************************************
 	//DxScriptSpriteObject3D
@@ -303,14 +306,14 @@ namespace directx {
 		virtual void SetRenderState();
 		TrajectoryObject3D* GetObjectPointer() { return (TrajectoryObject3D*)objRender_.GetPointer(); }
 
-		virtual bool IsValidVertexIndex(int index) { return false; }
+		virtual bool IsValidVertexIndex(size_t index) { return false; }
 		virtual void SetColor(int r, int g, int b);
 		virtual void SetAlpha(int alpha) {};
-		virtual void SetVertexPosition(int index, float x, float y, float z) {};
-		virtual void SetVertexUV(int index, float u, float v) {};
-		virtual void SetVertexAlpha(int index, int alpha) {};
-		virtual void SetVertexColor(int index, int r, int g, int b) {};
-		virtual D3DXVECTOR3 GetVertexPosition(int index) { return D3DXVECTOR3(0, 0, 0); }
+		virtual void SetVertexPosition(size_t index, float x, float y, float z) {};
+		virtual void SetVertexUV(size_t index, float u, float v) {};
+		virtual void SetVertexAlpha(size_t index, int alpha) {};
+		virtual void SetVertexColor(size_t index, int r, int g, int b) {};
+		virtual D3DXVECTOR3 GetVertexPosition(size_t index) { return D3DXVECTOR3(0, 0, 0); }
 	};
 
 	/**********************************************************
@@ -513,7 +516,7 @@ namespace directx {
 		virtual bool Store() = 0;
 		virtual void Close();
 
-		virtual bool IsArchived() { return isArchived_; };
+		virtual bool IsArchived() { return isArchived_; }
 	};
 
 	/**********************************************************
@@ -530,8 +533,8 @@ namespace directx {
 		virtual bool OpenR(gstd::ref_count_ptr<gstd::FileReader> reader);
 		virtual bool OpenW(std::wstring path);
 		virtual bool Store();
-		int GetLineCount() { return listLine_.size(); }
-		std::string GetLine(int line);
+		size_t GetLineCount() { return listLine_.size(); }
+		std::string GetLine(size_t line);
 
 		void AddLine(std::string line) { 
 			if (isArchived_) return;
@@ -561,7 +564,7 @@ namespace directx {
 		virtual bool Store();
 
 		gstd::ref_count_ptr<gstd::ByteBuffer> GetBuffer() { return buffer_; }
-		bool IsReadableSize(int size);
+		bool IsReadableSize(size_t size);
 
 		unsigned int GetCodePage() { return codePage_; }
 		void SetCodePage(unsigned int page) { codePage_ = page; }
@@ -604,7 +607,7 @@ namespace directx {
 		virtual ~DxScriptObjectManager();
 
 		size_t GetMaxObject() { return obj_.size(); }
-		void SetMaxObject(size_t max);
+		void SetMaxObject(size_t size);
 		size_t GetAliveObjectCount() { return listActiveObject_.size(); }
 		size_t GetRenderBucketCapacity() { return objRender_.size(); }
 		void SetRenderBucketCapacity(size_t capacity);
@@ -678,7 +681,7 @@ namespace directx {
 
 		void SetObjectManager(std::shared_ptr<DxScriptObjectManager> manager) { objManager_ = manager; }
 		std::shared_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
-		void SetMaxObject(int max) { objManager_->SetMaxObject(max); }
+		void SetMaxObject(size_t size) { objManager_->SetMaxObject(size); }
 		void SetRenderBucketCapacity(int capacity) { objManager_->SetRenderBucketCapacity(capacity); }
 		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
 		virtual void ActivateObject(int id, bool bActivate) { objManager_->ActivateObject(id, bActivate); }

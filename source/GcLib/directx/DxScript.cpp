@@ -70,27 +70,6 @@ DxScriptPrimitiveObject::DxScriptPrimitiveObject() {
 	angY_ = D3DXVECTOR2(1, 0);
 	angZ_ = D3DXVECTOR2(1, 0);
 }
-void DxScriptPrimitiveObject::SetPrimitiveType(D3DPRIMITIVETYPE type) {
-	objRender_->SetPrimitiveType(type);
-}
-void DxScriptPrimitiveObject::SetVertexCount(int count) {
-	objRender_->SetVertexCount(count);
-}
-int DxScriptPrimitiveObject::GetVertexCount() {
-	return objRender_->GetVertexCount();
-}
-gstd::ref_count_ptr<Texture> DxScriptPrimitiveObject::GetTexture() {
-	return objRender_->GetTexture();
-}
-void DxScriptPrimitiveObject::SetTexture(gstd::ref_count_ptr<Texture> texture) {
-	objRender_->SetTexture(texture);
-}
-gstd::ref_count_ptr<Shader> DxScriptPrimitiveObject::GetShader() {
-	return objRender_->GetShader();
-}
-void DxScriptPrimitiveObject::SetShader(gstd::ref_count_ptr<Shader> shader) {
-	objRender_->SetShader(shader);
-}
 
 /**********************************************************
 //DxScriptPrimitiveObject2D
@@ -134,10 +113,8 @@ void DxScriptPrimitiveObject2D::SetRenderState() {
 	obj->SetFilteringMip(filterMip_);
 	obj->SetVertexShaderRendering(bVertexShaderMode_);
 }
-bool DxScriptPrimitiveObject2D::IsValidVertexIndex(int index) {
-	RenderObjectTLX* obj = GetObjectPointer();
-	int count = obj->GetVertexCount();
-	return index >= 0 && index < count;
+bool DxScriptPrimitiveObject2D::IsValidVertexIndex(size_t index) {
+	return index >= 0 && index < GetObjectPointer()->GetVertexCount();
 }
 void DxScriptPrimitiveObject2D::SetColor(int r, int g, int b) {
 	RenderObjectTLX* obj = GetObjectPointer();
@@ -148,67 +125,47 @@ void DxScriptPrimitiveObject2D::SetColor(int r, int g, int b) {
 	ColorAccess::ClampColor(b);
 	color_ = D3DCOLOR_RGBA(r, g, b, a_);
 
-	int count = obj->GetVertexCount();
-	for (int iVert = 0; iVert < count; ++iVert) {
-		VERTEX_TLX* vert = obj->GetVertex(iVert);
-		D3DCOLOR& color = vert->diffuse_color;
-		int a = ColorAccess::GetColorA(color);
-		color = D3DCOLOR_ARGB(a, r, g, b);
-	}
+	obj->SetColorRGB(color_);
 }
 void DxScriptPrimitiveObject2D::SetAlpha(int alpha) {
 	RenderObjectTLX* obj = GetObjectPointer();
 
+	ColorAccess::ClampColor(alpha);
 	ColorAccess::SetColorA(color_, alpha);
 
-	int count = obj->GetVertexCount();
-	for (int iVert = 0; iVert < count; ++iVert) {
-		VERTEX_TLX* vert = obj->GetVertex(iVert);
-		D3DCOLOR& color = vert->diffuse_color;
-		ColorAccess::SetColorA(color, alpha);
-	}
+	obj->SetAlpha(alpha);
 }
-void DxScriptPrimitiveObject2D::SetVertexPosition(int index, float x, float y, float z) {
-	if (!IsValidVertexIndex(index))return;
+void DxScriptPrimitiveObject2D::SetVertexPosition(size_t index, float x, float y, float z) {
 	RenderObjectTLX* obj = GetObjectPointer();
 	obj->SetVertexPosition(index, x, y, z);
 }
-void DxScriptPrimitiveObject2D::SetVertexUV(int index, float u, float v) {
-	if (!IsValidVertexIndex(index))return;
+void DxScriptPrimitiveObject2D::SetVertexUV(size_t index, float u, float v) {
 	RenderObjectTLX* obj = GetObjectPointer();
 	obj->SetVertexUV(index, u, v);
 }
-void DxScriptPrimitiveObject2D::SetVertexAlpha(int index, int alpha) {
-	if (!IsValidVertexIndex(index))return;
+void DxScriptPrimitiveObject2D::SetVertexAlpha(size_t index, int alpha) {
 	RenderObjectTLX* obj = GetObjectPointer();
-	VERTEX_TLX* vert = obj->GetVertex(index);
-	D3DCOLOR& color = vert->diffuse_color;
-	ColorAccess::SetColorA(color, alpha);
+	ColorAccess::ClampColor(alpha);
+	obj->SetVertexAlpha(index, alpha);
 }
-void DxScriptPrimitiveObject2D::SetVertexColor(int index, int r, int g, int b) {
-	if (!IsValidVertexIndex(index))return;
+void DxScriptPrimitiveObject2D::SetVertexColor(size_t index, int r, int g, int b) {
 	RenderObjectTLX* obj = GetObjectPointer();
-	VERTEX_TLX* vert = obj->GetVertex(index);
-	D3DCOLOR& color = vert->diffuse_color;
-
 	ColorAccess::ClampColor(r);
 	ColorAccess::ClampColor(g);
 	ColorAccess::ClampColor(b);
-
-	int a = ColorAccess::GetColorA(color);
-	color = D3DCOLOR_ARGB(a, r, g, b);
+	obj->SetVertexColorRGB(index, r, g, b);
 }
 void DxScriptPrimitiveObject2D::SetPermitCamera(bool bPermit) {
 	RenderObjectTLX* obj = GetObjectPointer();
 	obj->SetPermitCamera(bPermit);
 }
-D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(int index) {
+D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(size_t index) {
 	D3DXVECTOR3 res(0, 0, 0);
 	if (!IsValidVertexIndex(index))return res;
 	RenderObjectTLX* obj = GetObjectPointer();
 	VERTEX_TLX* vert = obj->GetVertex(index);
 
-	float bias = 0.5f;
+	constexpr float bias = 0.5f;
 	res.x = vert->position.x + bias;
 	res.y = vert->position.y + bias;
 	res.z = 0;
@@ -338,10 +295,8 @@ void DxScriptPrimitiveObject3D::SetRenderState() {
 	obj->SetFilteringMip(filterMip_);
 	obj->SetVertexShaderRendering(bVertexShaderMode_);
 }
-bool DxScriptPrimitiveObject3D::IsValidVertexIndex(int index) {
-	RenderObjectLX* obj = GetObjectPointer();
-	int count = obj->GetVertexCount();
-	return index >= 0 && index < count;
+bool DxScriptPrimitiveObject3D::IsValidVertexIndex(size_t index) {
+	return index >= 0 && index < GetObjectPointer()->GetVertexCount();
 }
 void DxScriptPrimitiveObject3D::SetColor(int r, int g, int b) {
 	RenderObjectLX* obj = GetObjectPointer();
@@ -352,63 +307,36 @@ void DxScriptPrimitiveObject3D::SetColor(int r, int g, int b) {
 	int a_ = ColorAccess::GetColorA(color_);
 	color_ = D3DCOLOR_ARGB(a_, r, g, b);
 
-	int count = obj->GetVertexCount();
-	for (int iVert = 0; iVert < count; ++iVert) {
-		VERTEX_LX* vert = obj->GetVertex(iVert);
-		D3DCOLOR& color = vert->diffuse_color;
-		int a = ColorAccess::GetColorA(color);
-		color = D3DCOLOR_ARGB(a, r, g, b);
-	}
+	obj->SetColorRGB(color_);
 }
 void DxScriptPrimitiveObject3D::SetAlpha(int alpha) {
 	RenderObjectLX* obj = GetObjectPointer();
-
+	ColorAccess::ClampColor(alpha);
 	ColorAccess::SetColorA(color_, alpha);
-
-	int count = obj->GetVertexCount();
-	for (int iVert = 0; iVert < count; ++iVert) {
-		VERTEX_LX* vert = obj->GetVertex(iVert);
-		D3DCOLOR& color = vert->diffuse_color;
-		color = ColorAccess::SetColorA(color, alpha);
-	}
+	obj->SetAlpha(alpha);
 }
-void DxScriptPrimitiveObject3D::SetVertexPosition(int index, float x, float y, float z) {
+void DxScriptPrimitiveObject3D::SetVertexPosition(size_t index, float x, float y, float z) {
+	RenderObjectLX* obj = GetObjectPointer();
+	obj->SetVertexPosition(index, x, y, z);
+}
+void DxScriptPrimitiveObject3D::SetVertexUV(size_t index, float u, float v) {
+	RenderObjectLX* obj = GetObjectPointer();
+	obj->SetVertexUV(index, u, v);
+}
+void DxScriptPrimitiveObject3D::SetVertexAlpha(size_t index, int alpha) {
+	RenderObjectLX* obj = GetObjectPointer();
+	ColorAccess::ClampColor(alpha);
+	obj->SetVertexAlpha(index, alpha);
+}
+void DxScriptPrimitiveObject3D::SetVertexColor(size_t index, int r, int g, int b) {
 	if (!IsValidVertexIndex(index))return;
 	RenderObjectLX* obj = GetObjectPointer();
-	VERTEX_LX* vert = obj->GetVertex(index);
-	vert->position.x = x;
-	vert->position.y = y;
-	vert->position.z = z;
-}
-void DxScriptPrimitiveObject3D::SetVertexUV(int index, float u, float v) {
-	if (!IsValidVertexIndex(index))return;
-	RenderObjectLX* obj = GetObjectPointer();
-
-	VERTEX_LX* vert = obj->GetVertex(index);
-	vert->texcoord.x = u;
-	vert->texcoord.y = v;
-}
-void DxScriptPrimitiveObject3D::SetVertexAlpha(int index, int alpha) {
-	if (!IsValidVertexIndex(index))return;
-	RenderObjectLX* obj = GetObjectPointer();
-	VERTEX_LX* vert = obj->GetVertex(index);
-	D3DCOLOR& color = vert->diffuse_color;
-	color = ColorAccess::SetColorA(color, alpha);
-}
-void DxScriptPrimitiveObject3D::SetVertexColor(int index, int r, int g, int b) {
-	if (!IsValidVertexIndex(index))return;
-	RenderObjectLX* obj = GetObjectPointer();
-	VERTEX_LX* vert = obj->GetVertex(index);
-	D3DCOLOR& color = vert->diffuse_color;
-	int a = ColorAccess::GetColorA(color);
-
 	ColorAccess::ClampColor(r);
 	ColorAccess::ClampColor(g);
 	ColorAccess::ClampColor(b);
-
-	color = D3DCOLOR_ARGB(a, r, g, b);
+	obj->SetVertexColorRGB(index, r, g, b);
 }
-D3DXVECTOR3 DxScriptPrimitiveObject3D::GetVertexPosition(int index) {
+D3DXVECTOR3 DxScriptPrimitiveObject3D::GetVertexPosition(size_t index) {
 	D3DXVECTOR3 res(0, 0, 0);
 	if (!IsValidVertexIndex(index))return res;
 	RenderObjectLX* obj = GetObjectPointer();
@@ -896,7 +824,7 @@ bool DxTextFileObject::Store() {
 	}
 	return true;
 }
-std::string DxTextFileObject::GetLine(int line) {
+std::string DxTextFileObject::GetLine(size_t line) {
 	line--; //s”‚Í1ŠJŽn
 	if (line >= listLine_.size())return "";
 
@@ -947,8 +875,8 @@ bool DxBinaryFileObject::Store() {
 
 	return true;
 }
-bool DxBinaryFileObject::IsReadableSize(int size) {
-	int pos = buffer_->GetOffset();
+bool DxBinaryFileObject::IsReadableSize(size_t size) {
+	size_t pos = buffer_->GetOffset();
 	bool res = pos + size <= buffer_->GetSize();
 	return res;
 }
@@ -957,7 +885,7 @@ bool DxBinaryFileObject::IsReadableSize(int size) {
 //DxScriptObjectManager
 **********************************************************/
 DxScriptObjectManager::DxScriptObjectManager() {
-	SetMaxObject(2048);
+	SetMaxObject(512U);
 	SetRenderBucketCapacity(101);
 	totalObjectCreateCount_ = 0;
 
@@ -969,17 +897,21 @@ DxScriptObjectManager::DxScriptObjectManager() {
 DxScriptObjectManager::~DxScriptObjectManager() {
 
 }
-void DxScriptObjectManager::SetMaxObject(size_t max) {
-	if (obj_.size() == max) return;
+void DxScriptObjectManager::SetMaxObject(size_t size) {
+	if (size > 131072U) size = 131072U;
+	if (obj_.size() >= size) return;
 
-	if (obj_.size() == 0) {
-		obj_.resize(max, nullptr);
-		for (size_t i = 0U; i < max; ++i) listUnusedIndex_.push_back(i);
+	listUnusedIndex_.clear();
+	for (size_t iObj = 0U; iObj < obj_.size(); ++iObj) {
+		if (obj_[iObj] != nullptr) continue;
+		listUnusedIndex_.push_back(iObj);
 	}
-	else {
-		size_t oldSize = obj_.size();
-		for (size_t i = oldSize; i < max; ++i) listUnusedIndex_.push_back(i);
-		obj_.resize(max, nullptr);
+
+	if (listUnusedIndex_.size() < 64U) {
+		for (size_t iObj = obj_.size(); iObj < size; ++iObj) {
+			listUnusedIndex_.push_back(iObj);
+		}
+		obj_.resize(size);
 	}
 }
 void DxScriptObjectManager::SetRenderBucketCapacity(size_t capacity) {
@@ -998,14 +930,15 @@ void DxScriptObjectManager::_ArrangeActiveObjectList() {
 int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
 	int res = DxScript::ID_INVALID;
 
-	if (listUnusedIndex_.size() < 16) {
+	if (listUnusedIndex_.size() < 64U) {
 		size_t oldSize = obj_.size();
-		size_t newSize = oldSize * 2;
-		SetMaxObject(newSize);
-		Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object buffer extension. [%d->%d]", oldSize, newSize));
+		SetMaxObject(oldSize * 2U);
+		if (obj_.size() > oldSize)
+			Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object container expansion. [%d->%d]",
+				oldSize, obj_.size()));
 	}
 
-	{
+	if (listUnusedIndex_.size() > 0U) {
 		res = listUnusedIndex_.front();
 		listUnusedIndex_.pop_front();
 
@@ -1073,7 +1006,7 @@ void DxScriptObjectManager::DeleteObject(int id) {
 	obj_[id]->bDeleted_ = true;
 	obj_[id] = nullptr;
 
-	listUnusedIndex_.push_back(id);
+	//listUnusedIndex_.push_back(id);
 }
 void DxScriptObjectManager::ClearObject() {
 	size_t size = obj_.size();
