@@ -413,7 +413,11 @@ namespace gstd {
 			pc_dup_n,
 			pc_for,
 			pc_loop_ascent, pc_loop_descent, pc_loop_count, pc_loop_if, pc_loop_continue, pc_continue_marker, pc_loop_back,
-			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait
+			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait,
+
+			//Inline operations
+			pc_inline_inc, pc_inline_dec,
+			pc_inline_add, pc_inline_sub, pc_inline_mul, pc_inline_div, pc_inline_mod, pc_inline_pow,
 		};
 
 		struct block;
@@ -437,7 +441,7 @@ namespace gstd {
 					size_t arguments;
 				};
 				struct {	//loop_back
-					int ip;
+					size_t ip;
 				};
 				struct {	//call_and_assign
 					block* sub;
@@ -463,7 +467,7 @@ namespace gstd {
 				arguments(the_arguments) {
 			}
 
-			code(int the_line, command_kind the_command, int the_ip) : line(the_line), command(the_command), ip(the_ip) {}
+			code(int the_line, command_kind the_command, size_t the_ip) : line(the_line), command(the_command), ip(the_ip) {}
 
 			code(int the_line, command_kind the_command, value& the_data) : line(the_line), command(the_command), data(the_data) {}
 		};
@@ -569,14 +573,17 @@ namespace gstd {
 
 		bool bTerminate;
 
-		typedef script_vector<value> variables_t;
-		typedef script_vector<value> stack_t;
+		//typedef script_vector<value> variables_t;
+		//typedef script_vector<value> stack_t;
+		typedef std::vector<value> variables_t;
+		typedef std::vector<value> stack_t;
 
-		struct environment {
-			environment* pred;	//‘o•ûŒüƒŠƒ“ƒNƒŠƒXƒg
-			environment* succ;
-			environment* parent;
-			int ref_count;
+		class environment {
+		public:
+			environment(std::shared_ptr<environment> parent, script_engine::block* b);
+			~environment();
+
+			std::shared_ptr<environment> parent;
 			script_engine::block* sub;
 			size_t ip;
 			variables_t variables;
@@ -584,17 +591,12 @@ namespace gstd {
 			bool has_result;
 			int waitCount;
 		};
+		using environment_ptr = std::shared_ptr<environment>;
 
-		std::list<environment*> call_start_parent_environment_list;
-		environment* first_using_environment;
-		environment* last_using_environment;
-		environment* first_garbage_environment;
-		environment* last_garbage_environment;
-		environment* new_environment(environment* parent, script_engine::block* b);
-		void dispose_environment(environment* object);
+		std::list<environment_ptr> call_start_parent_environment_list;
 
-		std::list<environment*> threads;
-		std::list<environment*>::iterator current_thread_index;
+		std::list<environment_ptr> threads;
+		std::list<environment_ptr>::iterator current_thread_index;
 		bool finished;
 		bool stopped;
 		bool resuming;
@@ -607,6 +609,7 @@ namespace gstd {
 		}
 
 		void advance();
+		value* find_variable_symbol(environment_ptr current_env, script_engine::code* var_data);
 	public:
 		size_t get_thread_count() { return threads.size(); }
 	};
@@ -615,7 +618,7 @@ namespace gstd {
 		return engine->events.find(event_name) != engine->events.end();
 	}
 	inline int script_machine::get_current_line() {
-		environment* current = *current_thread_index;
+		environment_ptr current = *current_thread_index;
 		script_engine::code* c = &(current->sub->codes[current->ip]);
 		return c->line;
 	}
