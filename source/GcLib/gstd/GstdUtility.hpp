@@ -500,7 +500,7 @@ namespace gstd {
 		}
 		static T* GetInstance() {
 			if (_This() == NULL) {
-				throw std::exception("Singleton::GetInstance –¢‰Šú‰»");
+				throw std::exception("Instance uninitialized.");
 			}
 			return _This();
 		}
