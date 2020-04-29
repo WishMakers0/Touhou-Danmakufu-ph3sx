@@ -20,6 +20,13 @@
 #define IDC_RADIO_FPS_3                 1008
 #define IDC_RADIO_AUTO                  1009
 #define IDC_RADIO_FPS_AUTO              1009
+#define IDC_STATIC              		1010
+
+#define IDC_RADIO_COLOR_32				2000
+#define IDC_RADIO_COLOR_16				2001
+#define IDC_VSYNC						3000
+#define IDC_REFERENCERASTERIZER			3001
+
 #define ID_MENUITEM_MAIN_EXIT           40001
 
 // Next default values for new objects

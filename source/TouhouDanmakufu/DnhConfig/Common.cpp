@@ -1,10 +1,11 @@
-#include"Common.hpp"
+#include "source/GcLib/pch.h"
+
+#include "Common.hpp"
 
 /**********************************************************
 //KeyCodeList
 **********************************************************/
-KeyCodeList::KeyCodeList()
-{
+KeyCodeList::KeyCodeList() {
 	mapText_[DIK_ESCAPE] = L"Esc";
 	mapText_[DIK_1] = L"1";
 	mapText_[DIK_2] = L"2";
@@ -49,7 +50,7 @@ KeyCodeList::KeyCodeList()
 	mapText_[DIK_APOSTROPHE] = L"'";
 	mapText_[DIK_GRAVE] = L"`";
 	mapText_[DIK_LSHIFT] = L"Shift (Left)";
- 	mapText_[DIK_BACKSLASH] = L"\\";
+	mapText_[DIK_BACKSLASH] = L"\\";
 
 	mapText_[DIK_Z] = L"Z";
 	mapText_[DIK_X] = L"X";
@@ -141,23 +142,19 @@ KeyCodeList::KeyCodeList()
 	mapText_[DIK_SLEEP] = L"Sleep";
 
 	std::map<int, std::wstring>::iterator itr = mapText_.begin();
-	for(; itr != mapText_.end() ; itr++)
-	{
+	for (; itr != mapText_.end(); itr++) {
 		int code = itr->first;
 		listValidCode_.push_back(code);
 	}
 }
-KeyCodeList::~KeyCodeList()
-{
+KeyCodeList::~KeyCodeList() {
 }
-bool KeyCodeList::IsValidCode(int code)
-{
+bool KeyCodeList::IsValidCode(int code) {
 	bool res = mapText_.find(code) != mapText_.end();
 	return res;
 }
-std::wstring KeyCodeList::GetCodeText(int code)
-{
-	if(!IsValidCode(code))return L"";
+std::wstring KeyCodeList::GetCodeText(int code) {
+	if (!IsValidCode(code))return L"";
 
 	std::wstring res = mapText_[code];
 	return res;

@@ -29,22 +29,10 @@
     <ClCompile Include="source\GcLib\gstd\File.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\FpsController.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
     <ClCompile Include="source\GcLib\gstd\GstdUtility.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
     <ClCompile Include="source\GcLib\gstd\Logger.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\MersenneTwister.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\Script.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\ScriptClient.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
     <ClCompile Include="source\GcLib\gstd\Task.cpp">
@@ -62,40 +50,7 @@
     <ClCompile Include="source\GcLib\directx\DirectInput.cpp">
       <Filter>source\GcLib\directx</Filter>
     </ClCompile>
-    <ClCompile Include="source\GcLib\directx\DirectSound.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\DxScript.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\DxText.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
     <ClCompile Include="source\GcLib\directx\DxUtility.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\DxWindow.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\ElfreinaMesh.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\EventScript.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\MetasequoiaMesh.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\RenderObject.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\Shader.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\Texture.cpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\directx\TransitionEffect.cpp">
       <Filter>source\GcLib\directx</Filter>
     </ClCompile>
     <ClCompile Include="source\TouhouDanmakufu\Common\DnhCommon.cpp">
@@ -116,18 +71,18 @@
     <ClCompile Include="source\TouhouDanmakufu\DnhConfig\WinMain.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\GcLib\pch.cpp">
+      <Filter>source\GcLib</Filter>
+    </ClCompile>
+    <ClCompile Include="source\GcLib\gstd\Value.cpp">
+      <Filter>source\GcLib\gstd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\GcLib\gstd\Application.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\File.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\FpsController.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\GstdConstant.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp">
@@ -137,15 +92,6 @@
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\Logger.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\MersenneTwister.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\Script.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\ScriptClient.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\SmartPointer.hpp">
@@ -166,49 +112,13 @@
     <ClInclude Include="source\GcLib\directx\DirectInput.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\directx\DirectSound.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\directx\DxConstant.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\directx\DxLib.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\directx\DxScript.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\DxText.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\directx\DxUtility.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\DxWindow.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\ElfreinaMesh.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\EventScript.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\HLSL.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\MetasequoiaMesh.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\RenderObject.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\Shader.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\Texture.hpp">
-      <Filter>source\GcLib\directx</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\directx\TransitionEffect.hpp">
       <Filter>source\GcLib\directx</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\GcLib.hpp">
@@ -234,6 +144,12 @@
     </ClInclude>
     <ClInclude Include="source\TouhouDanmakufu\DnhConfig\MainWindow.hpp">
       <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\pch.h">
+      <Filter>source\GcLib</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GcLib\gstd\Value.hpp">
+      <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

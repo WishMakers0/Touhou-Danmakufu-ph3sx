@@ -5,6 +5,7 @@
 
 #include "DnhConstant.hpp"
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ScriptInformation
 **********************************************************/
@@ -38,8 +39,6 @@ private:
 	std::vector<std::wstring> listPlayer_;
 
 	std::wstring replayName_;
-
-
 public:
 	ScriptInformation() {}
 	virtual ~ScriptInformation() {}
@@ -70,14 +69,13 @@ public:
 	std::wstring GetReplayName() { return replayName_; }
 	void SetReplayName(std::wstring name) { replayName_ = name; }
 
-	std::vector<ref_count_ptr<ScriptInformation> > CreatePlayerScriptInformationList();
-
+	std::vector<ref_count_ptr<ScriptInformation>> CreatePlayerScriptInformationList();
 public:
 	static ref_count_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, bool bNeedHeader = true);
 	static ref_count_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, std::wstring pathArchive, std::string source, bool bNeedHeader = true);
 
-	static std::vector<ref_count_ptr<ScriptInformation> > CreateScriptInformationList(std::wstring path, bool bNeedHeader = true);
-	static std::vector<ref_count_ptr<ScriptInformation> > FindPlayerScriptInformationList(std::wstring dir);
+	static std::vector<ref_count_ptr<ScriptInformation>> CreateScriptInformationList(std::wstring path, bool bNeedHeader = true);
+	static std::vector<ref_count_ptr<ScriptInformation>> FindPlayerScriptInformationList(std::wstring dir);
 	static bool IsExcludeExtention(std::wstring ext);
 
 private:
@@ -111,7 +109,7 @@ struct ScriptInformation::PlayerListSort {
 		return res == CSTR_LESS_THAN ? TRUE : FALSE;
 	}
 };
-
+#endif
 
 /**********************************************************
 //ErrorDialog
@@ -149,19 +147,23 @@ public:
 		WINDOW_SIZE_1600x1200,
 		WINDOW_SIZE_1920x1200,
 
-		FPS_NORMAL = 0,
-		FPS_1_2,// 1/2
-		FPS_1_3,// 1/3
+		FPS_NORMAL = 0,	// 1/1
+		FPS_1_2,		// 1/2
+		FPS_1_3,		// 1/3
 		FPS_AUTO,
 	};
-
 private:
-	int modeScreen_;//DirectGraphics::SCREENMODE_FULLSCREEN,SCREENMODE_WINDOW
+	int modeScreen_;	//DirectGraphics::SCREENMODE_FULLSCREEN,SCREENMODE_WINDOW
+	int modeColor_;		//DirectGraphics::COLOR_MODE_32BIT,COLOR_MODE_16BIT
 	int sizeWindow_;
 	int fpsType_;
+	int fastModeSpeed_;
+
+	bool bVSync_;
+	bool referenceRasterizer_;
 
 	int padIndex_;
-	std::map<int, ref_count_ptr<VirtualKey> > mapKey_;
+	std::map<int, ref_count_ptr<VirtualKey>> mapKey_;
 
 	bool bLogWindow_;
 	bool bLogFile_;
@@ -185,6 +187,14 @@ public:
 	void SetWindowSize(int size) { sizeWindow_ = size; }
 	int GetFpsType() { return fpsType_; }
 	void SetFpsType(int type) { fpsType_ = type; }
+	int GetSkipModeSpeedRate() { return fastModeSpeed_; }
+
+	int GetColorMode() { return modeColor_; }
+	void SetColorMode(int mode) { modeColor_ = mode; }
+	bool IsEnableVSync() { return bVSync_; }
+	void SetEnableVSync(bool b) { bVSync_ = b; }
+	bool IsEnableRef() { return referenceRasterizer_; }
+	void SetEnableRef(bool b) { referenceRasterizer_ = b; }
 
 	int GetPadIndex() { return padIndex_; }
 	void SetPadIndex(int index) { padIndex_ = index; }

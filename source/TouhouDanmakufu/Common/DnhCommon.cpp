@@ -3,6 +3,7 @@
 #include "DnhCommon.hpp"
 #include "DnhGcLibImpl.hpp"
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ScriptInformation
 **********************************************************/
@@ -149,7 +150,7 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 bool ScriptInformation::IsExcludeExtention(std::wstring ext) {
 	bool res = false;
 	if (ext == L".dat" || ext == L".mid" || ext == L".wav" || ext == L".mp3" || ext == L".ogg" ||
-		ext == L".bmp" || ext == L".png" || ext == L".jpg" ||
+		ext == L".bmp" || ext == L".png" || ext == L".jpg" || ext == L".jpeg" ||
 		ext == L".mqo" || ext == L".elem") {
 		res = true;
 	}
@@ -300,6 +301,7 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 
 	return res;
 }
+#endif
 
 /**********************************************************
 //ErrorDialog
@@ -403,8 +405,13 @@ bool ErrorDialog::ShowModal(std::wstring msg) {
 const int DnhConfiguration::VERSION = 1;
 DnhConfiguration::DnhConfiguration() {
 	modeScreen_ = DirectGraphics::SCREENMODE_WINDOW;
+	modeColor_ = DirectGraphicsConfig::COLOR_MODE_32BIT;
 	sizeWindow_ = WINDOW_SIZE_640x480;
 	fpsType_ = FPS_NORMAL;
+	fastModeSpeed_ = 20;
+
+	bVSync_ = true;
+	referenceRasterizer_ = false;
 
 	//ÉLÅ[ìoò^
 	padIndex_ = 0;
@@ -455,6 +462,10 @@ bool DnhConfiguration::_LoadDefintionFile() {
 	screenHeight_ = std::max(screenHeight_, 480);
 	screenHeight_ = std::min(screenHeight_, 1200);
 
+	fastModeSpeed_ = prop.GetInteger(L"skip.rate", 20);
+	fastModeSpeed_ = std::max(fastModeSpeed_, 1);
+	fastModeSpeed_ = std::min(fastModeSpeed_, 30);
+
 	return true;
 }
 bool DnhConfiguration::LoadConfigFile() {
@@ -470,6 +481,10 @@ bool DnhConfiguration::LoadConfigFile() {
 	sizeWindow_ = record.GetRecordAsInteger("sizeWindow");
 	fpsType_ = record.GetRecordAsInteger("fpsType");
 
+	modeColor_ = record.GetRecordAsInteger("modeColor");
+	bVSync_ = record.GetRecordAsBoolean("bVSync");
+	referenceRasterizer_ = record.GetRecordAsBoolean("bDeviceREF");
+
 	if (record.IsExists("padIndex"))
 		padIndex_ = record.GetRecordAsInteger("padIndex");
 
@@ -477,7 +492,8 @@ bool DnhConfiguration::LoadConfigFile() {
 	int bufKeySize = record.GetRecordAsInteger("mapKey_size");
 	bufKey.SetSize(bufKeySize);
 	record.GetRecord("mapKey", bufKey.GetPointer(), bufKey.GetSize());
-	int mapKeyCount = bufKey.ReadInteger();
+
+	size_t mapKeyCount = bufKey.ReadValue<size_t>();
 	if (mapKeyCount == mapKey_.size()) {
 		for (int iKey = 0; iKey < mapKeyCount; iKey++) {
 			int id = bufKey.ReadInteger();
@@ -505,10 +521,14 @@ bool DnhConfiguration::SaveConfigFile() {
 	record.SetRecordAsInteger("sizeWindow", sizeWindow_);
 	record.SetRecordAsInteger("fpsType", fpsType_);
 
+	record.SetRecordAsInteger("modeColor", modeColor_);
+	record.SetRecordAsBoolean("bVSync", bVSync_);
+	record.SetRecordAsBoolean("bDeviceREF", referenceRasterizer_);
+
 	record.SetRecordAsInteger("padIndex", padIndex_);
 	ByteBuffer bufKey;
-	bufKey.WriteInteger(mapKey_.size());
-	std::map<int, ref_count_ptr<VirtualKey> >::iterator itrKey = mapKey_.begin();
+	bufKey.WriteValue(mapKey_.size());
+	std::map<int, ref_count_ptr<VirtualKey>>::iterator itrKey = mapKey_.begin();
 	for (; itrKey != mapKey_.end(); itrKey++) {
 		int id = itrKey->first;
 		ref_count_ptr<VirtualKey> vk = itrKey->second;
@@ -529,8 +549,7 @@ bool DnhConfiguration::SaveConfigFile() {
 	return true;
 }
 ref_count_ptr<VirtualKey> DnhConfiguration::GetVirtualKey(int id) {
-	if (mapKey_.find(id) == mapKey_.end())return NULL;
-
-	ref_count_ptr<VirtualKey> res = mapKey_[id];
-	return res;
+	auto itr = mapKey_.find(id);
+	if (itr == mapKey_.end()) return nullptr;
+	return itr->second;
 }

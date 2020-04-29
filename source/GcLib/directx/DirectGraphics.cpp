@@ -17,7 +17,7 @@ DirectGraphicsConfig::DirectGraphicsConfig() {
 	bUseRef_ = false;
 	colorMode_ = COLOR_MODE_32BIT;
 	bUseTripleBuffer_ = true;
-	bUseWaitTimer_ = false;
+	bVSync_ = false;
 	bPseudoFullScreen_ = true;
 }
 DirectGraphicsConfig::~DirectGraphicsConfig() {
@@ -37,15 +37,20 @@ DirectGraphics::DirectGraphics() {
 	pDevice_ = nullptr;
 	pBackSurf_ = nullptr;
 	pZBuffer_ = nullptr;
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	camera_ = new DxCamera();
 	camera2D_ = new DxCamera2D();
 
-	previousBlendMode_ = -999;
+	
 	stateFog_.bEnable = true;
 	stateFog_.color = D3DXVECTOR3(0, 0, 0);
 	stateFog_.bEnable = D3DXVECTOR2(0, 1);
 
 	bufferManager_ = nullptr;
+#endif
+
+	previousBlendMode_ = -999;
 }
 DirectGraphics::~DirectGraphics() {
 	Logger::WriteTop("DirectGraphics: Finalizing.");
@@ -54,7 +59,9 @@ DirectGraphics::~DirectGraphics() {
 	if (pBackSurf_) pBackSurf_->Release(); pBackSurf_ = nullptr;
 	if (pDevice_) pDevice_->Release(); pDevice_ = nullptr;
 	if (pDirect3D_) pDirect3D_->Release(); pDirect3D_ = nullptr;
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	if (bufferManager_) bufferManager_->Release(); bufferManager_ = nullptr;
+#endif
 
 	thisBase_ = nullptr;
 	Logger::WriteTop("DirectGraphics: Finalized.");
@@ -81,14 +88,14 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 	d3dppFull_.BackBufferHeight = config_.GetScreenHeight();
 	d3dppFull_.Windowed = FALSE;
 	d3dppFull_.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	if (config_.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT)d3dppFull_.BackBufferFormat = D3DFMT_R5G6B5;
-	else d3dppFull_.BackBufferFormat = D3DFMT_X8R8G8B8;
-	if (config_.IsTripleBufferEnable())d3dppFull_.BackBufferCount = 1;
-	else d3dppFull_.BackBufferCount = 2;
-	if (config_.IsWaitTimerEnable() == false)d3dppFull_.FullScreen_RefreshRateInHz = 60;
+	d3dppFull_.BackBufferFormat = config_.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT ? 
+		D3DFMT_X4R4G4B4 : D3DFMT_X8R8G8B8;
+	d3dppFull_.BackBufferCount = config_.IsTripleBufferEnable() ? 2 : 1;
 	d3dppFull_.EnableAutoDepthStencil = TRUE;
 	d3dppFull_.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dppFull_.MultiSampleType = D3DMULTISAMPLE_NONE;
+	d3dppFull_.PresentationInterval = config_.IsVSyncEnable() ? D3DPRESENT_INTERVAL_ONE :  D3DPRESENT_INTERVAL_IMMEDIATE;
+	d3dppFull_.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
 
 	//WindowModeの設定
 	D3DDISPLAYMODE dmode;
@@ -100,13 +107,12 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 	d3dppWin_.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dppWin_.BackBufferFormat = D3DFMT_UNKNOWN;
 	d3dppWin_.hDeviceWindow = hWnd;
-	d3dppWin_.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-
-	if (config_.IsTripleBufferEnable())d3dppWin_.BackBufferCount = 1;
-	else d3dppWin_.BackBufferCount = 2;
+	d3dppWin_.BackBufferCount = config_.IsTripleBufferEnable() ? 2 : 1;
 	d3dppWin_.EnableAutoDepthStencil = TRUE;
 	d3dppWin_.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dppWin_.MultiSampleType = D3DMULTISAMPLE_NONE;
+	d3dppWin_.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	d3dppWin_.FullScreen_RefreshRateInHz = 0;
 
 	if (!config_.IsWindowed()) {//FullScreenMode
 		::SetWindowLong(hWnd, GWL_STYLE, wndStyleFull_);
@@ -167,17 +173,20 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 
 	thisBase_ = this;
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	if (camera2D_ != nullptr)
 		camera2D_->Reset();
 	_InitializeDeviceState();
 
 	BeginScene();
 	EndScene();
+#endif
 
 	Logger::WriteTop("DirectGraphics: Initialized.");
 	return true;
 }
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 void DirectGraphics::_ReleaseDxResource() {
 	if (pZBuffer_ != nullptr)pZBuffer_->Release();
 	if (pBackSurf_ != nullptr)pBackSurf_->Release();
@@ -576,6 +585,8 @@ void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir) {
 	pDevice_->SetLight(0, &light);
 	pDevice_->LightEnable(0, TRUE);
 }
+#endif
+
 void DirectGraphics::SetViewPort(int x, int y, int width, int height) {
 	D3DVIEWPORT9 viewPort;
 	ZeroMemory(&viewPort, sizeof(D3DVIEWPORT9));
@@ -643,6 +654,8 @@ POINT DirectGraphics::GetMousePosition() {
 
 	return res;
 }
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 void DirectGraphics::SaveBackSurfaceToFile(std::wstring path) {
 	RECT rect = { 0, 0, config_.GetScreenWidth(), config_.GetScreenHeight() };
 	LPDIRECT3DSURFACE9 pBackSurface = nullptr;
@@ -657,6 +670,7 @@ bool DirectGraphics::IsPixelShaderSupported(int major, int minor) {
 	bool res = caps.PixelShaderVersion >= D3DPS_VERSION(major, minor);
 	return res;
 }
+#endif
 
 /**********************************************************
 //DirectGraphicsPrimaryWindow
@@ -745,12 +759,23 @@ bool DirectGraphicsPrimaryWindow::Initialize(DirectGraphicsConfig& config) {
 
 	DirectGraphics::Initialize(hWndGraphics, config);
 
-	if (config.IsWindowed()) {
-		modeScreen_ = SCREENMODE_FULLSCREEN;
-		ChangeScreenMode();
+	if (modeScreen_ == SCREENMODE_WINDOW) {
+		::SetWindowLong(hWnd_, GWL_STYLE, wndStyleWin_);
+		::ShowWindow(hWnd_, SW_SHOW);
+
+		int screenWidth = config_.GetScreenWidth();
+		int screenHeight = config_.GetScreenHeight();
+
+		RECT wr = { 0, 0, screenWidth, screenHeight };
+		AdjustWindowRect(&wr, wndStyleWin_, FALSE);
+
+		SetBounds(0, 0, wr.right - wr.left, wr.bottom - wr.top);
+		MoveWindowCenter();
 	}
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	bufferManager_ = new VertexBufferManager(this->pDevice_);
+#endif
 
 	return true;
 }
@@ -853,12 +878,14 @@ LRESULT DirectGraphicsPrimaryWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPAR
 		return FALSE;
 	}
 	*/
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	case WM_SYSCHAR:
 	{
 		if (wParam == VK_RETURN)
 			this->ChangeScreenMode();
 		return FALSE;
 	}
+#endif
 	}
 	return _CallPreviousWindowProcedure(hWnd, uMsg, wParam, lParam);
 }
@@ -881,8 +908,10 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 
 		Application::GetBase()->SetActive(true);
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		//テクスチャ解放
 		_ReleaseDxResource();
+#endif
 
 		if (modeScreen_ == SCREENMODE_FULLSCREEN) {
 			pDevice_->Reset(&d3dppWin_);
@@ -914,8 +943,10 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 			modeScreen_ = SCREENMODE_FULLSCREEN;
 		}
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		//テクスチャレストア
 		_RestoreDxResource();
+#endif
 	}
 	else {
 		if (modeScreen_ == SCREENMODE_FULLSCREEN) {
@@ -946,6 +977,7 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 
 }
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //DxCamera
 **********************************************************/
@@ -1214,3 +1246,4 @@ void DxCamera2D::UpdateMatrix() {
 	matCamera_._41 += pos.x;
 	matCamera_._42 += pos.y;
 }
+#endif

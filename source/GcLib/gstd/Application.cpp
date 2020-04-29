@@ -1,7 +1,10 @@
 #include "source/GcLib/pch.h"
 
 #include "Application.hpp"
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 #include "Logger.hpp"
+#endif
 
 using namespace gstd;
 
@@ -21,6 +24,7 @@ bool Application::Initialize() {
 	hAppInstance_ = ::GetModuleHandle(NULL);
 	bAppRun_ = true;
 	bAppActive_ = true;
+	//return _Initialize();
 	return true;
 }
 bool Application::Run() {
@@ -42,14 +46,18 @@ bool Application::Run() {
 				if (!_Loop()) break;
 			}
 			catch (std::exception& e) {
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 				Logger::WriteTop(e.what());
 				Logger::WriteTop("Runtime failure.");
+#endif
 				throw e;
 				break;
 			}
 			catch (gstd::wexception& e) {
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 				Logger::WriteTop(e.what());
 				Logger::WriteTop("Runtime failure.");
+#endif
 				throw e;
 				break;
 			}

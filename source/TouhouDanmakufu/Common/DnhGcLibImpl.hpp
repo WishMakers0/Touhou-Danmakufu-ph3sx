@@ -23,6 +23,7 @@ public:
 	static std::wstring GetCommonDataPath(std::wstring scriptPath, std::wstring area);
 };
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ELogger
 **********************************************************/
@@ -59,6 +60,7 @@ public:
 	float GetCurrentRenderFps() { return controller_->GetCurrentRenderFps(); }
 	bool IsFastMode() { return controller_->IsFastMode(); }
 	void SetFastMode(bool b) { controller_->SetFastMode(b); }
+	void SetFastModeRate(size_t rate) { controller_->SetFastModeRate(rate); }
 
 	void AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) { controller_->AddFpsControlObject(obj); }
 	void RemoveFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) { controller_->RemoveFpsControlObject(obj); }
@@ -66,6 +68,7 @@ public:
 	int GetFastModeKey() { return fastModeKey_; }
 	void SetFastModeKey(int key) { fastModeKey_ = key; }
 };
+#endif
 
 /**********************************************************
 //EFileManager
@@ -87,7 +90,7 @@ public:
 	bool Initialize();
 };
 
-
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ETextureManager
 **********************************************************/
@@ -127,6 +130,7 @@ class EDxTextRenderer : public Singleton<EDxTextRenderer>, public DxTextRenderer
 class EDirectSoundManager : public Singleton<EDirectSoundManager>, public DirectSoundManager {
 
 };
+#endif
 
 /**********************************************************
 //EDirectInput

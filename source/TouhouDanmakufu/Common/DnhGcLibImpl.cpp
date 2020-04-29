@@ -47,7 +47,7 @@ std::wstring EPathProperty::GetCommonDataPath(std::wstring scriptPath, std::wstr
 	return path;
 }
 
-
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ELogger
 **********************************************************/
@@ -94,6 +94,7 @@ EFpsController::EFpsController() {
 	SetFps(STANDARD_FPS);
 	fastModeKey_ = DIK_LCONTROL;
 }
+#endif
 
 /**********************************************************
 //EFileManager
@@ -110,30 +111,37 @@ bool ETaskManager::Initialize() {
 	return true;
 }
 
-
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 /**********************************************************
 //ETextureManager
 **********************************************************/
 bool ETextureManager::Initialize() {
 	bool res = TextureManager::Initialize();
+	if (!res)
+		throw gstd::wexception("ETextureManager: Failed to initialize TextureManager.");
 
-	for (int iRender = 0; iRender < MAX_RESERVED_RENDERTARGET; iRender++) {
+	int failedIndex = -1;
+	for (size_t iRender = 0; iRender < MAX_RESERVED_RENDERTARGET; iRender++) {
 		std::wstring name = GetReservedRenderTargetName(iRender);
 		ref_count_ptr<Texture> texture = new Texture();
-		res &= texture->CreateRenderTarget(name);
+		if (!texture->CreateRenderTarget(name)) {
+			failedIndex = iRender;
+			break;
+		}
 		Add(name, texture);
 	}
 
-	if (!res) {
-		throw gstd::wexception(L"ETextureManager‰Šú‰»Ž¸”s");
+	if (failedIndex >= 0) {
+		std::string err = StringUtility::Format("ETextureManager: Failed to create reserved render target %d.", failedIndex);
+		throw gstd::wexception(err);
+		res = false;
 	}
 	return res;
 }
 std::wstring ETextureManager::GetReservedRenderTargetName(int index) {
-	std::wstring res = L"__RESERVED_RENDER_TARGET__";
-	res += StringUtility::Format(L"%d", index);
-	return res;
+	return StringUtility::FormatToWide("__RESERVED_RENDER_TARGET__%d", index);
 }
+#endif
 
 /**********************************************************
 //EDirectInput

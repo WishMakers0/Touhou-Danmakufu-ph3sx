@@ -17,10 +17,13 @@ bool EApplication::_Initialize() {
 	ELogger* logger = ELogger::GetInstance();
 	Logger::WriteTop("Initializing application.");
 
+	DnhConfiguration* config = DnhConfiguration::CreateInstance();
+
 	EFileManager* fileManager = EFileManager::CreateInstance();
 	fileManager->Initialize();
 
 	EFpsController* fpsController = EFpsController::CreateInstance();
+	fpsController->SetFastModeRate((size_t)config->GetSkipModeSpeedRate() * 60U);
 
 #if defined(GAME_VERSION_TCL)
 	std::wstring appName = L"東方宝天京　～ Treasure Castle Labyrinth ";
@@ -31,7 +34,6 @@ bool EApplication::_Initialize() {
 #endif
 	appName += DNH_VERSION;
 
-	DnhConfiguration* config = DnhConfiguration::CreateInstance();
 	std::wstring configWindowTitle = config->GetWindowTitle();
 	if (configWindowTitle.size() > 0)
 		appName = configWindowTitle;
@@ -232,11 +234,14 @@ bool EDirectGraphics::Initialize() {
 	dxConfig.SetScreenWidth(screenWidth);
 	dxConfig.SetScreenHeight(screenHeight);
 	dxConfig.SetShowWindow(bShowWindow);
+	dxConfig.SetColorMode(dnhConfig->GetColorMode());
+	dxConfig.SetVSyncEnable(dnhConfig->IsEnableVSync());
+	dxConfig.SetReferenceEnable(dnhConfig->IsEnableRef());
 	bool res = DirectGraphicsPrimaryWindow::Initialize(dxConfig);
 
-	int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
-	int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
-	bool bFullScreenEnable = screenWidth <= wWidth && screenHeight <= wHeight;
+	int monitorWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
+	bool bFullScreenEnable = screenWidth <= monitorWidth && screenHeight <= monitorHeight;
 
 	//コンフィグ反映
 	if (screenMode == DirectGraphics::SCREENMODE_FULLSCREEN && bFullScreenEnable) {
@@ -266,20 +271,10 @@ bool EDirectGraphics::Initialize() {
 				}
 			}
 
-			double ratioWH = (double)screenWidth / (double)screenHeight;
-			if (width > wWidth)width = wWidth;
-			height = (double)width / ratioWH;
+			RECT wr = { 0, 0, width, height };
+			AdjustWindowRect(&wr, wndStyleWin_, FALSE);
 
-			double ratioHW = (double)screenHeight / (double)screenWidth;
-			if (height > wHeight) height = wHeight;
-			width = (double)height / ratioHW;
-
-			int tw = ::GetSystemMetrics(SM_CXEDGE) + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-			int th = ::GetSystemMetrics(SM_CYEDGE) + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-			width += tw;
-			height += th;
-
-			SetBounds(0, 0, width, height);
+			SetBounds(0, 0, wr.right - wr.left, wr.bottom - wr.top);
 			MoveWindowCenter();
 		}
 	}

@@ -3,7 +3,10 @@
 
 #include "../pch.h"
 #include "DxConstant.hpp"
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 #include "VertexBuffer.hpp"
+#endif
 
 namespace directx {
 	struct VertexFogState {
@@ -21,8 +24,8 @@ namespace directx {
 	class DirectGraphicsConfig {
 	public:
 		enum {
-			COLOR_MODE_16BIT,
 			COLOR_MODE_32BIT,
+			COLOR_MODE_16BIT,
 		};
 	protected:
 		bool bShowWindow_;
@@ -32,7 +35,7 @@ namespace directx {
 		bool bUseRef_;
 		int colorMode_;
 		bool bUseTripleBuffer_;
-		bool bUseWaitTimer_;
+		bool bVSync_;
 		bool bPseudoFullScreen_;
 	public:
 		DirectGraphicsConfig();
@@ -51,8 +54,8 @@ namespace directx {
 		void SetColorMode(int mode) { colorMode_ = mode; }
 		bool IsTripleBufferEnable() { return bUseTripleBuffer_; }
 		void SetTripleBufferEnable(bool bEnable) { bUseTripleBuffer_ = bEnable; }
-		bool IsWaitTimerEnable() { return bUseWaitTimer_; }
-		void SetWaitTimerEnable(bool bEnable) { bUseWaitTimer_ = bEnable; }
+		bool IsVSyncEnable() { return bVSync_; }
+		void SetVSyncEnable(bool bEnable) { bVSync_ = bEnable; }
 		bool IsPseudoFullScreen() { return bPseudoFullScreen_; }
 		void SetbPseudoFullScreen(bool b) { bPseudoFullScreen_ = b; }
 	};
@@ -103,6 +106,9 @@ namespace directx {
 		int modeScreen_;
 		std::list<DirectGraphicsListener*> listListener_;
 
+		int previousBlendMode_;
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		gstd::ref_count_ptr<DxCamera> camera_;
 		gstd::ref_count_ptr<DxCamera2D> camera2D_;
 		gstd::ref_count_ptr<Texture> textureTarget_;
@@ -110,12 +116,12 @@ namespace directx {
 		VertexBufferManager* bufferManager_;
 
 		VertexFogState stateFog_;
-		int previousBlendMode_;
 
 		void _ReleaseDxResource();
 		void _RestoreDxResource();
 		void _Restore();
 		void _InitializeDeviceState();
+#endif
 	public:
 		DirectGraphics();
 		virtual ~DirectGraphics();
@@ -135,6 +141,7 @@ namespace directx {
 		IDirect3DDevice9* GetDevice() { return pDevice_; }
 		DirectGraphicsConfig& GetConfigData() { return config_; }
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		void BeginScene(bool bClear = true);//ï`âÊäJén
 		void EndScene();//ï`âÊèIóπ
 		void ClearRenderTarget();
@@ -162,6 +169,7 @@ namespace directx {
 		VertexFogState* GetFogState() { return &stateFog_; }
 
 		void SetDirectionalLight(D3DVECTOR& dir);
+#endif
 
 		void SetViewPort(int x, int y, int width, int height);
 		void ResetViewPort();
@@ -171,11 +179,14 @@ namespace directx {
 		double GetScreenWidthRatio();
 		double GetScreenHeightRatio();
 		POINT GetMousePosition();
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		gstd::ref_count_ptr<DxCamera> GetCamera() { return camera_; }
 		gstd::ref_count_ptr<DxCamera2D> GetCamera2D() { return camera2D_; }
 
 		void SaveBackSurfaceToFile(std::wstring path);
 		bool IsPixelShaderSupported(int major, int minor);
+#endif
 	};
 
 	/**********************************************************
@@ -195,6 +206,7 @@ namespace directx {
 		void ChangeScreenMode();
 	};
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 	/**********************************************************
 	//DxCamera
 	**********************************************************/
@@ -349,6 +361,7 @@ namespace directx {
 		void UpdateMatrix();
 		D3DXMATRIX& GetMatrix() { return bEnable_ ? matCamera_ : matIdentity_; }
 	};
+#endif
 }
 
 #endif

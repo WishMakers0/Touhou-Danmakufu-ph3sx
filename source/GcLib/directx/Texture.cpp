@@ -336,6 +336,8 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 		return true;
 	}
 
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+
 	//まだ作成されていないなら、作成
 	try {
 		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
@@ -353,7 +355,8 @@ bool TextureManager::_CreateFromFile(std::wstring path, bool genMipmap, bool flg
 		D3DCOLOR colorKey = D3DCOLOR_ARGB(255, 0, 0, 0);
 		if (path.find(L".bmp") == std::wstring::npos)//bmpのみカラーキー適応
 			colorKey = 0;
-		D3DFORMAT pixelFormat = D3DFMT_A8R8G8B8;
+		D3DFORMAT pixelFormat = graphics->GetConfigData().GetColorMode() == DirectGraphicsConfig::COLOR_MODE_32BIT ? 
+			D3DFMT_A8R8G8B8 : D3DFMT_A4R4G4B4;
 
 		ref_count_ptr<TextureData> data(new TextureData());
 		data->useMipMap_ = genMipmap;
@@ -440,7 +443,8 @@ bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t
 			0, FALSE, &data->lpRenderZ_, nullptr);
 		if (FAILED(hr))throw false;
 
-		D3DFORMAT fmt = D3DFMT_A8R8G8B8;
+		D3DFORMAT fmt = graphics->GetConfigData().GetColorMode() == DirectGraphicsConfig::COLOR_MODE_32BIT ?
+			D3DFMT_A8R8G8B8 : D3DFMT_A4R4G4B4;
 		hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT,
 			&data->pTexture_, nullptr);
 
@@ -453,7 +457,6 @@ bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t
 				0, FALSE, &data->lpRenderZ_, nullptr);
 			if (FAILED(hr))throw false;
 
-			D3DFORMAT fmt = D3DFMT_A8R8G8B8;
 			hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT,
 				&data->pTexture_, nullptr);
 			if (FAILED(hr))throw false;
@@ -470,7 +473,6 @@ bool TextureManager::_CreateRenderTarget(std::wstring name, size_t width, size_t
 		data->resourceSize_ = width * height * 4U;
 
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Render target created. [%s]", name.c_str()));
-
 	}
 	catch (...) {
 		Logger::WriteTop(StringUtility::Format(L"TextureManager: Failed to create render target. [%s]", name.c_str()));
@@ -597,6 +599,8 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 	return res;
 }
 void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEvent> event) {
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+
 	std::wstring path = event->GetPath();
 	{
 		Lock lock(lock_);
@@ -627,7 +631,8 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 			if (path.find(L".bmp") == std::wstring::npos)//bmpのみカラーキー適応
 				colorKey = 0;
 
-			D3DFORMAT pixelFormat = D3DFMT_A8R8G8B8;
+			D3DFORMAT pixelFormat = graphics->GetConfigData().GetColorMode() == DirectGraphicsConfig::COLOR_MODE_32BIT ?
+				D3DFMT_A8R8G8B8 : D3DFMT_A4R4G4B4;
 
 			HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(DirectGraphics::GetBase()->GetDevice(),
 				buf.GetPointer(), size,

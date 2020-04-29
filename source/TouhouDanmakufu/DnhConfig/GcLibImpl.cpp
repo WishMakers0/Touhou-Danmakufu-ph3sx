@@ -1,22 +1,18 @@
-#include"GcLibImpl.hpp"
-#include"MainWindow.hpp"
+#include "source/GcLib/pch.h"
+
+#include "GcLibImpl.hpp"
+#include "MainWindow.hpp"
 
 /**********************************************************
 //EApplication
 **********************************************************/
-EApplication::EApplication()
-{
+EApplication::EApplication() {
 
 }
-EApplication::~EApplication()
-{
+EApplication::~EApplication() {
 
 }
-bool EApplication::_Initialize()
-{
-	ELogger* logger = ELogger::GetInstance();
-	Logger::WriteTop(L"アプリケーション初期化");
-
+bool EApplication::_Initialize() {
 	EFileManager* fileManager = EFileManager::CreateInstance();
 	fileManager->Initialize();
 
@@ -32,20 +28,13 @@ bool EApplication::_Initialize()
 	wndMain->StartUp();
 	::SetForegroundWindow(wndMain->GetWindowHandle());
 
-	Logger::WriteTop(L"アプリケーション初期化完了");
-
 	return true;
 }
-bool EApplication::_Loop()
-{
-	ELogger* logger = ELogger::GetInstance();
-
+bool EApplication::_Loop() {
 	MainWindow* mainWindow = MainWindow::GetInstance();
 	HWND hWndFocused = ::GetForegroundWindow();
 	HWND hWndMain = mainWindow->GetWindowHandle();
-	HWND hWndLogger = ELogger::GetInstance()->GetWindowHandle();
-	if(hWndFocused != hWndMain && hWndFocused != hWndLogger)
-	{
+	if (hWndFocused != hWndMain) {
 		//非アクティブ時は動作しない
 		::Sleep(10);
 		return true;
@@ -59,13 +48,10 @@ bool EApplication::_Loop()
 
 	return true;
 }
-bool EApplication::_Finalize()
-{
-	Logger::WriteTop(L"アプリケーション終了処理開始");
+bool EApplication::_Finalize() {
 	EFileManager::GetInstance()->EndLoadThread();
 	EDirectInput::DeleteInstance();
 	EFileManager::DeleteInstance();
-	Logger::WriteTop(L"アプリケーション終了処理完了");
 	return true;
 }
 

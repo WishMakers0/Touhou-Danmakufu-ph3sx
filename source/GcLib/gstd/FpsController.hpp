@@ -11,15 +11,13 @@ namespace gstd {
 	//FpsController
 	**********************************************************/
 	class FpsController {
-	public:
-		enum {
-			FPS_FAST_MODE = 1200,
-		};
 	protected:
 		int fps_;			//設定されているFPS
 		bool bUseTimer_;	//タイマー制御
 		bool bCriticalFrame_;
 		bool bFastMode_;
+
+		size_t fastModeFpsRate_;
 
 		std::list<ref_count_weak_ptr<FpsControlObject>> listFpsControlObject_;
 
@@ -41,6 +39,8 @@ namespace gstd {
 		bool IsFastMode() { return bFastMode_; }
 		void SetFastMode(bool b) { bFastMode_ = b; }
 
+		void SetFastModeRate(size_t fpsRate) { fastModeFpsRate_ = fpsRate; }
+
 		void AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj) {
 			listFpsControlObject_.push_back(obj);
 		}
@@ -52,9 +52,6 @@ namespace gstd {
 	//StaticFpsController
 	**********************************************************/
 	class StaticFpsController : public FpsController {
-		enum {
-			FAST_MODE_SKIP_RATE = 10,
-		};
 	protected:
 		float fpsCurrent_;		//現在のFPS
 		int timePrevious_;			//前回Waitしたときの時間
@@ -63,7 +60,6 @@ namespace gstd {
 		int rateSkip_;		//描画スキップ数
 		int countSkip_;		//描画スキップカウント
 		std::list<int> listFps_;	//1秒ごとに現在fpsを計算するためにfpsを保持
-
 	public:
 		StaticFpsController();
 		~StaticFpsController();

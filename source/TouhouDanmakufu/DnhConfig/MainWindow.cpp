@@ -1,5 +1,7 @@
-#include"MainWindow.hpp"
-#include"GcLibImpl.hpp"
+#include "source/GcLib/pch.h"
+
+#include "MainWindow.hpp"
+#include "GcLibImpl.hpp"
 
 /**********************************************************
 //MainWindow
@@ -93,15 +95,6 @@ LRESULT MainWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		break;
 	}
 
-	case WM_SYSCOMMAND:
-	{
-		int nId = wParam & 0xffff;
-		if (nId == WindowLogger::MENU_ID_OPEN) {
-			ELogger::GetInstance()->ShowLogWindow();
-		}
-		break;
-	}
-
 	case WM_NOTIFY:
 	{
 		switch (((NMHDR*)lParam)->code) {
@@ -123,7 +116,13 @@ void MainWindow::_RunExecutor() {
 	ZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(STARTUPINFO);
 
-	std::wstring command = L"th_dnh.exe";
+#if defined(GAME_VERSION_TCL)
+	std::wstring command = L"th_tcl.exe";
+#elif defined(GAME_VERSION_SP)
+	std::wstring command = L"th_sp.exe";
+#else
+	std::wstring command = L"th_dnh_ph3sx.exe";
+#endif
 	BOOL res = ::CreateProcess(
 		NULL,
 		(wchar_t*)command.c_str(),
@@ -132,11 +131,13 @@ void MainWindow::_RunExecutor() {
 		NULL, NULL,
 		&si, &infoProcess
 	);
+	/*
 	if (res == 0) {
-		std::wstring log = StringUtility::Format(L"実行失敗\r\n%s", ErrorUtility::GetLastErrorMessage().c_str());
+		std::wstring log = StringUtility::Format(L"Could not start the game. [%s]\r\n", ErrorUtility::GetLastErrorMessage().c_str());
 		Logger::WriteTop(log);
 		return;
 	}
+	*/
 
 	::CloseHandle(infoProcess.hProcess);
 	::CloseHandle(infoProcess.hThread);
@@ -214,10 +215,10 @@ void DevicePanel::ReadConfiguration() {
 	int screenMode = config->GetScreenMode();
 	switch (screenMode) {
 	case DirectGraphics::SCREENMODE_FULLSCREEN:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_FULLSCREEN, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_FULLSCREEN, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	default:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_WINDOW, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_WINDOW, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	}
 
@@ -227,19 +228,25 @@ void DevicePanel::ReadConfiguration() {
 	int fpsType = config->GetFpsType();
 	switch (fpsType) {
 	case DnhConfiguration::FPS_NORMAL:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_1, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_1, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	case DnhConfiguration::FPS_1_2:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_2, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_2, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	case DnhConfiguration::FPS_1_3:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_3, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_3, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	case DnhConfiguration::FPS_AUTO:
-		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_AUTO, BM_SETCHECK, 1, 0);
+		SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_AUTO, BM_SETCHECK, BST_CHECKED, 0);
 		break;
 	}
 
+	SendDlgItemMessage(hWnd_, (config->GetColorMode() == DirectGraphicsConfig::COLOR_MODE_32BIT) ?
+		IDC_RADIO_COLOR_32 : IDC_RADIO_COLOR_16, BM_SETCHECK, BST_CHECKED, 0);
+	SendDlgItemMessage(hWnd_, IDC_VSYNC, BM_SETCHECK, 
+		config->IsEnableVSync() ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hWnd_, IDC_REFERENCERASTERIZER, BM_SETCHECK,
+		config->IsEnableRef() ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 void DevicePanel::WriteConfiguration() {
 	DnhConfiguration* config = DnhConfiguration::GetInstance();
@@ -261,6 +268,16 @@ void DevicePanel::WriteConfiguration() {
 	else if (SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_AUTO, BM_GETCHECK, 0, 0))
 		fpsType = DnhConfiguration::FPS_AUTO;
 	config->SetFpsType(fpsType);
+
+	int modeColor = DirectGraphicsConfig::COLOR_MODE_32BIT;
+	if (SendDlgItemMessage(hWnd_, IDC_RADIO_COLOR_32, BM_GETCHECK, 0, 0))
+		modeColor = DirectGraphicsConfig::COLOR_MODE_32BIT;
+	else if (SendDlgItemMessage(hWnd_, IDC_RADIO_COLOR_16, BM_GETCHECK, 0, 0))
+		modeColor = DirectGraphicsConfig::COLOR_MODE_16BIT;
+	config->SetColorMode(modeColor);
+
+	config->SetEnableVSync(SendDlgItemMessage(hWnd_, IDC_VSYNC, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	config->SetEnableRef(SendDlgItemMessage(hWnd_, IDC_REFERENCERASTERIZER, BM_GETCHECK, 0, 0) == BST_CHECKED);
 }
 
 /**********************************************************
@@ -288,23 +305,23 @@ bool KeyPanel::Initialize(HWND hParent) {
 
 	viewKey_ = new KeyListView();
 	viewKey_->Attach(hListKey);
-	viewKey_->AddColumn(140, COL_ACTION, L"Action(動作)");
-	viewKey_->AddColumn(100, COL_KEY_ASSIGN, L"Keyboard(キーボード)");
-	viewKey_->AddColumn(100, COL_PAD_ASSIGN, L"Pad(パッド)");
+	viewKey_->AddColumn(120, COL_ACTION, L"Action");
+	viewKey_->AddColumn(100, COL_KEY_ASSIGN, L"Keyboard");
+	viewKey_->AddColumn(80, COL_PAD_ASSIGN, L"Pad");
 
 	std::map<int, std::wstring> mapViewText;
-	mapViewText[EDirectInput::KEY_LEFT] = L"Left(左)";
-	mapViewText[EDirectInput::KEY_RIGHT] = L"Right(右)";
-	mapViewText[EDirectInput::KEY_UP] = L"Up(上)";
-	mapViewText[EDirectInput::KEY_DOWN] = L"Down(下)";
-	mapViewText[EDirectInput::KEY_OK] = L"Decide(決定)";
-	mapViewText[EDirectInput::KEY_CANCEL] = L"Cancel(キャンセル)";
-	mapViewText[EDirectInput::KEY_SHOT] = L"Shot(ショット)";
-	mapViewText[EDirectInput::KEY_BOMB] = L"Spell(スペル)";
-	mapViewText[EDirectInput::KEY_SLOWMOVE] = L"Slow-Moving(低速移動)";
-	mapViewText[EDirectInput::KEY_USER1] = L"User1(ユーザ定義1)";
-	mapViewText[EDirectInput::KEY_USER2] = L"User2(ユーザ定義2)";
-	mapViewText[EDirectInput::KEY_PAUSE] = L"Pause(ポーズ)";
+	mapViewText[EDirectInput::KEY_LEFT] = L"Left";
+	mapViewText[EDirectInput::KEY_RIGHT] = L"Right";
+	mapViewText[EDirectInput::KEY_UP] = L"Up";
+	mapViewText[EDirectInput::KEY_DOWN] = L"Down";
+	mapViewText[EDirectInput::KEY_OK] = L"Accept";
+	mapViewText[EDirectInput::KEY_CANCEL] = L"Cancel";
+	mapViewText[EDirectInput::KEY_SHOT] = L"Shot";
+	mapViewText[EDirectInput::KEY_BOMB] = L"Bomb";
+	mapViewText[EDirectInput::KEY_SLOWMOVE] = L"Focus";
+	mapViewText[EDirectInput::KEY_USER1] = L"User 1";
+	mapViewText[EDirectInput::KEY_USER2] = L"User 2";
+	mapViewText[EDirectInput::KEY_PAUSE] = L"Pause";
 	for (int iView = 0; iView < mapViewText.size(); iView++) {
 		std::wstring text = mapViewText[iView];
 		viewKey_->SetText(iView, COL_ACTION, text);
@@ -450,10 +467,10 @@ bool OptionPanel::Initialize(HWND hParent) {
 
 	viewOption_ = new WListView();
 	viewOption_->Attach(hListOption);
-	viewOption_->AddColumn(292, 0, L"Option(オプション)");
-	viewOption_->SetText(ROW_LOG_WINDOW, 0, L"Show LogWindow(ログウィンドウを表示する)");
-	viewOption_->SetText(ROW_LOG_FILE, 0, L"Save LogFile(ログファイルを保存する)");
-	viewOption_->SetText(ROW_MOUSE_UNVISIBLE, 0, L"Hide Mouse Cursor(マウスカーソルを非表示にする)");
+	viewOption_->AddColumn(330, 0, L"Option");
+	viewOption_->SetText(ROW_LOG_WINDOW, 0, L"Show LogWindow on startup");
+	viewOption_->SetText(ROW_LOG_FILE, 0, L"Save LogWindow logs to file");
+	viewOption_->SetText(ROW_MOUSE_UNVISIBLE, 0, L"Hide mouse cursor");
 
 	return true;
 }

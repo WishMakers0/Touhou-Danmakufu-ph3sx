@@ -13,6 +13,7 @@ FpsController::FpsController() {
 	::timeBeginPeriod(1);
 	bCriticalFrame_ = true;
 	bFastMode_ = false;
+	fastModeFpsRate_ = 1200;
 }
 FpsController::~FpsController() {
 	::timeEndPeriod(1);
@@ -82,7 +83,7 @@ void StaticFpsController::Wait() {
 
 	double tFps = fps_;
 	tFps = std::min(tFps, (double)GetControlObjectFps());
-	if (bFastMode_)tFps = FPS_FAST_MODE;
+	if (bFastMode_)tFps = fastModeFpsRate_;
 
 	int sTime = time - timePrevious_;//前フレームとの時間差
 
@@ -124,13 +125,13 @@ void StaticFpsController::Wait() {
 	++countSkip_;
 
 	int rateSkip = rateSkip_;
-	if (bFastMode_)rateSkip = FAST_MODE_SKIP_RATE;
+	if (bFastMode_)rateSkip = fastModeFpsRate_ / 60U;
 	countSkip_ %= (rateSkip + 1);
 	bCriticalFrame_ = false;
 }
 bool StaticFpsController::IsSkip() {
 	int rateSkip = rateSkip_;
-	if (bFastMode_)rateSkip = FAST_MODE_SKIP_RATE;
+	if (bFastMode_)rateSkip = fastModeFpsRate_ / 60U;
 	if (rateSkip == 0 || bCriticalFrame_)return false;
 	if (countSkip_ % (rateSkip + 1) != 0)
 		return true;
@@ -161,7 +162,7 @@ void AutoSkipFpsController::Wait() {
 
 	double tFps = fps_;
 	tFps = std::min(tFps, (double)GetControlObjectFps());
-	if (bFastMode_)tFps = FPS_FAST_MODE;
+	if (bFastMode_)tFps = fastModeFpsRate_;
 
 	int sTime = time - timePrevious_;//前フレームとの時間差
 	int frameAs1Sec = sTime * tFps;

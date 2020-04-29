@@ -21,6 +21,9 @@ namespace gstd {
 		template <typename T> DWORD Write(T& data) {
 			return Write(&data, sizeof(T));
 		}
+		template <typename T> DWORD WriteValue(T data) {
+			return Write(&data, sizeof(T));
+		}
 		void WriteBoolean(bool b) { Write(b); }
 		void WriteCharacter(char ch) { Write(ch); }
 		void WriteShort(short num) { Write(num); }
@@ -171,8 +174,15 @@ namespace gstd {
 		static std::vector<std::wstring> GetDirectoryPathList(std::wstring dir);
 	};
 
+
 	class ArchiveFileEntry;
 	class ArchiveFile;
+#if defined(DNH_PROJ_CONFIG)
+	class ArchiveFileEntry {
+	};
+	class ArchiveFile {
+	};
+#endif
 
 	/**********************************************************
 	//FileManager
@@ -193,16 +203,22 @@ namespace gstd {
 		std::map<std::wstring, ref_count_ptr<ArchiveFile>> mapArchiveFile_;
 		std::map<std::wstring, ref_count_ptr<ByteBuffer>> mapByteBuffer_;
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		ref_count_ptr<ByteBuffer> _GetByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
 		void _ReleaseByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
+#endif
 	public:
 		static FileManager* GetBase() { return thisBase_; }
 		FileManager();
 		virtual ~FileManager();
 		virtual bool Initialize();
 		void EndLoadThread();
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		bool AddArchiveFile(std::wstring path);
 		bool RemoveArchiveFile(std::wstring path);
+#endif
+
 		ref_count_ptr<FileReader> GetFileReader(std::wstring path);
 
 		void AddLoadThreadEvent(ref_count_ptr<LoadThreadEvent> event);
@@ -273,7 +289,9 @@ namespace gstd {
 
 		FILETYPE type_;
 		ref_count_ptr<File> file_;
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
 		std::shared_ptr<ArchiveFileEntry> entry_;
+#endif
 		ref_count_ptr<ByteBuffer> buffer_;
 		int offset_;
 
@@ -290,12 +308,13 @@ namespace gstd {
 		virtual BOOL Seek(LONG offset);
 		virtual LONG GetFilePointer();
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
 		virtual bool IsArchived();
 		virtual bool IsCompressed();
+#endif
 
 		virtual ref_count_ptr<ByteBuffer> GetBuffer() { return buffer_; }
 	};
-
 
 	/**********************************************************
 	//Recordable
@@ -352,8 +371,7 @@ namespace gstd {
 	**********************************************************/
 	class RecordBuffer : public Recordable {
 	private:
-		std::map<std::string, ref_count_ptr<RecordEntry> > mapEntry_;
-
+		std::map<std::string, ref_count_ptr<RecordEntry>> mapEntry_;
 	public:
 		RecordBuffer();
 		virtual ~RecordBuffer();

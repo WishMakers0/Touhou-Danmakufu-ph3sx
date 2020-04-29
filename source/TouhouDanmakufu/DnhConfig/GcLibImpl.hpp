@@ -1,24 +1,19 @@
-#ifndef __TOUHOUDANMAKUFU_CONFIG_GCLIBIMPL__
-#define __TOUHOUDANMAKUFU_CONFIG_GCLIBIMPL__
+#pragma once
+#include "../../GcLib/pch.h"
 
-#include"Constant.hpp"
-#include"../Common/DnhGcLibImpl.hpp"
+#include "Constant.hpp"
+#include "../Common/DnhGcLibImpl.hpp"
 
 /**********************************************************
 //EApplication
 **********************************************************/
-class EApplication : public Singleton<EApplication>, public Application
-{
-		friend Singleton<EApplication>;
-		EApplication();
-	protected:
-		bool _Initialize();
-		bool _Loop();
-		bool _Finalize();
-	public:
-		~EApplication();
+class EApplication : public Singleton<EApplication>, public Application {
+	friend Singleton<EApplication>;
+	EApplication();
+protected:
+	bool _Initialize();
+	bool _Loop();
+	bool _Finalize();
+public:
+	~EApplication();
 };
-
-
-
-#endif

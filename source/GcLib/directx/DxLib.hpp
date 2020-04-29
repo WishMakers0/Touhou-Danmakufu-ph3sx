@@ -7,13 +7,19 @@
 
 #include "DxUtility.hpp"
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 #include "HLSL.hpp"
+#endif
 
 #include "DirectGraphics.hpp"
+
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 #include "Texture.hpp"
 #include "Shader.hpp"
+
 #include "RenderObject.hpp"
 #include "DxText.hpp"
+
 #include "ElfreinaMesh.hpp"
 #include "MetasequoiaMesh.hpp"
 
@@ -24,6 +30,8 @@
 //#include "EventScript.hpp"
 
 #include "DirectSound.hpp"
+#endif
+
 #include "DirectInput.hpp"
 
 #endif
