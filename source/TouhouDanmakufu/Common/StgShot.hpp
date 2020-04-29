@@ -42,7 +42,7 @@ protected:
 	StgStageController* stageController_;
 	StgShotDataList* listPlayerShotData_;
 	StgShotDataList* listEnemyShotData_;
-	std::list<ref_count_ptr<StgShotObject>::unsync> listObj_;
+	std::list<shared_ptr<StgShotObject>> listObj_;
 
 	std::bitset<BIT_EV_DELETE_COUNT> listDeleteEventEnable_;
 
@@ -60,7 +60,7 @@ public:
 	void Render(int targetPriority);
 	void RegistIntersectionTarget();
 
-	void AddShot(ref_count_ptr<StgShotObject>::unsync obj) { listObj_.push_back(obj); }
+	void AddShot(shared_ptr<StgShotObject> obj) { listObj_.push_back(obj); }
 
 	StgShotDataList* GetPlayerShotDataList() { return listPlayerShotData_; }
 	StgShotDataList* GetEnemyShotDataList() { return listEnemyShotData_; }
@@ -292,7 +292,7 @@ protected:
 	virtual void _DeleteInAutoDeleteFrame();
 	virtual void _Move();
 	void _AddReservedShotWork();
-	virtual void _AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
+	virtual void _AddReservedShot(shared_ptr<StgShotObject> obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent(bool flgPlayerCollision) {}
 	virtual void _SendDeleteEvent(int bit);
 public:
@@ -313,7 +313,7 @@ public:
 	virtual void SetAlpha(int alpha);
 	virtual void SetRenderState() {}
 
-	ref_count_ptr<StgShotObject>::unsync GetOwnObject();
+	shared_ptr<StgShotObject> GetOwnObject();
 	int GetShotDataID() { return idShotData_; }
 	virtual void SetShotDataID(int id) { idShotData_ = id; }
 	int GetOwnerType() { return typeOwner_; }
@@ -484,7 +484,7 @@ protected:
 
 	virtual void _DeleteInAutoClip();
 	virtual void _DeleteInAutoDeleteFrame();
-	virtual void _AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
+	virtual void _AddReservedShot(shared_ptr<StgShotObject> obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent(bool flgPlayerCollision);
 public:
 	StgStraightLaserObject(StgStageController* stageController);
@@ -535,9 +535,9 @@ public:
 	void SetTipDecrement(double dec) { tipDecrement_ = dec; }
 };
 
-
-
-
+/**********************************************************
+//Inline function implementations
+**********************************************************/
 inline bool StgShotManager::LoadPlayerShotData(std::wstring path, bool bReload) {
 	return listPlayerShotData_->AddShotDataList(path, bReload);
 }

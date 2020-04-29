@@ -56,21 +56,23 @@ void StgIntersectionManager::Work() {
 			if (!bIntersected) continue;
 
 			//Grazeの関係で、先に自機の当たり判定をする必要がある。
-			ref_count_weak_ptr<StgIntersectionObject>::unsync objA = targetA->GetObject();
-			ref_count_weak_ptr<StgIntersectionObject>::unsync objB = targetB->GetObject();
+			weak_ptr<StgIntersectionObject> objA = targetA->GetObject();
+			weak_ptr<StgIntersectionObject> objB = targetB->GetObject();
+			auto ptrA = objA.lock();
+			auto ptrB = objB.lock();
 
 			{
 				//omp_set_lock(&lock_);
 
-				if (objA) {
-					objA->Intersect(targetA, targetB);
-					objA->SetIntersected();
-					if (objB) objA->AddIntersectedId(objB->GetDxScriptObjectID());
+				if (ptrA) {
+					ptrA->Intersect(targetA, targetB);
+					ptrA->SetIntersected();
+					if (ptrB) ptrA->AddIntersectedId(ptrB->GetDxScriptObjectID());
 				}
-				if (objB) {
-					objB->Intersect(targetB, targetA);
-					objB->SetIntersected();
-					if (objA) objB->AddIntersectedId(objA->GetDxScriptObjectID());
+				if (ptrB) {
+					ptrB->Intersect(targetB, targetA);
+					ptrB->SetIntersected();
+					if (ptrA) ptrB->AddIntersectedId(ptrA->GetDxScriptObjectID());
 				}
 
 				//omp_unset_lock(&lock_);
@@ -103,6 +105,8 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 	//target->SetMortonNumber(-1);
 	//target->ClearObjectIntersectedIdList();
 
+	shared_ptr<StgIntersectionObject> obj = target->GetObject().lock();
+
 	int type = target->GetTargetType();
 	switch (type) {
 	case StgIntersectionTarget::TYPE_PLAYER:
@@ -116,17 +120,21 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 	{
 		listSpace_[SPACE_PLAYERSOHT_ENEMY]->RegistTargetA(target);
 
-		//弾消し能力付加なら
+		
 		bool bEraseShot = false;
-		if (type == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
-			StgShotObject* shot = (StgShotObject*)target->GetObject().GetPointer();
-			if (shot)
-				bEraseShot = shot->IsEraseShot();
-		}
-		else if (type == StgIntersectionTarget::TYPE_PLAYER_SPELL) {
-			StgPlayerSpellObject* spell = (StgPlayerSpellObject*)target->GetObject().GetPointer();
-			if (spell)
-				bEraseShot = spell->IsEraseShot();
+
+		if (obj) {
+		//弾消し能力付加なら
+			if (type == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
+				StgShotObject* shot = (StgShotObject*)obj.get();
+				if (shot)
+					bEraseShot = shot->IsEraseShot();
+			}
+			else if (type == StgIntersectionTarget::TYPE_PLAYER_SPELL) {
+				StgPlayerSpellObject* spell = (StgPlayerSpellObject*)obj.get();
+				if (spell)
+					bEraseShot = spell->IsEraseShot();
+			}
 		}
 
 		if (bEraseShot) {
@@ -142,8 +150,7 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 
 		StgIntersectionTarget_Circle::ptr circle = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
 		if (circle) {
-			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
-				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
+			shared_ptr<StgEnemyObject> objEnemy = std::dynamic_pointer_cast<StgEnemyObject>(obj);
 			if (objEnemy) {
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
 				StgIntersectionTargetPoint tp;
@@ -176,14 +183,15 @@ void StgIntersectionManager::AddEnemyTargetToShot(StgIntersectionTarget::ptr tar
 
 		StgIntersectionTarget_Circle::ptr circle = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
 		if (circle) {
-			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy =
-				ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
-			if (objEnemy) {
-				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
-				StgIntersectionTargetPoint tp;
-				tp.SetObjectRef(objEnemy);
-				tp.SetPoint(pos);
-				listEnemyTargetPointNext_.push_back(tp);
+			if (shared_ptr<StgIntersectionObject> obj = target->GetObject().lock()) {
+				shared_ptr<StgEnemyObject> objEnemy = std::dynamic_pointer_cast<StgEnemyObject>(obj);
+				if (objEnemy) {
+					POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
+					StgIntersectionTargetPoint tp;
+					tp.SetObjectRef(objEnemy);
+					tp.SetPoint(pos);
+					listEnemyTargetPointNext_.push_back(tp);
+				}
 			}
 		}
 
@@ -492,7 +500,7 @@ unsigned int  StgIntersectionSpace::_GetPointElem(float pos_x, float pos_y) {
 //StgIntersectionObject
 void StgIntersectionObject::ClearIntersectionRelativeTarget() {
 	for (auto itr = listRelativeTarget_.begin(); itr != listRelativeTarget_.end(); ++itr)
-		(*itr)->SetObject(nullptr);
+		(*itr)->SetObject(weak_ptr<StgIntersectionObject>());
 	listRelativeTarget_.clear();
 }
 void StgIntersectionObject::AddIntersectionRelativeTarget(StgIntersectionTarget::ptr target) {
@@ -578,19 +586,19 @@ std::wstring StgIntersectionTarget::GetInfoAsString() {
 	res += StringUtility::Format(L"address[%08x] ", (int)this);
 
 	res += L"obj[";
-	if (obj_ == nullptr) {
+	if (obj_.expired()) {
 		res += L"NULL";
 	}
 	else {
-		ref_count_weak_ptr<DxScriptObjectBase>::unsync dxObj =
-			ref_count_weak_ptr<DxScriptObjectBase>::unsync::DownCast(obj_);
+		shared_ptr<DxScriptObjectBase> dxObj = std::dynamic_pointer_cast<DxScriptObjectBase>(obj_.lock());
+
 		if (dxObj == nullptr)
 			res += L"UNKNOWN";
 		else {
-			int address = (int)dxObj.GetPointer();
+			int address = (int)dxObj.get();
 			char* className = (char*)typeid(*this).name();
 			res += StringUtility::Format(L"ref=%d, " L"delete=%s, active=%s, class=%s[%08x]",
-				dxObj.GetReferenceCount(),
+				dxObj.use_count(),
 				dxObj->IsDeleted() ? L"true" : L"false",
 				dxObj->IsActive() ? L"true" : L"false",
 				className, address);

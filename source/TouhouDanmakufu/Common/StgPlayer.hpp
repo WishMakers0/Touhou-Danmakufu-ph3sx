@@ -51,7 +51,7 @@ protected:
 	StgStageController* stageController_;
 	StgStagePlayerScript* script_;
 	ref_count_ptr<StgPlayerInformation> infoPlayer_;
-	ref_count_ptr<StgPlayerSpellManageObject>::unsync objSpell_;
+	shared_ptr<StgPlayerSpellManageObject> objSpell_;
 
 	double speedFast_;
 	double speedSlow_;
@@ -63,7 +63,7 @@ protected:
 	int frameRebirthDiff_;//Ç≠ÇÁÇ¢É{ÉÄå∏è≠ó 
 	int frameStateDown_;
 
-	std::vector<ref_count_weak_ptr<StgIntersectionObject>::unsync > listGrazedShot_;
+	std::vector<weak_ptr<StgIntersectionObject>> listGrazedShot_;
 	int hitObjectID_;
 
 	double itemCircle_;
@@ -98,10 +98,10 @@ public:
 
 	ref_count_ptr<StgPlayerInformation> GetPlayerInformation() { return infoPlayer_; }
 	void SetPlayerInforamtion(ref_count_ptr<StgPlayerInformation> info) { infoPlayer_ = info; }
-	ref_count_ptr<StgPlayerSpellManageObject>::unsync GetSpellManageObject() { return objSpell_; }
+	shared_ptr<StgPlayerSpellManageObject> GetSpellManageObject() { return objSpell_; }
 
 	StgStagePlayerScript* GetPlayerScript() { return script_; }
-	ref_count_ptr<StgPlayerObject>::unsync GetOwnObject();
+	shared_ptr<StgPlayerObject> GetOwnObject();
 	double GetX() { return posX_; }
 	double GetY() { return posY_; }
 	double GetFastSpeed() { return speedFast_; }

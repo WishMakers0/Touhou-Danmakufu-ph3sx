@@ -10,18 +10,18 @@ StgEnemyManager::StgEnemyManager(StgStageController* stageController) {
 	stageController_ = stageController;
 }
 StgEnemyManager::~StgEnemyManager() {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgEnemyObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
-		if (obj != NULL) {
+		shared_ptr<StgEnemyObject> obj = (*itr);
+		if (obj != nullptr) {
 			obj->ClearEnemyObject();
 		}
 	}
 }
 void StgEnemyManager::Work() {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgEnemyObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		shared_ptr<StgEnemyObject> obj = (*itr);
 		if (obj->IsDeleted()) {
 			obj->ClearEnemyObject();
 			itr = listObj_.erase(itr);
@@ -31,24 +31,24 @@ void StgEnemyManager::Work() {
 
 }
 void StgEnemyManager::RegistIntersectionTarget() {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgEnemyObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		shared_ptr<StgEnemyObject> obj = (*itr);
 		if (!obj->IsDeleted()) {
 			obj->ClearIntersectedIdList();
 			obj->RegistIntersectionTarget();
 		}
 	}
 }
-void StgEnemyManager::SetBossSceneObject(ref_count_ptr<StgEnemyBossSceneObject>::unsync obj) {
-	if (objBossScene_ != NULL && !objBossScene_->IsDeleted())
+void StgEnemyManager::SetBossSceneObject(shared_ptr<StgEnemyBossSceneObject> obj) {
+	if (objBossScene_ != nullptr && !objBossScene_->IsDeleted())
 		throw gstd::wexception(L"すでにEnemyBossSceneオブジェクトが存在します");
 
 	objBossScene_ = obj;
 }
-ref_count_ptr<StgEnemyBossSceneObject>::unsync StgEnemyManager::GetBossSceneObject() {
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync res = NULL;
-	if (objBossScene_ != NULL && !objBossScene_->IsDeleted())
+shared_ptr<StgEnemyBossSceneObject> StgEnemyManager::GetBossSceneObject() {
+	shared_ptr<StgEnemyBossSceneObject> res = nullptr;
+	if (objBossScene_ != nullptr && !objBossScene_->IsDeleted())
 		res = objBossScene_;
 	return res;
 }
@@ -94,22 +94,24 @@ void StgEnemyObject::_AddRelativeIntersection() {
 void StgEnemyObject::Activate() {}
 void StgEnemyObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
 	double damage = 0;
-	if (otherTarget->GetTargetType() == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
-		StgShotObject* shot = (StgShotObject*)otherTarget->GetObject().GetPointer();
-		if (shot != NULL) {
-			damage = shot->GetDamage();
-			if (shot->IsSpellFactor())
-				damage = damage * rateDamageSpell_ / 100;
-			else
-				damage = damage * rateDamageShot_ / 100;
-			intersectedPlayerShotCount_++;
+	if (auto ptrObj = otherTarget->GetObject().lock()) {
+		if (otherTarget->GetTargetType() == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
+			StgShotObject* shot = (StgShotObject*)ptrObj.get();
+			if (shot != nullptr) {
+				damage = shot->GetDamage();
+				if (shot->IsSpellFactor())
+					damage = damage * rateDamageSpell_ / 100;
+				else
+					damage = damage * rateDamageShot_ / 100;
+				intersectedPlayerShotCount_++;
+			}
 		}
-	}
-	else if (otherTarget->GetTargetType() == StgIntersectionTarget::TYPE_PLAYER_SPELL) {
-		StgPlayerSpellObject* spell = (StgPlayerSpellObject*)otherTarget->GetObject().GetPointer();
-		if (spell != NULL) {
-			damage = spell->GetDamage();
-			damage = damage * rateDamageSpell_ / 100;
+		else if (otherTarget->GetTargetType() == StgIntersectionTarget::TYPE_PLAYER_SPELL) {
+			StgPlayerSpellObject* spell = (StgPlayerSpellObject*)ptrObj.get();
+			if (spell != nullptr) {
+				damage = spell->GetDamage();
+				damage = damage * rateDamageSpell_ / 100;
+			}
 		}
 	}
 	life_ = std::max(life_ - damage, 0.0);
@@ -117,8 +119,8 @@ void StgEnemyObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 void StgEnemyObject::RegistIntersectionTarget() {
 	_AddRelativeIntersection();
 }
-ref_count_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject() {
-	return ref_count_ptr<StgEnemyObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+shared_ptr<StgEnemyObject> StgEnemyObject::GetOwnObject() {
+	return std::dynamic_pointer_cast<StgEnemyObject>(stageController_->GetMainRenderObject(idObject_));
 }
 void StgEnemyObject::AddReferenceToShotIntersection(StgIntersectionTarget::ptr pointer) {
 	ptrIntersectionToShot_.push_back(pointer);
@@ -152,7 +154,7 @@ bool StgEnemyBossSceneObject::_NextStep() {
 	auto scriptManager = stageController_->GetScriptManager();
 
 	//現ステップ終了通知
-	if (activeData_ != NULL) {
+	if (activeData_ != nullptr) {
 		scriptManager->RequestEventAll(StgStageScript::EV_END_BOSS_STEP);
 	}
 
@@ -171,15 +173,15 @@ bool StgEnemyBossSceneObject::_NextStep() {
 	//敵登録
 	StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
 	activeData_ = listData_[dataStep_][dataIndex_];
-	std::vector<ref_count_ptr<StgEnemyBossObject>::unsync >& listEnemy = activeData_->GetEnemyObjectList();
+	std::vector<shared_ptr<StgEnemyBossObject>>& listEnemy = activeData_->GetEnemyObjectList();
 	std::vector<double>& listLife = activeData_->GetLifeList();
-	for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-		ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+	for (size_t iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
+		shared_ptr<StgEnemyBossObject> obj = listEnemy[iEnemy];
 		obj->SetLife(listLife[iEnemy]);
-		if (oldActiveData != NULL) {
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync > listOldEnemyObject = oldActiveData->GetEnemyObjectList();
+		if (oldActiveData != nullptr) {
+			std::vector<shared_ptr<StgEnemyBossObject>> listOldEnemyObject = oldActiveData->GetEnemyObjectList();
 			if (iEnemy < listOldEnemyObject.size()) {
-				ref_count_ptr<StgEnemyBossObject>::unsync objOld = listOldEnemyObject[iEnemy];
+				shared_ptr<StgEnemyBossObject> objOld = listOldEnemyObject[iEnemy];
 				obj->SetPositionX(objOld->GetPositionX());
 				obj->SetPositionY(objOld->GetPositionY());
 			}
@@ -200,9 +202,9 @@ void StgEnemyBossSceneObject::Work() {
 	if (activeData_->IsReadyNext()) {
 		//次ステップ遷移可能
 		bool bEnemyExists = false;
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync > listEnemy = activeData_->GetEnemyObjectList();
-		for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+		std::vector<shared_ptr<StgEnemyBossObject>> listEnemy = activeData_->GetEnemyObjectList();
+		for (size_t iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
+			shared_ptr<StgEnemyBossObject> obj = listEnemy[iEnemy];
 			bEnemyExists |= (!obj->IsDeleted());
 		}
 
@@ -213,7 +215,7 @@ void StgEnemyBossSceneObject::Work() {
 				StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 				StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
 				objectManager->DeleteObject(idObject_);
-				enemyManager->SetBossSceneObject(NULL);
+				enemyManager->SetBossSceneObject(nullptr);
 				return;
 			}
 		}
@@ -239,9 +241,9 @@ void StgEnemyBossSceneObject::Work() {
 
 		if (bZeroTimer || bEndLastSpell) {
 			//タイマー0なら敵のライフを0にする
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync >& listEnemy = activeData_->GetEnemyObjectList();
-			for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-				ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+			std::vector<shared_ptr<StgEnemyBossObject>>& listEnemy = activeData_->GetEnemyObjectList();
+			for (size_t iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
+				shared_ptr<StgEnemyBossObject> obj = listEnemy[iEnemy];
 				obj->SetLife(0);
 			}
 
@@ -254,9 +256,9 @@ void StgEnemyBossSceneObject::Work() {
 
 		//次シーンへの遷移フラグ設定
 		bool bReadyNext = true;
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync >& listEnemy = activeData_->GetEnemyObjectList();
-		for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+		std::vector<shared_ptr<StgEnemyBossObject>>& listEnemy = activeData_->GetEnemyObjectList();
+		for (size_t iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
+			shared_ptr<StgEnemyBossObject> obj = listEnemy[iEnemy];
 			if (obj->GetLife() > 0)
 				bReadyNext = false;
 		}
@@ -289,12 +291,12 @@ void StgEnemyBossSceneObject::Activate() {
 
 	auto scriptManager = stageController_->GetScriptManager();
 	StgStageScriptObjectManager* objectManager = stageController_->GetMainObjectManager();
-	for (int iStep = 0; iStep < listData_.size(); iStep++) {
-		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
+	for (size_t iStep = 0; iStep < listData_.size(); iStep++) {
+		for (size_t iData = 0; iData < listData_[iStep].size(); iData++) {
 			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
 			int64_t idScript = data->GetScriptID();
 			ref_count_ptr<ManagedScript> script = scriptManager->GetScript(idScript);
-			if (script == NULL)
+			if (script == nullptr)
 				throw gstd::wexception(StringUtility::Format(L"読み込まれていないスクリプト：%s", data->GetPath().c_str()).c_str());
 			if (!script->IsLoad()) {
 				int count = 0;
@@ -321,7 +323,7 @@ void StgEnemyBossSceneObject::Activate() {
 			}
 			else if (script->IsRealArrayValue(vLife)) {
 				int count = vLife.length_as_array();
-				for (int iLife = 0; iLife < count; iLife++) {
+				for (size_t iLife = 0; iLife < count; iLife++) {
 					double life = vLife.index_as_array(iLife).as_real();
 					listLife.push_back(life);
 				}
@@ -362,9 +364,9 @@ void StgEnemyBossSceneObject::Activate() {
 			}
 
 			//敵オブジェクト作成
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync > listEnemyObject;
-			for (int iEnemy = 0; iEnemy < listLife.size(); iEnemy++) {
-				ref_count_ptr<StgEnemyBossObject>::unsync obj = new StgEnemyBossObject(stageController_);
+			std::vector<shared_ptr<StgEnemyBossObject>> listEnemyObject;
+			for (size_t iEnemy = 0; iEnemy < listLife.size(); iEnemy++) {
+				shared_ptr<StgEnemyBossObject> obj = shared_ptr<StgEnemyBossObject>(new StgEnemyBossObject(stageController_));
 				int idEnemy = objectManager->AddObject(obj, false);
 				listEnemyObject.push_back(obj);
 			}
@@ -383,8 +385,8 @@ void StgEnemyBossSceneObject::AddData(int step, ref_count_ptr<StgEnemyBossSceneD
 }
 void StgEnemyBossSceneObject::LoadAllScriptInThread() {
 	auto scriptManager = stageController_->GetScriptManager();
-	for (int iStep = 0; iStep < listData_.size(); iStep++) {
-		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
+	for (size_t iStep = 0; iStep < listData_.size(); iStep++) {
+		for (size_t iData = 0; iData < listData_[iStep].size(); iData++) {
 			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
 			std::wstring path = data->GetPath();
 
@@ -410,10 +412,10 @@ double StgEnemyBossSceneObject::GetActiveStepTotalMaxLife() {
 	double res = 0;
 
 //#pragma omp parallel for
-	for (int iData = 0; iData < listData_[dataStep_].size(); iData++) {
+	for (size_t iData = 0; iData < listData_[dataStep_].size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 		std::vector<double>& listLife = data->GetLifeList();
-		for (int iLife = 0; iLife < listLife.size(); iLife++)
+		for (size_t iLife = 0; iLife < listLife.size(); iLife++)
 			res = res + listLife[iLife];
 	}
 
@@ -426,7 +428,7 @@ double StgEnemyBossSceneObject::GetActiveStepTotalLife() {
 	double res = 0;
 
 //#pragma omp parallel for
-	for (int iData = dataIndex_; iData < listData_[dataStep_].size(); iData++) {
+	for (size_t iData = dataIndex_; iData < listData_[dataStep_].size(); iData++) {
 		res = res + GetActiveStepLife(iData);
 	}
 
@@ -439,15 +441,15 @@ double StgEnemyBossSceneObject::GetActiveStepLife(int index) {
 	double res = 0;
 	ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][index];
 	if (index == dataIndex_) {
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync >& listEnemyObject = data->GetEnemyObjectList();
-		for (int iEnemy = 0; iEnemy < listEnemyObject.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject[iEnemy];
+		std::vector<shared_ptr<StgEnemyBossObject>>& listEnemyObject = data->GetEnemyObjectList();
+		for (size_t iEnemy = 0; iEnemy < listEnemyObject.size(); iEnemy++) {
+			shared_ptr<StgEnemyBossObject> obj = listEnemyObject[iEnemy];
 			res += obj->GetLife();
 		}
 	}
 	else {
 		std::vector<double>& listLife = data->GetLifeList();
-		for (int iLife = 0; iLife < listLife.size(); iLife++)
+		for (size_t iLife = 0; iLife < listLife.size(); iLife++)
 			res += listLife[iLife];
 	}
 	return res;
@@ -459,12 +461,12 @@ std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList() {
 	const double total = GetActiveStepTotalMaxLife();
 
 //#pragma omp parallel for
-	for (int iData = 0; iData < res.size(); iData++) {
+	for (size_t iData = 0; iData < res.size(); iData++) {
 		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 
 		double life = 0;
 		std::vector<double>& listLife = data->GetLifeList();
-		for (int iLife = 0; iLife < listLife.size(); iLife++) {
+		for (size_t iLife = 0; iLife < listLife.size(); iLife++) {
 			life += listLife[iLife];
 		}
 
@@ -474,11 +476,11 @@ std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList() {
 	return res;
 }
 void StgEnemyBossSceneObject::AddPlayerShootDownCount() {
-	if (activeData_ == NULL)return;
+	if (activeData_ == nullptr)return;
 	activeData_->AddPlayerShootDownCount();
 }
 void StgEnemyBossSceneObject::AddPlayerSpellCount() {
-	if (activeData_ == NULL)return;
+	if (activeData_ == nullptr)return;
 	activeData_->AddPlayerSpellCount();
 }
 
@@ -501,8 +503,8 @@ int StgEnemyBossSceneData::GetEnemyBossIdInCreate() {
 		throw gstd::wexception(log.c_str());
 	}
 
-	ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject_[countCreate_];
-	countCreate_++;
+	shared_ptr<StgEnemyBossObject> obj = listEnemyObject_[countCreate_];
+	++countCreate_;
 
 	return obj->GetObjectID();
 }

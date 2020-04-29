@@ -22,7 +22,7 @@ class StgItemManager {
 	SpriteList2D* listSpriteDigit_;
 	StgItemDataList* listItemData_;
 
-	std::list<ref_count_ptr<StgItemObject>::unsync> listObj_;
+	std::list<shared_ptr<StgItemObject>> listObj_;
 	std::set<int> listItemTypeToPlayer_;
 	std::list<DxCircle> listCircleToPlayer_;
 	bool bAllItemToPlayer_;
@@ -36,7 +36,7 @@ class StgItemManager {
 	D3DXHANDLE handleEffectWorld_;
 public:
 	enum {
-		ITEM_MAX = 16384,
+		ITEM_MAX = 8192 + 1024 + 256,
 	};
 
 	StgItemManager(StgStageController* stageController);
@@ -44,7 +44,9 @@ public:
 	void Work();
 	void Render(int targetPriority);
 
-	void AddItem(ref_count_ptr<StgItemObject>::unsync obj) { listObj_.push_back(obj); }
+	void AddItem(shared_ptr<StgItemObject> obj) { 
+		listObj_.push_back(obj); 
+	}
 	size_t GetItemCount() { return listObj_.size(); }
 
 	SpriteList2D* GetItemRenderer() { return listSpriteItem_; }
@@ -54,7 +56,7 @@ public:
 	StgItemDataList* GetItemDataList() { return listItemData_; }
 	bool LoadItemData(std::wstring path, bool bReload = false);
 
-	ref_count_ptr<StgItemObject>::unsync CreateItem(int type);
+	shared_ptr<StgItemObject> CreateItem(int type);
 
 	void CollectItemsAll();
 	void CollectItemsByType(int type);

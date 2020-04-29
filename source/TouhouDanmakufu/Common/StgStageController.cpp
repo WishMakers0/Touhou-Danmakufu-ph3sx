@@ -17,16 +17,12 @@ StgStageController::StgStageController(StgSystemController* systemController) {
 	intersectionManager_ = nullptr;
 }
 StgStageController::~StgStageController() {
-	delete enemyManager_;
-	delete shotManager_;
-	delete itemManager_;
-	delete intersectionManager_;
-	intersectionManager_ = NULL;
-	itemManager_ = NULL;
-	shotManager_ = NULL;
-	enemyManager_ = NULL;
-	objectManagerMain_ = NULL;
-	scriptManager_ = NULL;
+	objectManagerMain_ = nullptr;
+	scriptManager_ = nullptr;
+	ptr_delete(enemyManager_);
+	ptr_delete(shotManager_);
+	ptr_delete(itemManager_);
+	ptr_delete(intersectionManager_);
 }
 void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) {
 	//FPU初期化
@@ -55,7 +51,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	ref_count_ptr<StgPlayerInformation> prevPlayerInfo = startData->GetPrevPlayerInformation();
 
 	infoStage_ = infoStage;
-	infoStage_->SetReplay(replayStageData != NULL);
+	infoStage_->SetReplay(replayStageData != nullptr);
 
 	//リプレイキー設定
 	int replayState = infoStage_->IsReplay() ? KeyReplayManager::STATE_REPLAY : KeyReplayManager::STATE_RECORD;
@@ -79,7 +75,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		keyReplayManager_->AddTarget(id);
 	}
 
-	if (replayStageData == NULL)
+	if (replayStageData == nullptr)
 		replayStageData = new ReplayInformation::StageData();
 	infoStage_->SetReplayData(replayStageData);
 
@@ -89,7 +85,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	EFpsController::GetInstance()->AddFpsControlObject(wPtr);
 
 	//前ステージ情報反映
-	if (prevStageData != NULL) {
+	if (prevStageData != nullptr) {
 		infoStage_->SetScore(prevStageData->GetScore());
 		infoStage_->SetGraze(prevStageData->GetGraze());
 		infoStage_->SetPoint(prevStageData->GetPoint());
@@ -157,9 +153,9 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 
 	//パッケージスクリプトの場合は、ステージスクリプトと関連付ける
 	StgPackageController* packageController = systemController_->GetPackageController();
-	if (packageController != NULL) {
-		std::shared_ptr<ScriptManager> packageScriptManager = std::dynamic_pointer_cast<ScriptManager>(packageController->GetScriptManagerRef());
-		std::shared_ptr<ScriptManager> stageScriptManager = std::dynamic_pointer_cast<ScriptManager>(scriptManager_);
+	if (packageController != nullptr) {
+		shared_ptr<ScriptManager> packageScriptManager = std::dynamic_pointer_cast<ScriptManager>(packageController->GetScriptManagerRef());
+		shared_ptr<ScriptManager> stageScriptManager = std::dynamic_pointer_cast<ScriptManager>(scriptManager_);
 		ScriptManager::AddRelativeScriptManagerMutual(packageScriptManager, stageScriptManager);
 	}
 
@@ -184,14 +180,14 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	}
 
 	//自機スクリプト
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = NULL;
+	shared_ptr<StgPlayerObject> objPlayer = nullptr;
 	ref_count_ptr<ScriptInformation> infoPlayer = infoStage_->GetPlayerScriptInformation();
 	std::wstring pathPlayerScript = infoPlayer->GetScriptPath();
 
 	if (pathPlayerScript.size() > 0) {
 		ELogger::WriteTop(StringUtility::Format(L"Player script: [%s]", pathPlayerScript.c_str()));
 		int idPlayer = objectManager->CreatePlayerObject();
-		objPlayer = ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
+		objPlayer = std::dynamic_pointer_cast<StgPlayerObject>(GetMainRenderObject(idPlayer));
 
 		if (systemController_->GetSystemInformation()->IsPackageMode())
 			objPlayer->SetEnableStateEnd(false);
@@ -207,10 +203,10 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		scriptManager_->StartScript(script);
 
 		//前ステージ情報反映
-		if (prevPlayerInfo != NULL)
+		if (prevPlayerInfo != nullptr)
 			objPlayer->SetPlayerInforamtion(prevPlayerInfo);
 	}
-	if (objPlayer != NULL)
+	if (objPlayer != nullptr)
 		infoStage_->SetPlayerObjectInformation(objPlayer->GetPlayerInformation());
 
 	//メインスクリプト
@@ -252,7 +248,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		pathBGM = EPathProperty::ExtendRelativeToFull(dirInfo, pathBGM);
 		ELogger::WriteTop(StringUtility::Format(L"BGM: [%s]", pathBGM.c_str()));
 		ref_count_ptr<SoundPlayer> player = DirectSoundManager::GetBase()->GetPlayer(pathBGM);
-		if (player != NULL) {
+		if (player != nullptr) {
 			player->SetSoundDivision(SoundDivision::DIVISION_BGM);
 			SoundPlayer::PlayStyle style;
 			style.SetLoopEnable(true);
@@ -263,8 +259,8 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	//リプレイ関連(スクリプト初期化後)
 	if (!infoStage_->IsReplay()) {
 		//自機情報
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
-		if (objPlayer != NULL) {
+		shared_ptr<StgPlayerObject> objPlayer = GetPlayerObject();
+		if (objPlayer != nullptr) {
 			replayStageData->SetPlayerLife(objPlayer->GetLife());
 			replayStageData->SetPlayerBombCount(objPlayer->GetSpell());
 			replayStageData->SetPlayerPower(objPlayer->GetPower());
@@ -304,7 +300,7 @@ void StgStageController::CloseScene() {
 void StgStageController::_SetupReplayTargetCommonDataArea(int64_t idScript) {
 	ref_count_ptr<StgStageScript> script =
 		ref_count_ptr<StgStageScript>::DownCast(scriptManager_->GetScript(idScript));
-	if (script == NULL)return;
+	if (script == nullptr)return;
 
 	const gstd::value& res = script->RequestEvent(StgStageScript::EV_REQUEST_REPLAY_TARGET_COMMON_AREA);
 	if (!res.has_data())return;
@@ -379,8 +375,8 @@ void StgStageController::Work() {
 			scriptManager_->Work(StgStageScript::TYPE_SHOT);
 			scriptManager_->Work(StgStageScript::TYPE_ITEM);
 
-			ref_count_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
-			if (objPlayer != NULL)objPlayer->Move(); //自機だけ先に移動
+			shared_ptr<StgPlayerObject> objPlayer = GetPlayerObject();
+			if (objPlayer) objPlayer->Move(); //自機だけ先に移動
 			scriptManager_->Work(StgStageScript::TYPE_PLAYER);
 
 			//オブジェクト動作処理
@@ -449,16 +445,16 @@ void StgStageController::RenderToTransitionTexture() {
 	systemController_->RenderScriptObject();
 
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 }
 
-ref_count_ptr<DxScriptObjectBase>::unsync StgStageController::GetMainRenderObject(int idObject) {
+shared_ptr<DxScriptObjectBase> StgStageController::GetMainRenderObject(int idObject) {
 	return objectManagerMain_->GetObject(idObject);
 }
-ref_count_ptr<StgPlayerObject>::unsync StgStageController::GetPlayerObject() {
+shared_ptr<StgPlayerObject> StgStageController::GetPlayerObject() {
 	int idPlayer = objectManagerMain_->GetPlayerObjectID();
-	if (idPlayer == DxScript::ID_INVALID)return NULL;
-	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
+	if (idPlayer == DxScript::ID_INVALID)return nullptr;
+	return std::dynamic_pointer_cast<StgPlayerObject>(GetMainRenderObject(idPlayer));
 }
 
 /**********************************************************

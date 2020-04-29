@@ -51,9 +51,7 @@ public:
 **********************************************************/
 class StgStageScriptObjectManager : public DxScriptObjectManager {
 	StgStageController* stageController_;
-
 	int idObjPleyer_;
-
 public:
 	StgStageScriptObjectManager(StgStageController* stageController);
 	~StgStageScriptObjectManager();
@@ -62,8 +60,6 @@ public:
 
 	int GetPlayerObjectID() { return idObjPleyer_; }
 	int CreatePlayerObject();
-
-
 };
 
 

@@ -56,8 +56,8 @@ public:
 	StgIntersectionManager* GetIntersectionManager() { return intersectionManager_; }
 	ref_count_ptr<StgPauseScene> GetPauseManager() { return pauseManager_; }
 
-	ref_count_ptr<DxScriptObjectBase>::unsync GetMainRenderObject(int idObject);
-	ref_count_ptr<StgPlayerObject>::unsync GetPlayerObject();
+	shared_ptr<DxScriptObjectBase> GetMainRenderObject(int idObject);
+	shared_ptr<StgPlayerObject> GetPlayerObject();
 
 	StgSystemController* GetSystemController() { return systemController_; }
 	ref_count_ptr<StgSystemInformation> GetSystemInformation() { return infoSystem_; }

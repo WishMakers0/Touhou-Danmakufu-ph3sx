@@ -83,7 +83,7 @@ protected:
 	double dist_;
 
 	StgStageController* _GetStageController() { return target_->stageController_; }
-	ref_count_ptr<StgMoveObject>::unsync _GetMoveObject(int id);
+	shared_ptr<StgMoveObject> _GetMoveObject(int id);
 	virtual void _Activate() {}
 public:
 	StgMovePattern(StgMoveObject* target);

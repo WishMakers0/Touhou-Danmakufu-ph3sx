@@ -584,11 +584,15 @@ namespace directx {
 			SoundPlayer::PlayStyle style_;
 			virtual ~SoundInfo() {}
 		};
+
+		enum : size_t {
+			DEFAULT_CONTAINER_CAPACITY = 4096U,
+		};
 	protected:
 		int64_t totalObjectCreateCount_;
 		std::list<int> listUnusedIndex_;
-		std::vector<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> obj_;		//オブジェクト
-		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> listActiveObject_;
+		std::vector<shared_ptr<DxScriptObjectBase>> obj_;		//オブジェクト
+		std::list<shared_ptr<DxScriptObjectBase>> listActiveObject_;
 		std::unordered_map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapReservedSound_;
 
 		//フォグ
@@ -597,7 +601,7 @@ namespace directx {
 		float fogStart_;
 		float fogEnd_;
 
-		std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>> objRender_;//描画バケットソート
+		std::vector<std::list<shared_ptr<DxScriptObjectBase>>> objRender_; //描画バケットソート
 		std::vector<gstd::ref_count_ptr<Shader>> listShader_;
 
 		void _SetObjectID(DxScriptObjectBase* obj, int index) { obj->idObject_ = index; obj->manager_ = this; }
@@ -612,11 +616,12 @@ namespace directx {
 		size_t GetRenderBucketCapacity() { return objRender_.size(); }
 		void SetRenderBucketCapacity(size_t capacity);
 
-		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
-		//void AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
+		virtual int AddObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
+		//void AddObject(int id, shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
 		void ActivateObject(int id, bool bActivate);
+		void ActivateObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate);
 
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { 
+		shared_ptr<DxScriptObjectBase> GetObject(int id) {
 			return ((id < 0 || id >= obj_.size()) ? nullptr : obj_[id]); 
 		}
 
@@ -624,16 +629,18 @@ namespace directx {
 
 		DxScriptObjectBase* GetObjectPointer(int id);
 		virtual void DeleteObject(int id);
+		virtual void DeleteObject(shared_ptr<DxScriptObjectBase> obj);
+		virtual void DeleteObject(DxScriptObjectBase* obj);
 
 		void ClearObject();
 		void DeleteObjectByScriptID(int64_t idScript);
-		void AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj);//要フレームごとに登録
+		void AddRenderObject(shared_ptr<DxScriptObjectBase> obj);//要フレームごとに登録
 		void WorkObject();
 		void RenderObject();
 
 		void PrepareRenderObject();
 		void ClearRenderObject();
-		std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync > >* GetRenderObjectListPointer() { return &objRender_; }
+		std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* GetRenderObjectListPointer() { return &objRender_; }
 
 		void SetShader(gstd::ref_count_ptr<Shader> shader, double min, double max);
 		void ResetShader();
@@ -683,9 +690,9 @@ namespace directx {
 		std::shared_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
 		void SetMaxObject(size_t size) { objManager_->SetMaxObject(size); }
 		void SetRenderBucketCapacity(int capacity) { objManager_->SetRenderBucketCapacity(capacity); }
-		virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
+		virtual int AddObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
 		virtual void ActivateObject(int id, bool bActivate) { objManager_->ActivateObject(id, bActivate); }
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { return objManager_->GetObject(id); }
+		shared_ptr<DxScriptObjectBase> GetObject(int id) { return objManager_->GetObject(id); }
 		DxScriptObjectBase* GetObjectPointer(int id) { return objManager_->GetObjectPointer(id); }
 		virtual void DeleteObject(int id) { objManager_->DeleteObject(id); }
 		void ClearObject() { objManager_->ClearObject(); }

@@ -22,8 +22,8 @@ namespace directx {
 		bool bHasCloseScriptWork_;
 
 		std::wstring error_;
-		std::map<int64_t, gstd::ref_count_ptr<ManagedScript> > mapScriptLoad_;
-		std::list<gstd::ref_count_ptr<ManagedScript> > listScriptRun_;
+		std::map<int64_t, gstd::ref_count_ptr<ManagedScript>> mapScriptLoad_;
+		std::list<gstd::ref_count_ptr<ManagedScript>> listScriptRun_;
 		std::map<int64_t, gstd::value> mapClosedScriptResult_;
 		std::list<std::weak_ptr<ScriptManager>> listRelativeManager_;
 

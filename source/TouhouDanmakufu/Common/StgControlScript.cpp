@@ -153,7 +153,7 @@ const function stgControlFunction[] =
 };
 StgControlScript::StgControlScript(StgSystemController* systemController) {
 	systemController_ = systemController;
-	scriptManager_ = NULL;
+	scriptManager_ = nullptr;
 	_AddFunction(stgControlFunction, sizeof(stgControlFunction) / sizeof(function));
 
 	bLoad_ = false;
@@ -174,7 +174,7 @@ gstd::value StgControlScript::Func_SaveCommonDataAreaA1(gstd::script_machine* ma
 	std::string sArea = StringUtility::ConvertWideToMulti(area);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	ref_count_ptr<ScriptCommonData> commonData = commonDataManager->GetData(sArea);
-	if (commonData == NULL)
+	if (commonData == nullptr)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
 	std::wstring pathMain = infoSystem->GetMainScriptInformation()->GetScriptPath();
@@ -219,7 +219,7 @@ gstd::value StgControlScript::Func_SaveCommonDataAreaA2(gstd::script_machine* ma
 	std::string area = StringUtility::ConvertWideToMulti(argv[0].as_string());
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 	ScriptCommonData::ptr commonData = commonDataManager->GetData(area);
-	if (commonData == NULL)
+	if (commonData == nullptr)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
 	std::wstring pathSave = argv[1].as_string();
@@ -275,7 +275,7 @@ gstd::value StgControlScript::Func_AddReplayTargetVirtualKey(gstd::script_machin
 
 	int id = (int)argv[0].as_real();
 	infoSystem->AddReplayTargetKey(id);
-	if (stageController != NULL) {
+	if (stageController != nullptr) {
 		ref_count_ptr<KeyReplayManager> keyReplayManager = stageController->GetKeyReplayManager();
 		keyReplayManager->AddTarget(id);
 	}
@@ -294,7 +294,7 @@ gstd::value StgControlScript::Func_SetSkipModeKey(gstd::script_machine* machine,
 gstd::value StgControlScript::Func_GetScore(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	double res = stageController->GetStageInformation()->GetScore();
@@ -303,7 +303,7 @@ gstd::value StgControlScript::Func_GetScore(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_AddScore(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)return value();
+	if (stageController == nullptr)return value();
 
 	int64_t inc = (int64_t)argv[0].as_real();
 	stageController->GetStageInformation()->AddScore(inc);
@@ -312,7 +312,7 @@ gstd::value StgControlScript::Func_AddScore(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_GetGraze(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	double res = stageController->GetStageInformation()->GetGraze();
@@ -321,7 +321,7 @@ gstd::value StgControlScript::Func_GetGraze(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_AddGraze(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)return value();
+	if (stageController == nullptr)return value();
 
 	int64_t inc = (int64_t)argv[0].as_real();
 	stageController->GetStageInformation()->AddGraze(inc);
@@ -330,7 +330,7 @@ gstd::value StgControlScript::Func_AddGraze(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_GetPoint(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	double res = stageController->GetStageInformation()->GetPoint();
@@ -339,7 +339,7 @@ gstd::value StgControlScript::Func_GetPoint(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_AddPoint(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)return value();
+	if (stageController == nullptr)return value();
 
 	int64_t inc = (int64_t)argv[0].as_real();
 	stageController->GetStageInformation()->AddPoint(inc);
@@ -348,7 +348,7 @@ gstd::value StgControlScript::Func_AddPoint(gstd::script_machine* machine, int a
 gstd::value StgControlScript::Func_IsReplay(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
 	bool res = stageController->GetStageInformation()->IsReplay();
@@ -369,7 +369,7 @@ gstd::value StgControlScript::Func_GetCurrentFps(gstd::script_machine* machine, 
 gstd::value StgControlScript::Func_GetStageTime(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
@@ -382,7 +382,7 @@ gstd::value StgControlScript::Func_GetStageTime(gstd::script_machine* machine, i
 gstd::value StgControlScript::Func_GetStageTimeF(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
@@ -392,7 +392,7 @@ gstd::value StgControlScript::Func_GetStageTimeF(gstd::script_machine* machine, 
 gstd::value StgControlScript::Func_GetPackageTime(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgPackageController* packageController = script->systemController_->GetPackageController();
-	if (packageController == NULL)
+	if (packageController == nullptr)
 		return value(machine->get_engine()->get_real_type(), 0.0);
 
 	ref_count_ptr<StgPackageInformation> infoPackage = packageController->GetPackageInformation();
@@ -408,7 +408,7 @@ gstd::value StgControlScript::Func_GetStgFrameLeft(gstd::script_machine* machine
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != NULL) {
+	if (stageController != nullptr) {
 		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
 		res = rect.left;
 	}
@@ -419,7 +419,7 @@ gstd::value StgControlScript::Func_GetStgFrameTop(gstd::script_machine* machine,
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != NULL) {
+	if (stageController != nullptr) {
 		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
 		res = rect.top;
 	}
@@ -430,7 +430,7 @@ gstd::value StgControlScript::Func_GetStgFrameWidth(gstd::script_machine* machin
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != NULL) {
+	if (stageController != nullptr) {
 		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
 		res = res = rect.right - rect.left;
 	}
@@ -441,7 +441,7 @@ gstd::value StgControlScript::Func_GetStgFrameHeight(gstd::script_machine* machi
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != NULL) {
+	if (stageController != nullptr) {
 		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
 		res = res = rect.bottom - rect.top;
 	}
@@ -452,7 +452,7 @@ gstd::value StgControlScript::Func_GetMainPackageScriptPath(gstd::script_machine
 	StgPackageController* packageController = script->systemController_->GetPackageController();
 
 	std::wstring path = L"";
-	if (packageController != NULL) {
+	if (packageController != nullptr) {
 		ref_count_ptr<ScriptInformation> infoScript =
 			packageController->GetPackageInformation()->GetMainScriptInformation();
 		path = infoScript->GetScriptPath();
@@ -479,7 +479,7 @@ gstd::value StgControlScript::Func_GetScriptPathList(gstd::script_machine* machi
 
 		path = PathProperty::GetUnique(path);
 		ref_count_ptr<ScriptInformation> infoScript = ScriptInformation::CreateScriptInformation(path, true);
-		if (infoScript == NULL)continue;
+		if (infoScript == nullptr)continue;
 		if (typeScript != TYPE_SCRIPT_ALL && typeScript != infoScript->GetType())continue;
 
 		script->mapScriptInfo_[path] = infoScript;
@@ -495,7 +495,7 @@ gstd::value StgControlScript::Func_GetScriptInfoA1(gstd::script_machine* machine
 	std::wstring path = argv[0].as_string();
 	int type = (int)argv[1].as_real();
 
-	ref_count_ptr<ScriptInformation> infoScript = NULL;
+	ref_count_ptr<ScriptInformation> infoScript = nullptr;
 	auto itr = script->mapScriptInfo_.find(path);
 	if (itr != script->mapScriptInfo_.end())
 		infoScript = itr->second;
@@ -503,7 +503,7 @@ gstd::value StgControlScript::Func_GetScriptInfoA1(gstd::script_machine* machine
 		infoScript = ScriptInformation::CreateScriptInformation(path, true);
 		script->mapScriptInfo_[path] = infoScript;
 	}
-	if (infoScript == NULL)
+	if (infoScript == nullptr)
 		throw gstd::wexception(ErrorUtility::GetFileNotFoundErrorMessage(path));
 
 	value res;
@@ -578,9 +578,9 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
-	if (texture == NULL)
+	if (texture == nullptr)
 		textureManager->GetTexture(name);
-	if (texture == NULL && textureManager->IsDataExists(name)) {
+	if (texture == nullptr && textureManager->IsDataExists(name)) {
 		texture = new Texture();
 		texture->CreateRenderTarget(name);
 	}
@@ -591,7 +591,7 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 	systemController->RenderScriptObject(priMin, priMax);
 
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 	/*
 		{
 			static int count = 0;
@@ -599,7 +599,7 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 			RECT rect = {0, 0, 640, 480};
 			IDirect3DSurface9* pBackSurface = texture->GetD3DSurface();
 			D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
-									pBackSurface, NULL, &rect );
+									pBackSurface, nullptr, &rect );
 			count++;
 		}
 	*/
@@ -619,14 +619,14 @@ gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machi
 	bool bClear = argv[2].as_boolean();
 
 	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
-	if (obj == NULL)return value();
+	if (obj == nullptr)return value();
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
-	if (texture == NULL)
+	if (texture == nullptr)
 		textureManager->GetTexture(name);
 
-	if (texture == NULL && textureManager->IsDataExists(name)) {
+	if (texture == nullptr && textureManager->IsDataExists(name)) {
 		texture = new Texture();
 		texture->CreateRenderTarget(name);
 	}
@@ -637,7 +637,7 @@ gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machi
 	obj->Render();
 
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 
 	//script->criticalSection_.Leave();
 
@@ -657,7 +657,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA1(gstd::script_machine* machine,
 	graphics->BeginScene(true);
 	systemController->RenderScriptObject(0, 100);
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 
 	//フォルダ生成
 	std::wstring dir = PathProperty::GetFileDirectory(path);
@@ -668,7 +668,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA1(gstd::script_machine* machine,
 	IDirect3DSurface9* pSurface = texture->GetD3DSurface();
 	RECT rect = { 0, 0, graphics->GetScreenWidth(), graphics->GetScreenHeight() };
 	HRESULT hr = D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
-		pSurface, NULL, &rect);
+		pSurface, nullptr, &rect);
 
 	return value();
 }
@@ -690,7 +690,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA2(gstd::script_machine* machine,
 	graphics->BeginScene(true);
 	systemController->RenderScriptObject(0, 100);
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 
 	//フォルダ生成
 	std::wstring dir = PathProperty::GetFileDirectory(path);
@@ -701,7 +701,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA2(gstd::script_machine* machine,
 	IDirect3DSurface9* pSurface = texture->GetD3DSurface();
 	RECT rect = { rcLeft, rcTop, rcRight, rcBottom };
 	HRESULT hr = D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
-		pSurface, NULL, &rect);
+		pSurface, nullptr, &rect);
 	return value();
 }
 gstd::value StgControlScript::Func_SaveSnapShotA3(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -728,7 +728,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA3(gstd::script_machine* machine,
 	graphics->BeginScene(true);
 	systemController->RenderScriptObject(0, 100);
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 
 	//フォルダ生成
 	std::wstring dir = PathProperty::GetFileDirectory(path);
@@ -739,7 +739,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA3(gstd::script_machine* machine,
 	IDirect3DSurface9* pSurface = texture->GetD3DSurface();
 	RECT rect = { rcLeft, rcTop, rcRight, rcBottom };
 	HRESULT hr = D3DXSaveSurfaceToFile(path.c_str(), (D3DXIMAGE_FILEFORMAT)imgFormat,
-		pSurface, NULL, &rect);
+		pSurface, nullptr, &rect);
 	return value();
 }
 
@@ -747,7 +747,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA3(gstd::script_machine* machine,
 gstd::value StgControlScript::Func_GetPlayerID(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_string_type(), std::wstring());
 
 	std::wstring id = stageController->GetStageInformation()->GetPlayerScriptInformation()->GetID();
@@ -756,7 +756,7 @@ gstd::value StgControlScript::Func_GetPlayerID(gstd::script_machine* machine, in
 gstd::value StgControlScript::Func_GetPlayerReplayName(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	StgStageController* stageController = script->systemController_->GetStageController();
-	if (stageController == NULL)
+	if (stageController == nullptr)
 		return value(machine->get_engine()->get_string_type(), std::wstring());
 
 	std::wstring replayName = stageController->GetStageInformation()->GetPlayerScriptInformation()->GetReplayName();
@@ -876,7 +876,7 @@ gstd::value StgControlScript::Func_IsValidReplayIndex(gstd::script_machine* mach
 	ref_count_ptr<ReplayInformationManager> replayInfoManager = infoControlScript->GetReplayInformationManager();
 
 	int index = (int)argv[0].as_real();
-	bool res = replayInfoManager->GetInformation(index) != NULL;
+	bool res = replayInfoManager->GetInformation(index) != nullptr;
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
 gstd::value StgControlScript::Func_GetReplayInfo(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -892,7 +892,7 @@ gstd::value StgControlScript::Func_GetReplayInfo(gstd::script_machine* machine, 
 	if (index == ReplayInformation::INDEX_ACTIVE)replayInfo = infoSystem->GetActiveReplayInformation();
 	else replayInfo = replayInfoManager->GetInformation(index);
 
-	if (replayInfo == NULL)
+	if (replayInfo == nullptr)
 		script->RaiseError(ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_OUTOFRANGE_INDEX));
 
 	value res;
@@ -919,7 +919,7 @@ gstd::value StgControlScript::Func_GetReplayInfo(gstd::script_machine* machine, 
 	{
 		std::vector<int> listStageI = replayInfo->GetStageIndexList();
 		std::vector<double> listStageD;
-		for (int iStage = 0; iStage < listStageI.size(); iStage++) {
+		for (size_t iStage = 0; iStage < listStageI.size(); iStage++) {
 			double stage = (double)listStageI[iStage];
 			listStageD.push_back(stage);
 		}
@@ -930,7 +930,7 @@ gstd::value StgControlScript::Func_GetReplayInfo(gstd::script_machine* machine, 
 	{
 		std::vector<int> listStage = replayInfo->GetStageIndexList();
 		std::vector<double> listScoreD;
-		for (int iStage = 0; iStage < listStage.size(); iStage++) {
+		for (size_t iStage = 0; iStage < listStage.size(); iStage++) {
 			int stage = listStage[iStage];
 			ref_count_ptr<ReplayInformation::StageData> data = replayInfo->GetStageData(stage);
 
@@ -944,7 +944,7 @@ gstd::value StgControlScript::Func_GetReplayInfo(gstd::script_machine* machine, 
 	{
 		std::vector<int> listStage = replayInfo->GetStageIndexList();
 		std::vector<double> listScoreD;
-		for (int iStage = 0; iStage < listStage.size(); iStage++) {
+		for (size_t iStage = 0; iStage < listStage.size(); iStage++) {
 			int stage = listStage[iStage];
 			ref_count_ptr<ReplayInformation::StageData> data = replayInfo->GetStageData(stage);
 
@@ -967,7 +967,7 @@ gstd::value StgControlScript::Func_SetReplayInfo(gstd::script_machine* machine, 
 	ref_count_ptr<ReplayInformationManager> replayInfoManager = infoControlScript->GetReplayInformationManager();
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 	ref_count_ptr<ReplayInformation> replayInfo = infoSystem->GetActiveReplayInformation();
-	if (replayInfo == NULL)
+	if (replayInfo == nullptr)
 		script->RaiseError("Cannot find a target replay data.");
 
 	int type = (int)argv[0].as_real();
@@ -992,7 +992,7 @@ gstd::value StgControlScript::Func_GetReplayUserData(gstd::script_machine* machi
 	if (index == ReplayInformation::INDEX_ACTIVE)replayInfo = infoSystem->GetActiveReplayInformation();
 	else replayInfo = replayInfoManager->GetInformation(index);
 
-	if (replayInfo == NULL)
+	if (replayInfo == nullptr)
 		script->RaiseError(ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_OUTOFRANGE_INDEX));
 
 	gstd::value res = replayInfo->GetUserData(key);
@@ -1004,7 +1004,7 @@ gstd::value StgControlScript::Func_SetReplayUserData(gstd::script_machine* machi
 	ref_count_ptr<ReplayInformationManager> replayInfoManager = infoControlScript->GetReplayInformationManager();
 	ref_count_ptr<StgSystemInformation> infoSystem = script->systemController_->GetSystemInformation();
 	ref_count_ptr<ReplayInformation> replayInfo = infoSystem->GetActiveReplayInformation();
-	if (replayInfo == NULL)
+	if (replayInfo == nullptr)
 		script->RaiseError("The replay data is not found.");
 
 	std::string key = StringUtility::ConvertWideToMulti(argv[0].as_string());
@@ -1025,7 +1025,7 @@ gstd::value StgControlScript::Func_IsReplayUserDataExists(gstd::script_machine* 
 	if (index == ReplayInformation::INDEX_ACTIVE)replayInfo = infoSystem->GetActiveReplayInformation();
 	else replayInfo = replayInfoManager->GetInformation(index);
 
-	if (replayInfo == NULL)
+	if (replayInfo == nullptr)
 		script->RaiseError(ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_OUTOFRANGE_INDEX));
 
 	bool res = replayInfo->IsUserDataExists(key);
@@ -1038,7 +1038,7 @@ gstd::value StgControlScript::Func_SaveReplay(gstd::script_machine* machine, int
 	ref_count_ptr<ScriptInformation> infoMain = script->systemController_->GetSystemInformation()->GetMainScriptInformation();
 
 	ref_count_ptr<ReplayInformation> replayInfoActive = infoSystem->GetActiveReplayInformation();
-	if (replayInfoActive == NULL)
+	if (replayInfoActive == nullptr)
 		script->RaiseError("The replay data is not found.");
 
 	int index = (int)argv[0].as_real();
@@ -1095,7 +1095,7 @@ void ScriptInfoPanel::_TerminateScriptAll() {
 	for (; itr != listTask.end(); itr++) {
 		ref_count_ptr<StgSystemController> systemController =
 			ref_count_ptr<StgSystemController>::DownCast(*itr);
-		if (systemController != NULL) {
+		if (systemController != nullptr) {
 			systemController->TerminateScriptAll();
 		}
 	}

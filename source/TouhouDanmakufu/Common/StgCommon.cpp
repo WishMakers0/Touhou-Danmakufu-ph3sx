@@ -108,12 +108,12 @@ StgMovePattern::StgMovePattern(StgMoveObject* target) {
 	c_ = 1;
 	s_ = 0;
 }
-ref_count_ptr<StgMoveObject>::unsync StgMovePattern::_GetMoveObject(int id) {
+shared_ptr<StgMoveObject> StgMovePattern::_GetMoveObject(int id) {
 	StgStageController* controller = _GetStageController();
-	ref_count_ptr<DxScriptObjectBase>::unsync base = controller->GetMainRenderObject(id);
-	if (base == NULL || base->IsDeleted())return NULL;
+	shared_ptr<DxScriptObjectBase> base = controller->GetMainRenderObject(id);
+	if (base == nullptr || base->IsDeleted())return nullptr;
 
-	return ref_count_ptr<StgMoveObject>::unsync::DownCast(base);
+	return std::dynamic_pointer_cast<StgMoveObject>(base);
 }
 
 //StgMovePattern_Angle
@@ -154,7 +154,7 @@ void StgMovePattern_Angle::Move() {
 }
 void StgMovePattern_Angle::_Activate() {
 	if (idRalativeID_ != DxScript::ID_INVALID) {
-		ref_count_ptr<StgMoveObject>::unsync obj = _GetMoveObject(idRalativeID_);
+		shared_ptr<StgMoveObject> obj = _GetMoveObject(idRalativeID_);
 		if (obj != nullptr) {
 			double px = target_->GetPositionX();
 			double py = target_->GetPositionY();

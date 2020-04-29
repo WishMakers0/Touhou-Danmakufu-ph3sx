@@ -263,8 +263,8 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	StgStageScriptObjectManager* objectManagerStage = nullptr;
 	DxScriptObjectManager* objectManagerPackage = nullptr;
 
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>>* pRenderListStage = nullptr;
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>>* pRenderListPackage = nullptr;
+	std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* pRenderListStage = nullptr;
+	std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* pRenderListPackage = nullptr;
 
 
 	int scene = infoSystem_->GetScene();
@@ -429,12 +429,12 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 				}
 
 				if (pRenderListStage != nullptr && iPri < (*pRenderListStage).size()) {
-					std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
-					std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>& renderList = (*pRenderListStage)[iPri];
+					std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
+					std::list<shared_ptr<DxScriptObjectBase>>& renderList = (*pRenderListStage)[iPri];
 
 					for (itr = renderList.begin(); itr != renderList.end(); itr++) {
 						if (!bClearZBufferFor2DCoordinate) {
-							DxScriptObjectBase* obj = (*itr).GetPointer();
+							DxScriptObjectBase* obj = (*itr).get();
 							if (obj->GetObjectType() == TypeObject::OBJ_MESH) {
 								gstd::ref_count_ptr<DxMesh>& mesh = dynamic_cast<DxScriptMeshObject*>(obj)->GetMesh();
 								if (mesh != nullptr && mesh->IsCoordinate2D()) {
@@ -471,12 +471,12 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 				if (effect != nullptr) effect->BeginPass(iPass);
 
 				if (pRenderListPackage != nullptr && iPri < (*pRenderListPackage).size()) {
-					std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
-					std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>& renderList = (*pRenderListPackage)[iPri];
+					std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
+					std::list<shared_ptr<DxScriptObjectBase>>& renderList = (*pRenderListPackage)[iPri];
 
 					for (itr = renderList.begin(); itr != renderList.end(); itr++) {
 						if (!bClearZBufferFor2DCoordinate) {
-							DxScriptObjectBase* obj = (*itr).GetPointer();
+							DxScriptObjectBase* obj = (*itr).get();
 							if (obj->GetObjectType() == TypeObject::OBJ_MESH) {
 								gstd::ref_count_ptr<DxMesh>& mesh = dynamic_cast<DxScriptMeshObject*>(obj)->GetMesh();
 								if (mesh != nullptr && mesh->IsCoordinate2D()) {
@@ -551,7 +551,7 @@ void StgSystemController::_ControlScene() {
 				stageController_->RenderToTransitionTexture();
 				if (infoStage->GetResult() == StgStageInformation::RESULT_UNKNOWN) {
 					int sceneResult = StgStageInformation::RESULT_CLEARED;
-					ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+					shared_ptr<StgPlayerObject> objPlayer = stageController_->GetPlayerObject();
 					if (objPlayer != nullptr) {
 						int statePlayer = objPlayer->GetState();
 						if (statePlayer == StgPlayerObject::STATE_END)
@@ -680,7 +680,7 @@ ref_count_ptr<ReplayInformation> StgSystemController::CreateReplayInformation() 
 	if (infoSystem_->IsPackageMode()) {
 		ref_count_ptr<StgPackageInformation> infoPackage = packageController_->GetPackageInformation();
 		std::vector<ref_count_ptr<StgStageStartData> > listStageData = infoPackage->GetStageDataList();
-		for (int iStage = 0; iStage < listStageData.size(); iStage++) {
+		for (size_t iStage = 0; iStage < listStageData.size(); iStage++) {
 			ref_count_ptr<StgStageStartData> stageData = listStageData[iStage];
 			ref_count_ptr<StgStageInformation> infoStage = stageData->GetStageInformation();
 			ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();

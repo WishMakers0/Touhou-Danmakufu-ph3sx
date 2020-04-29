@@ -262,10 +262,10 @@ void DxScriptPrimitiveObject3D::Render() {
 }
 void DxScriptPrimitiveObject3D::SetRenderState() {
 	if (idRelative_ >= 0) {
-		ref_count_ptr<DxScriptObjectBase>::unsync objRelative = manager_->GetObject(idRelative_);
+		shared_ptr<DxScriptObjectBase> objRelative = manager_->GetObject(idRelative_);
 		if (objRelative != nullptr) {
 			objRelative->SetRenderState();
-			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.GetPointer());
+			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.get());
 			if (objMesh != nullptr) {
 				int frameAnime = objMesh->GetAnimeFrame();
 				std::wstring nameAnime = objMesh->GetAnimeName();
@@ -365,10 +365,10 @@ DxScriptTrajectoryObject3D::DxScriptTrajectoryObject3D() {
 }
 void DxScriptTrajectoryObject3D::Work() {
 	if (idRelative_ >= 0) {
-		ref_count_ptr<DxScriptObjectBase>::unsync objRelative = manager_->GetObject(idRelative_);
+		shared_ptr<DxScriptObjectBase> objRelative = manager_->GetObject(idRelative_);
 		if (objRelative != nullptr) {
 			objRelative->SetRenderState();
-			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.GetPointer());
+			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.get());
 			if (objMesh != nullptr) {
 				int frameAnime = objMesh->GetAnimeFrame();
 				std::wstring nameAnime = objMesh->GetAnimeName();
@@ -885,7 +885,7 @@ bool DxBinaryFileObject::IsReadableSize(size_t size) {
 //DxScriptObjectManager
 **********************************************************/
 DxScriptObjectManager::DxScriptObjectManager() {
-	SetMaxObject(512U);
+	SetMaxObject(DEFAULT_CONTAINER_CAPACITY);
 	SetRenderBucketCapacity(101);
 	totalObjectCreateCount_ = 0;
 
@@ -898,49 +898,50 @@ DxScriptObjectManager::~DxScriptObjectManager() {
 
 }
 void DxScriptObjectManager::SetMaxObject(size_t size) {
-	if (size > 131072U) size = 131072U;
-	if (obj_.size() >= size) return;
-
+	/*
 	listUnusedIndex_.clear();
 	for (size_t iObj = 0U; iObj < obj_.size(); ++iObj) {
-		if (obj_[iObj] != nullptr) continue;
+		shared_ptr<DxScriptObjectBase> obj = obj_[iObj];
+		if (obj == nullptr) listUnusedIndex_.push_back(iObj);
+	}
+	*/
+	if (obj_.size() == 131072U) return;
+	size = std::min(size, 131072U);
+
+	for (size_t iObj = obj_.size(); iObj < size; ++iObj) {
 		listUnusedIndex_.push_back(iObj);
 	}
-
-	if (listUnusedIndex_.size() < 64U) {
-		for (size_t iObj = obj_.size(); iObj < size; ++iObj) {
-			listUnusedIndex_.push_back(iObj);
-		}
-		obj_.resize(size);
-	}
+	obj_.resize(size, nullptr);
 }
 void DxScriptObjectManager::SetRenderBucketCapacity(size_t capacity) {
 	objRender_.resize(capacity);
 	listShader_.resize(capacity);
 }
 void DxScriptObjectManager::_ArrangeActiveObjectList() {
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
+	std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end();) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		shared_ptr<DxScriptObjectBase> obj = (*itr);
 		if (obj == nullptr || obj->IsDeleted() || !obj->IsActive())
 			itr = listActiveObject_.erase(itr);
 		else ++itr;
 	}
 }
-int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
+int DxScriptObjectManager::AddObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate) {
 	int res = DxScript::ID_INVALID;
 
-	if (listUnusedIndex_.size() < 64U) {
+	auto ExpandContainerCapacity = [&]() {
 		size_t oldSize = obj_.size();
 		SetMaxObject(oldSize * 2U);
-		if (obj_.size() > oldSize)
-			Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object container expansion. [%d->%d]",
-				oldSize, obj_.size()));
-	}
+		Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object pool expansion. [%d->%d]",
+			oldSize, obj_.size()));
+	};
 
-	if (listUnusedIndex_.size() > 0U) {
-		res = listUnusedIndex_.front();
-		listUnusedIndex_.pop_front();
+	{
+		do {	//A very rudimentary fix, well as long as it fucking works
+			if (listUnusedIndex_.size() == 0U) ExpandContainerCapacity();
+			res = listUnusedIndex_.front();
+			listUnusedIndex_.pop_front();
+		} while (obj_[res] != nullptr);
 
 		obj_[res] = obj;
 		if (bActivate) {
@@ -955,29 +956,11 @@ int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::un
 
 	return res;
 }
-/*
-void DxScriptObjectManager::AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
-	obj_[id] = obj;
-	obj->idObject_ = id;
-	obj->manager_ = this;
-	if (bActivate) {
-		obj->bActive_ = true;
-		listActiveObject_.push_back(obj);
-	}
-
-	std::list<int>::iterator itr = listUnusedIndex_.begin();
-	for (; itr != listUnusedIndex_.end(); ++itr) {
-		if ((*itr) == id) {
-			listUnusedIndex_.erase(itr);
-			++totalObjectCreateCount_;
-			break;
-		}
-	}
-}
-*/
 void DxScriptObjectManager::ActivateObject(int id, bool bActivate) {
-	gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = GetObject(id);
-	if (obj == nullptr || obj->IsDeleted())return;
+	DxScriptObjectManager::ActivateObject(GetObject(id), bActivate);
+}
+void DxScriptObjectManager::ActivateObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate) {
+	if (obj == nullptr || obj->IsDeleted()) return;
 
 	if (bActivate && !obj->IsActive()) {
 		obj->bActive_ = true;
@@ -989,29 +972,42 @@ void DxScriptObjectManager::ActivateObject(int id, bool bActivate) {
 }
 std::vector<int> DxScriptObjectManager::GetValidObjectIdentifier() {
 	std::vector<int> res;
-	for (int iObj = 0; iObj < obj_.size(); ++iObj) {
-		if (obj_[iObj] == nullptr)continue;
+	for (size_t iObj = 0; iObj < obj_.size(); ++iObj) {
+		if (obj_[iObj] == nullptr) continue;
 		res.push_back(obj_[iObj]->idObject_);
 	}
 	return res;
 }
 DxScriptObjectBase* DxScriptObjectManager::GetObjectPointer(int id) {
 	if (id < 0 || id >= obj_.size())return nullptr;
-	return obj_[id].GetPointer();
+	return obj_[id].get();
 }
 void DxScriptObjectManager::DeleteObject(int id) {
-	if (id < 0 || id >= obj_.size())return;
-	if (obj_[id] == nullptr)return;
+	if (id < 0 || id >= obj_.size()) return;
 
-	obj_[id]->bDeleted_ = true;
+	auto ptr = obj_[id];
+	if (ptr == nullptr) return;
+
+	ptr->bDeleted_ = true;
 	obj_[id] = nullptr;
 
-	//listUnusedIndex_.push_back(id);
+	listUnusedIndex_.push_back(id);
+}
+void DxScriptObjectManager::DeleteObject(shared_ptr<DxScriptObjectBase> obj) {
+	DxScriptObjectManager::DeleteObject(obj.get());
+}
+void DxScriptObjectManager::DeleteObject(DxScriptObjectBase* obj) {
+	if (obj == nullptr) return;
+
+	obj->bDeleted_ = true;
+	obj_[obj->GetObjectID()] = nullptr;
+
+	listUnusedIndex_.push_back(obj->GetObjectID());
 }
 void DxScriptObjectManager::ClearObject() {
 	size_t size = obj_.size();
 	obj_.clear();
-	obj_.resize(size);
+	obj_.resize(size, nullptr);
 	listActiveObject_.clear();
 
 	listUnusedIndex_.clear();
@@ -1027,14 +1023,13 @@ gstd::ref_count_ptr<Shader> DxScriptObjectManager::GetShader(int index) {
 void DxScriptObjectManager::DeleteObjectByScriptID(int64_t idScript) {
 	if (idScript == ScriptClientBase::ID_SCRIPT_FREE) return;
 
-#pragma omp for
-	for (int iObj = 0; iObj < obj_.size(); ++iObj) {
+	for (size_t iObj = 0; iObj < obj_.size(); ++iObj) {
 		if (obj_[iObj] == nullptr) continue;
 		if (obj_[iObj]->GetScriptID() != idScript) continue;
-		DeleteObject(obj_[iObj]->GetObjectID());
+		DeleteObject(obj_[iObj]);
 	}
 }
-void DxScriptObjectManager::AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj) {
+void DxScriptObjectManager::AddRenderObject(shared_ptr<DxScriptObjectBase> obj) {
 	if (!obj->IsVisible())return;
 
 	int renderSize = objRender_.size();
@@ -1044,15 +1039,17 @@ void DxScriptObjectManager::AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBa
 	objRender_[tPri].push_back(obj);
 }
 void DxScriptObjectManager::WorkObject() {
-	_ArrangeActiveObjectList();
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
+	//_ArrangeActiveObjectList();
+	std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
 
-	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end(); ++itr) {
-		{
-			gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
-			if (obj == nullptr || obj->IsDeleted())continue;
-			obj->Work();
+	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end();) {
+		shared_ptr<DxScriptObjectBase> obj = *itr;
+		if (obj == nullptr || obj->IsDeleted()) {
+			itr = listActiveObject_.erase(itr);
+			continue;
 		}
+		obj->Work();
+		++itr;
 	}
 
 //音声再生
@@ -1082,7 +1079,7 @@ void DxScriptObjectManager::RenderObject() {
 			effect->Begin(&cPass, 0);
 		}
 
-		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
+		std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
 
 		for (UINT iPass = 0; iPass < cPass; ++iPass) {
 			if (effect != nullptr) effect->BeginPass(iPass);
@@ -1101,9 +1098,9 @@ void DxScriptObjectManager::RenderObject() {
 
 }
 void DxScriptObjectManager::PrepareRenderObject() {
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
+	std::list<shared_ptr<DxScriptObjectBase>>::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end(); ++itr) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		shared_ptr<DxScriptObjectBase> obj = (*itr);
 		if (obj == nullptr || obj->IsDeleted())continue;
 		if (!obj->IsVisible())continue;
 		AddRenderObject(obj);
@@ -1111,7 +1108,7 @@ void DxScriptObjectManager::PrepareRenderObject() {
 }
 void DxScriptObjectManager::ClearRenderObject() {
 //#pragma omp parallel for
-	for (int iPri = 0; iPri < objRender_.size(); ++iPri) {
+	for (size_t iPri = 0; iPri < objRender_.size(); ++iPri) {
 		objRender_[iPri].clear();
 	}
 }
@@ -1703,7 +1700,7 @@ void DxScript::_ClearResource() {
 	}
 	mapSoundPlayer_.clear();
 }
-int DxScript::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate) {
+int DxScript::AddObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate) {
 	obj->idScript_ = idScript_;
 	return objManager_->AddObject(obj, bActivate);
 }
@@ -3398,7 +3395,7 @@ value DxScript::Func_ObjRender_SetVertexShaderRenderingMode(gstd::script_machine
 gstd::value DxScript::Func_ObjShader_Create(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
-	ref_count_ptr<DxScriptShaderObject>::unsync obj = new DxScriptShaderObject();
+	shared_ptr<DxScriptShaderObject> obj = std::make_shared<DxScriptShaderObject>();
 
 	int id = ID_INVALID;
 	if (obj != nullptr) {
@@ -3628,24 +3625,25 @@ value DxScript::Func_ObjPrimitive_Create(script_machine* machine, int argc, cons
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
 	TypeObject type = (TypeObject)((int)argv[0].as_real());
-	ref_count_ptr<DxScriptPrimitiveObject>::unsync obj;
+
+	shared_ptr<DxScriptPrimitiveObject> obj;
 	if (type == TypeObject::OBJ_PRIMITIVE_2D) {
-		obj = new DxScriptPrimitiveObject2D();
+		obj = std::make_shared<DxScriptPrimitiveObject2D>();
 	}
 	else if (type == TypeObject::OBJ_SPRITE_2D) {
-		obj = new DxScriptSpriteObject2D();
+		obj = std::make_shared<DxScriptSpriteObject2D>();
 	}
 	else if (type == TypeObject::OBJ_SPRITE_LIST_2D) {
-		obj = new DxScriptSpriteListObject2D();
+		obj = std::make_shared<DxScriptSpriteListObject2D>();
 	}
 	else if (type == TypeObject::OBJ_PRIMITIVE_3D) {
-		obj = new DxScriptPrimitiveObject3D();
+		obj = std::make_shared<DxScriptPrimitiveObject3D>();
 	}
 	else if (type == TypeObject::OBJ_SPRITE_3D) {
-		obj = new DxScriptSpriteObject3D();
+		obj = std::make_shared<DxScriptSpriteObject3D>();
 	}
 	else if (type == TypeObject::OBJ_TRAJECTORY_3D) {
-		obj = new DxScriptTrajectoryObject3D();
+		obj = std::make_shared<DxScriptTrajectoryObject3D>();
 	}
 
 	int id = ID_INVALID;
@@ -4003,7 +4001,7 @@ value DxScript::Func_ObjTrajectory3D_SetComplementCount(script_machine* machine,
 //Dx関数：オブジェクト操作(DxMesh)
 value DxScript::Func_ObjMesh_Create(script_machine* machine, int argc, const value* argv) {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<DxScriptMeshObject>::unsync obj = new DxScriptMeshObject();
+	shared_ptr<DxScriptMeshObject> obj = shared_ptr<DxScriptMeshObject>(new DxScriptMeshObject());
 	int id = ID_INVALID;
 	if (obj != nullptr)
 		id = script->AddObject(obj);
@@ -4091,7 +4089,7 @@ value DxScript::Func_ObjMesh_GetPath(script_machine* machine, int argc, const va
 //Dx関数：オブジェクト操作(DxText)
 value DxScript::Func_ObjText_Create(script_machine* machine, int argc, const value* argv) {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<DxScriptTextObject>::unsync obj = new DxScriptTextObject();
+	shared_ptr<DxScriptTextObject> obj = shared_ptr<DxScriptTextObject>(new DxScriptTextObject());
 	int id = ID_INVALID;
 	if (obj != nullptr)
 		id = script->AddObject(obj);
@@ -4366,7 +4364,7 @@ gstd::value DxScript::Func_ObjSound_Create(gstd::script_machine* machine, int ar
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	ref_count_ptr<DxSoundObject>::unsync obj = new DxSoundObject();
+	shared_ptr<DxSoundObject> obj = shared_ptr<DxSoundObject>(new DxSoundObject());
 	int id = script->AddObject(obj);
 	return value(machine->get_engine()->get_real_type(), (double)id);
 }
@@ -4650,12 +4648,13 @@ gstd::value DxScript::Func_ObjFile_Create(gstd::script_machine* machine, int arg
 	DxScript* script = (DxScript*)machine->data;
 	//	script->CheckRunInMainThread();
 	TypeObject type = (TypeObject)((int)argv[0].as_real());
-	ref_count_ptr<DxFileObject>::unsync obj;
+
+	shared_ptr<DxFileObject> obj;
 	if (type == TypeObject::OBJ_FILE_TEXT) {
-		obj = new DxTextFileObject();
+		obj = shared_ptr<DxFileObject>(new DxTextFileObject());
 	}
 	else if (type == TypeObject::OBJ_FILE_BINARY) {
-		obj = new DxBinaryFileObject();
+		obj = shared_ptr<DxFileObject>(new DxBinaryFileObject());
 	}
 
 	int id = ID_INVALID;

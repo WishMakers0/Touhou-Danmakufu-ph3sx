@@ -31,7 +31,7 @@ protected:
 	//int mortonNo_;
 	int typeTarget_;
 	int shape_;
-	ref_count_weak_ptr<StgIntersectionObject>::unsync obj_;
+	weak_ptr<StgIntersectionObject> obj_;
 
 	RECT intersectionSpace_;
 public:
@@ -46,9 +46,9 @@ public:
 	int GetTargetType() { return typeTarget_; }
 	void SetTargetType(int type) { typeTarget_ = type; }
 	int GetShape() { return shape_; }
-	ref_count_weak_ptr<StgIntersectionObject>::unsync GetObject() { return obj_; }
-	void SetObject(ref_count_weak_ptr<StgIntersectionObject>::unsync obj) {
-		if (obj != nullptr) obj_ = obj;
+	weak_ptr<StgIntersectionObject> GetObject() { return obj_; }
+	void SetObject(weak_ptr<StgIntersectionObject> obj) {
+		if (!obj.expired()) obj_ = obj;
 	}
 
 	//int GetMortonNumber() { return mortonNo_; }
@@ -341,7 +341,8 @@ public:
 };
 
 inline void StgIntersectionTarget::ClearObjectIntersectedIdList() { 
-	if (obj_) obj_->ClearIntersectedIdList(); 
+	if (auto ptr = obj_.lock()) 
+		ptr->ClearIntersectedIdList();
 }
 
 /**********************************************************
@@ -351,12 +352,12 @@ class StgEnemyObject;
 class StgIntersectionTargetPoint {
 private:
 	POINT pos_;
-	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync ptrObject_;
+	weak_ptr<StgEnemyObject> ptrObject_;
 public:
 	POINT& GetPoint() { return pos_; }
 	void SetPoint(POINT& pos) { pos_ = pos; }
-	gstd::ref_count_weak_ptr<StgEnemyObject>::unsync GetObjectRef() { return ptrObject_; }
-	void SetObjectRef(gstd::ref_count_weak_ptr<StgEnemyObject>::unsync id) { ptrObject_ = id; }
+	weak_ptr<StgEnemyObject> GetObjectRef() { return ptrObject_; }
+	void SetObjectRef(weak_ptr<StgEnemyObject> id) { ptrObject_ = id; }
 };
 
 #endif

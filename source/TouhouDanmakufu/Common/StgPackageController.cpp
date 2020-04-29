@@ -48,7 +48,7 @@ void StgPackageController::RenderToTransitionTexture() {
 	scriptManager_->Render();
 
 	graphics->EndScene();
-	graphics->SetRenderTarget(NULL);
+	graphics->SetRenderTarget(nullptr);
 }
 
 /**********************************************************
@@ -60,7 +60,7 @@ StgPackageInformation::StgPackageInformation() {
 }
 StgPackageInformation::~StgPackageInformation() {}
 void StgPackageInformation::InitializeStageData() {
-	infoReplay_ = NULL;
+	infoReplay_ = nullptr;
 	listStageData_.clear();
 
 	nextStageStartData_ = new StgStageStartData();

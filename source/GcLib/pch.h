@@ -135,17 +135,17 @@
 
 //zlib
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
-	#include <zlib/zlib.h>
-	#pragma comment(lib, "zlibstatic.lib")
+#include <zlib/zlib.h>
+#pragma comment(lib, "zlibstatic.lib")
 #endif
 
 //libogg + libvorbis
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
-	#include <vorbis/codec.h>
-	#include <vorbis/vorbisfile.h>
-	#pragma comment(lib, "ogg_static.lib")
-	#pragma comment(lib, "vorbis_static.lib")
-	#pragma comment(lib, "vorbisfile_static.lib")
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
+#pragma comment(lib, "ogg_static.lib")
+#pragma comment(lib, "vorbis_static.lib")
+#pragma comment(lib, "vorbisfile_static.lib")
 #endif
 
 //----------------------------------------------
@@ -181,6 +181,10 @@ template<typename T> static constexpr inline void ptr_release(T*& ptr) {
 	if (ptr) ptr->Release();
 	ptr = nullptr;
 }
+using std::shared_ptr;
+using std::weak_ptr;
 
 #undef min
 #undef max
+
+#undef GetObject

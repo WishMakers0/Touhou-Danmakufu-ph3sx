@@ -48,16 +48,16 @@ StgItemManager::~StgItemManager() {
 	ptr_delete(listItemData_);
 }
 void StgItemManager::Work() {
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+	shared_ptr<StgPlayerObject> objPlayer = stageController_->GetPlayerObject();
 	double px = objPlayer->GetX();
 	double py = objPlayer->GetY();
 	double pr = objPlayer->GetItemIntersectionRadius();
 	pr *= pr;
 	int pAutoItemCollectY = objPlayer->GetAutoItemCollectY();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgItemObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end();) {
-		ref_count_ptr<StgItemObject>::unsync obj = *itr;
+		shared_ptr<StgItemObject> obj = *itr;
 
 		if (obj->IsDeleted()) {
 			//obj->Clear();
@@ -75,59 +75,71 @@ void StgItemManager::Work() {
 				//if (obj->GetItemType() == StgItemObject::ITEM_SCORE && obj->GetFrameWork() > 60 * 15)
 				//	obj->Intersect(nullptr, nullptr);
 
+				bool deleted = false;
+
 				double radius = dx * dx + dy * dy;
 				if (radius <= 16 * 16) {
 					obj->Intersect(nullptr, nullptr);
+					deleted = true;
 				}
 				else if (radius <= pr && obj->IsPermitMoveToPlayer()) {
 					obj->SetMoveToPlayer(true);
 					bMoveToPlayer = true;
 				}
 
-				if (bCancelToPlayer_) {
-					//自動回収キャンセル
-					obj->SetMoveToPlayer(false);
-				}
-				else if (obj->IsPermitMoveToPlayer() && !bMoveToPlayer) {
-					if (pAutoItemCollectY >= 0) {
-						//上部自動回収
-						int typeMove = obj->GetMoveType();
-						if (!obj->IsMoveToPlayer() && py <= pAutoItemCollectY)
-							bMoveToPlayer = true;
+				if (!deleted) {
+					if (bCancelToPlayer_) {
+						//自動回収キャンセル
+						obj->SetMoveToPlayer(false);
 					}
-
-					if (listItemTypeToPlayer_.size() > 0) {
-						//自機にアイテムを集める
-						int typeItem = obj->GetItemType();
-						bool bFind = listItemTypeToPlayer_.find(typeItem) != listItemTypeToPlayer_.end();
-						if (bFind)
-							bMoveToPlayer = true;
-					}
-
-					if (listCircleToPlayer_.size() > 0) {
-						std::list<DxCircle>::iterator itr = listCircleToPlayer_.begin();
-						for (; itr != listCircleToPlayer_.end(); itr++) {
-							DxCircle circle = *itr;
-
-							double cdx = ix - circle.GetX();
-							double cdy = iy - circle.GetY();
-
-							if ((cdx * cdx + cdy * cdy) <= circle.GetR() * circle.GetR()) {
+					else if (obj->IsPermitMoveToPlayer() && !bMoveToPlayer) {
+						if (pAutoItemCollectY >= 0) {
+							//上部自動回収
+							int typeMove = obj->GetMoveType();
+							if (!obj->IsMoveToPlayer() && py <= pAutoItemCollectY)
 								bMoveToPlayer = true;
-								break;
+						}
+
+						if (listItemTypeToPlayer_.size() > 0) {
+							//自機にアイテムを集める
+							int typeItem = obj->GetItemType();
+							bool bFind = listItemTypeToPlayer_.find(typeItem) != listItemTypeToPlayer_.end();
+							if (bFind)
+								bMoveToPlayer = true;
+						}
+
+						if (listCircleToPlayer_.size() > 0) {
+							std::list<DxCircle>::iterator itr = listCircleToPlayer_.begin();
+							for (; itr != listCircleToPlayer_.end(); itr++) {
+								DxCircle circle = *itr;
+
+								double cdx = ix - circle.GetX();
+								double cdy = iy - circle.GetY();
+
+								if ((cdx * cdx + cdy * cdy) <= circle.GetR() * circle.GetR()) {
+									bMoveToPlayer = true;
+									break;
+								}
 							}
 						}
+
+						if (bAllItemToPlayer_)
+							bMoveToPlayer = true;
+
+						if (bMoveToPlayer)
+							obj->SetMoveToPlayer(true);
 					}
-
-					if (bAllItemToPlayer_)
-						bMoveToPlayer = true;
-
-					if (bMoveToPlayer)
-						obj->SetMoveToPlayer(true);
 				}
-
 			}
 			else {
+				/*
+				if (obj->GetItemType() == StgItemObject::ITEM_SCORE) {
+					std::shared_ptr<StgMovePattern_Item> move =
+						std::shared_ptr<StgMovePattern_Item>(new StgMovePattern_Item(obj.get()));
+					move->SetItemMoveType(StgMovePattern_Item::MOVE_DOWN);
+					obj->SetPattern(move);
+				}
+				*/
 				obj->SetMoveToPlayer(false);
 			}
 
@@ -161,9 +173,9 @@ void StgItemManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgItemObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgItemObject>::unsync obj = *itr;
+		shared_ptr<StgItemObject> obj = *itr;
 		if (obj->IsDeleted())continue;
 		if (obj->GetRenderPriorityI() != targetPriority)continue;
 
@@ -240,9 +252,9 @@ void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgItemObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgItemObject>::unsync obj = *itr;
+		shared_ptr<StgItemObject> obj = *itr;
 		if (obj->IsDeleted()) continue;
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
@@ -252,27 +264,27 @@ void StgItemManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 bool StgItemManager::LoadItemData(std::wstring path, bool bReload) {
 	return listItemData_->AddItemDataList(path, bReload);
 }
-ref_count_ptr<StgItemObject>::unsync StgItemManager::CreateItem(int type) {
-	ref_count_ptr<StgItemObject>::unsync res;
+shared_ptr<StgItemObject> StgItemManager::CreateItem(int type) {
+	shared_ptr<StgItemObject> res;
 	switch (type) {
 	case StgItemObject::ITEM_1UP:
 	case StgItemObject::ITEM_1UP_S:
-		res = new StgItemObject_1UP(stageController_);
+		res = shared_ptr<StgItemObject>(new StgItemObject_1UP(stageController_));
 		break;
 	case StgItemObject::ITEM_SPELL:
 	case StgItemObject::ITEM_SPELL_S:
-		res = new StgItemObject_Bomb(stageController_);
+		res = shared_ptr<StgItemObject>(new StgItemObject_Bomb(stageController_));
 		break;
 	case StgItemObject::ITEM_POWER:
 	case StgItemObject::ITEM_POWER_S:
-		res = new StgItemObject_Power(stageController_);
+		res = shared_ptr<StgItemObject>(new StgItemObject_Power(stageController_));
 		break;
 	case StgItemObject::ITEM_POINT:
 	case StgItemObject::ITEM_POINT_S:
-		res = new StgItemObject_Point(stageController_);
+		res = shared_ptr<StgItemObject>(new StgItemObject_Point(stageController_));
 		break;
 	case StgItemObject::ITEM_USER:
-		res = new StgItemObject_User(stageController_);
+		res = shared_ptr<StgItemObject>(new StgItemObject_User(stageController_));
 		break;
 	}
 	res->SetItemType(type);
@@ -615,7 +627,7 @@ void StgItemRenderer::Render(StgItemManager* manager) {
 
 	//device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, (int)(countRenderVertex_ / 3), vertex_.get(), sizeof(VERTEX_TLX));
 
-	if (countMaxVertex_ > manager->GetVertexBufferSize()) {
+	while (countMaxVertex_ > manager->GetVertexBufferSize()) {
 		manager->_SetVertexBuffer(manager->GetVertexBufferSize() * 2);
 	}
 	IDirect3DVertexBuffer9* vBuffer = manager->GetVertexBuffer();
@@ -666,6 +678,8 @@ StgItemObject::StgItemObject(StgStageController* stageController) : StgMoveObjec
 	bPermitMoveToPlayer_ = true;
 	bChangeItemScore_ = true;
 
+	frameWork_ = 0;
+
 	int priItemI = stageController_->GetStageInformation()->GetItemObjectPriority();
 	double priItemD = (double)priItemI / (stageController_->GetMainObjectManager()->GetRenderBucketCapacity() - 1);
 	SetRenderPriority(priItemD);
@@ -674,7 +688,7 @@ void StgItemObject::Work() {
 	bool bDefaultMovePattern = std::dynamic_pointer_cast<StgMovePattern_Item>(GetPattern()) != nullptr;
 	if (!bDefaultMovePattern && IsMoveToPlayer()) {
 		double speed = 8;
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+		shared_ptr<StgPlayerObject> objPlayer = stageController_->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - GetPositionY(), objPlayer->GetX() - GetPositionX());
 		double angDirection = angle;
 		SetSpeed(speed);
@@ -809,21 +823,24 @@ void StgItemObject::_DeleteInAutoClip() {
 	bool bDelete = (posX_ < rcClip.left || posX_ > rcClip.right || posY_ > rcClip.bottom);
 	if (!bDelete)return;
 
-	stageController_->GetMainObjectManager()->DeleteObject(GetObjectID());
+	stageController_->GetMainObjectManager()->DeleteObject(this);
 }
 void StgItemObject::_CreateScoreItem() {
 	auto objectManager = stageController_->GetMainObjectManager();
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	ref_count_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController_);
-	obj->SetX(posX_);
-	obj->SetY(posY_);
-	obj->SetScore(score_);
-	objectManager->AddObject(obj);
-	itemManager->AddItem(obj);
+
+	if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
+		shared_ptr<StgItemObject_Score> obj = shared_ptr<StgItemObject_Score>(new StgItemObject_Score(stageController_));
+		obj->SetX(posX_);
+		obj->SetY(posY_);
+		obj->SetScore(score_);
+		objectManager->AddObject(obj);
+		itemManager->AddItem(obj);
+	}
 }
 void StgItemObject::_NotifyEventToPlayerScript(std::vector<float>& listValue) {
 	//自機スクリプトへ通知
-	ref_count_ptr<StgPlayerObject>::unsync player = stageController_->GetPlayerObject();
+	shared_ptr<StgPlayerObject> player = stageController_->GetPlayerObject();
 	StgStagePlayerScript* scriptPlayer = player->GetPlayerScript();
 	std::vector<gstd::value> listScriptValue;
 	for (size_t iVal = 0; iVal < listValue.size(); iVal++) {
@@ -840,7 +857,7 @@ void StgItemObject::_NotifyEventToItemScript(std::vector<float>& listValue) {
 		ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetScript(idItemScript);
 		if (scriptItem) {
 			std::vector<gstd::value> listScriptValue;
-			for (int iVal = 0; iVal < listValue.size(); iVal++) {
+			for (size_t iVal = 0; iVal < listValue.size(); iVal++) {
 				listScriptValue.push_back(scriptItem->CreateRealValue(listValue[iVal]));
 			}
 			scriptItem->RequestEvent(StgStageItemScript::EV_GET_ITEM, listScriptValue);
@@ -886,7 +903,7 @@ void StgItemObject_1UP::Intersect(StgIntersectionTarget::ptr ownTarget, StgInter
 	_NotifyEventToItemScript(listValue);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 //StgItemObject_Bomb
@@ -903,7 +920,7 @@ void StgItemObject_Bomb::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 	_NotifyEventToItemScript(listValue);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 //StgItemObject_Power
@@ -925,7 +942,7 @@ void StgItemObject_Power::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	_NotifyEventToItemScript(listValue);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 //StgItemObject_Point
@@ -946,7 +963,7 @@ void StgItemObject_Point::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	_NotifyEventToItemScript(listValue);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 //StgItemObject_Bonus
@@ -961,13 +978,13 @@ StgItemObject_Bonus::StgItemObject_Bonus(StgStageController* stageController) : 
 void StgItemObject_Bonus::Work() {
 	StgItemObject::Work();
 
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+	shared_ptr<StgPlayerObject> objPlayer = stageController_->GetPlayerObject();
 	if (objPlayer->GetState() != StgPlayerObject::STATE_NORMAL) {
 		_CreateScoreItem();
 		stageController_->GetStageInformation()->AddScore(score_);
 
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(GetObjectID());
+		objectManager->DeleteObject(this);
 	}
 }
 void StgItemObject_Bonus::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -975,7 +992,7 @@ void StgItemObject_Bonus::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	stageController_->GetStageInformation()->AddScore(score_);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 //StgItemObject_Score
@@ -994,7 +1011,7 @@ void StgItemObject_Score::Work() {
 	color_ = D3DCOLOR_ARGB(alpha, alpha, alpha, alpha);
 
 	if (frameDelete_ > 30) {
-		stageController_->GetMainObjectManager()->DeleteObject(GetObjectID());
+		stageController_->GetMainObjectManager()->DeleteObject(this);
 		return;
 	}
 	frameDelete_++;
@@ -1154,7 +1171,7 @@ void StgItemObject_User::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 	_NotifyEventToItemScript(listValue);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(GetObjectID());
+	objectManager->DeleteObject(this);
 }
 
 
@@ -1175,8 +1192,9 @@ void StgMovePattern_Item::Move() {
 	double px = target_->GetPositionX();
 	double py = target_->GetPositionY();
 	if (typeMove_ == MOVE_TOPLAYER || itemObject->IsMoveToPlayer()) {
-		speed_ = 8;
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+		if (frame_ == 0) speed_ = 6;
+		speed_ += 0.025;
+		shared_ptr<StgPlayerObject> objPlayer = stageController->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - py, objPlayer->GetX() - px);
 		angDirection_ = angle;
 	}

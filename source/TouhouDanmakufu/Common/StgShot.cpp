@@ -63,9 +63,9 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	handleEffectWorld_ = effectLayer_->GetParameterBySemantic(nullptr, "WORLD");
 }
 StgShotManager::~StgShotManager() {
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
+		shared_ptr<StgShotObject> obj = (*itr);
 		if (obj != nullptr) {
 			obj->ClearShotObject();
 		}
@@ -86,9 +86,9 @@ StgShotManager::~StgShotManager() {
 	*/
 }
 void StgShotManager::Work() {
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
+		shared_ptr<StgShotObject> obj = (*itr);
 		if (obj->IsDeleted()) {
 			obj->ClearShotObject();
 			itr = listObj_.erase(itr);
@@ -123,9 +123,9 @@ void StgShotManager::Render(int targetPriority) {
 
 	D3DXMATRIX& matCamera = camera2D->GetMatrix();
 
-	std::list<ref_count_ptr<StgShotObject>::unsync >::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = (*itr);
+		shared_ptr<StgShotObject> obj = (*itr);
 		if (obj->IsDeleted())continue;
 		if (!obj->IsActive())continue;
 		if (obj->GetRenderPriorityI() != targetPriority)continue;
@@ -229,9 +229,9 @@ void StgShotManager::_SetVertexBuffer(size_t size) {
 }
 
 void StgShotManager::RegistIntersectionTarget() {
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = *itr;
+		shared_ptr<StgShotObject> obj = *itr;
 
 		if (!obj->IsDeleted() && obj->IsActive()) {
 			obj->ClearIntersectedIdList();
@@ -264,9 +264,9 @@ RECT StgShotManager::GetShotAutoDeleteClipRect() {
 void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, int cx, int cy, double radius) {
 	double rd = radius * radius;
 
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = *itr;
+		shared_ptr<StgShotObject> obj = *itr;
 
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
@@ -318,9 +318,9 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 
 	double rd = radius * radius;
 
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = *itr;
+		shared_ptr<StgShotObject> obj = *itr;
 
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
@@ -342,9 +342,9 @@ std::vector<int> StgShotManager::GetShotIdInCircle(int typeOwner, int cx, int cy
 size_t StgShotManager::GetShotCount(int typeOwner) {
 	size_t res = 0;
 
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = *itr;
+		shared_ptr<StgShotObject> obj = *itr;
 		if (obj->IsDeleted()) continue;
 		if ((typeOwner != StgShotObject::OWNER_NULL) && (obj->GetOwnerType() != typeOwner)) continue;
 		++res;
@@ -358,9 +358,9 @@ void StgShotManager::GetValidRenderPriorityList(std::vector<PriListBool>& list) 
 	list.clear();
 	list.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgShotObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); ++itr) {
-		ref_count_ptr<StgShotObject>::unsync obj = *itr;
+		shared_ptr<StgShotObject> obj = *itr;
 		if (obj->IsDeleted()) continue;
 		int pri = obj->GetRenderPriorityI();
 		list[pri] = true;
@@ -797,7 +797,7 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 
 	//device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, (int)(countRenderVertex_ / 3), vertex_.GetPointer(), sizeof(VERTEX_TLX));
 
-	if (countMaxVertex_ > manager->GetVertexBufferSize()) {
+	while (countMaxVertex_ > manager->GetVertexBufferSize()) {
 		manager->_SetVertexBuffer(manager->GetVertexBufferSize() * 2);
 	}
 	IDirect3DVertexBuffer9* vBuffer = manager->GetVertexBuffer();
@@ -875,8 +875,8 @@ StgShotObject::~StgShotObject() {
 		listReserveShot_->Clear(stageController_);
 	}
 }
-ref_count_ptr<StgShotObject>::unsync StgShotObject::GetOwnObject() {
-	return ref_count_ptr<StgShotObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+shared_ptr<StgShotObject> StgShotObject::GetOwnObject() {
+	return std::dynamic_pointer_cast<StgShotObject>(stageController_->GetMainRenderObject(idObject_));
 }
 void StgShotObject::Work() {}
 void StgShotObject::_Move() {
@@ -919,7 +919,7 @@ void StgShotObject::_DeleteInLife() {
 			}
 		}
 
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 void StgShotObject::_DeleteInAutoClip() {
@@ -929,7 +929,7 @@ void StgShotObject::_DeleteInAutoClip() {
 	RECT rect = shotManager->GetShotAutoDeleteClipRect();
 	if (posX_ < rect.left || posX_ > rect.right || posY_ < rect.top || posY_ > rect.bottom) {
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 void StgShotObject::_DeleteInFadeDelete() {
@@ -937,7 +937,7 @@ void StgShotObject::_DeleteInFadeDelete() {
 	if (frameFadeDelete_ == 0) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_FADE);
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 void StgShotObject::_DeleteInAutoDeleteFrame() {
@@ -947,7 +947,7 @@ void StgShotObject::_DeleteInAutoDeleteFrame() {
 	if (frameAutoDelete_ <= 0) {
 		_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_IMMEDIATE);
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 		return;
 	}
 	frameAutoDelete_ = std::max(0, frameAutoDelete_ - 1);
@@ -1002,8 +1002,7 @@ void StgShotObject::_AddReservedShotWork() {
 	for (; itr != list->end(); itr++) {
 		StgShotObject::ReserveShotListData& data = (*itr);
 		int idShot = data.GetShotID();
-		ref_count_ptr<StgShotObject>::unsync obj =
-			ref_count_ptr<StgShotObject>::unsync::DownCast(objectManager->GetObject(idShot));
+		shared_ptr<StgShotObject> obj = std::dynamic_pointer_cast<StgShotObject>(objectManager->GetObject(idShot));
 		if (obj == nullptr || obj->IsDeleted())continue;
 
 		_AddReservedShot(obj, &data);
@@ -1011,7 +1010,7 @@ void StgShotObject::_AddReservedShotWork() {
 
 }
 
-void StgShotObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, StgShotObject::ReserveShotListData* data) {
+void StgShotObject::_AddReservedShot(shared_ptr<StgShotObject> obj, StgShotObject::ReserveShotListData* data) {
 	auto objectManager = stageController_->GetMainObjectManager();
 
 	double ownAngle = GetDirectionAngle();
@@ -1031,9 +1030,13 @@ void StgShotObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, S
 	obj->SetY(ty);
 
 	StgShotManager* shotManager = stageController_->GetShotManager();
-	shotManager->AddShot(obj);
-	obj->Activate();
-	objectManager->ActivateObject(obj->GetObjectID(), true);
+	if (shotManager->GetShotCountAll() < StgShotManager::SHOT_MAX) {
+		shotManager->AddShot(obj);
+		obj->Activate();
+		objectManager->ActivateObject(obj->GetObjectID(), true);
+	}
+	else
+		objectManager->DeleteObject(obj);
 }
 
 void StgShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -1069,7 +1072,7 @@ void StgShotObject::ConvertToItem(bool flgPlayerCollision) {
 	}
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(idObject_);
+	objectManager->DeleteObject(this);
 }
 void StgShotObject::DeleteImmediate() {
 	if (IsDeleted())return;
@@ -1077,7 +1080,7 @@ void StgShotObject::DeleteImmediate() {
 	_SendDeleteEvent(StgShotManager::BIT_EV_DELETE_IMMEDIATE);
 
 	auto objectManager = stageController_->GetMainObjectManager();
-	objectManager->DeleteObject(idObject_);
+	objectManager->DeleteObject(this);
 }
 
 //StgShotObject::ReserveShotList
@@ -1090,7 +1093,7 @@ ref_count_ptr<StgShotObject::ReserveShotList::ListElement>::unsync StgShotObject
 		mapData_.erase(itr);
 	}
 
-	frame_++;
+	++frame_;
 	return res;
 }
 void StgShotObject::ReserveShotList::AddData(int frame, int idShot, int radius, int angle) {
@@ -1116,17 +1119,16 @@ void StgShotObject::ReserveShotList::Clear(StgStageController* stageController) 
 	if (objectManager == nullptr)return;
 
 	auto itrMap = mapData_.begin();
-	for (; itrMap != mapData_.end(); itrMap++) {
+	for (; itrMap != mapData_.end(); ++itrMap) {
 		ref_count_ptr<ListElement>::unsync listElement = itrMap->second;
 		std::list<ReserveShotListData>* list = listElement->GetDataList();
 		std::list<ReserveShotListData>::iterator itr = list->begin();
-		for (; itr != list->end(); itr++) {
+		for (; itr != list->end(); ++itr) {
 			StgShotObject::ReserveShotListData& data = (*itr);
 			int idShot = data.GetShotID();
-			ref_count_ptr<StgShotObject>::unsync objShot =
-				ref_count_ptr<StgShotObject>::unsync::DownCast(objectManager->GetObject(idShot));
+			shared_ptr<StgShotObject> objShot = std::dynamic_pointer_cast<StgShotObject>(objectManager->GetObject(idShot));
 			if (objShot != nullptr)objShot->ClearShotObject();
-			objectManager->DeleteObject(idShot);
+			objectManager->DeleteObject(objShot);
 		}
 	}
 }
@@ -1197,9 +1199,9 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 	if (GetIntersectionRelativeTargetCount() != 1) {
 		ClearIntersectionRelativeTarget();
 
-		ref_count_ptr<StgShotObject>::unsync obj = GetOwnObject();
+		shared_ptr<StgShotObject> obj = GetOwnObject();
 		if (obj == nullptr)return;
-		ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
+		weak_ptr<StgShotObject> wObj = obj;
 
 		StgIntersectionTarget_Circle::ptr target =
 			std::shared_ptr<StgIntersectionTarget_Circle>(new StgIntersectionTarget_Circle);
@@ -1246,7 +1248,7 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 	}
 	else {
 		//自機の移動範囲が負の値が可能であれば敵弾でも登録
-		ref_count_ptr<StgPlayerObject>::unsync player = stageController_->GetPlayerObject();
+		shared_ptr<StgPlayerObject> player = stageController_->GetPlayerObject();
 		if (player != nullptr) {
 			RECT rcClip = player->GetClip();
 			if (rcClip.left < 0 || rcClip.top < 0)
@@ -1409,6 +1411,8 @@ void StgNormalShotObject::RenderOnShotManager() {
 }
 
 void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
+	shared_ptr<StgIntersectionObject> ptrObj = otherTarget->GetObject().lock();
+
 	double damage = 0;
 	int otherType = otherTarget->GetTargetType();
 	switch (otherType) {
@@ -1420,22 +1424,26 @@ void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SHOT:
 	{
-		StgShotObject* shot = (StgShotObject*)otherTarget->GetObject().GetPointer();
-		if (shot != nullptr) {
-			bool bEraseShot = shot->IsEraseShot();
-			if (bEraseShot && life_ != LIFE_SPELL_REGIST)
-				ConvertToItem(false);
+		if (ptrObj) {
+			StgShotObject* shot = (StgShotObject*)ptrObj.get();
+			if (shot != nullptr) {
+				bool bEraseShot = shot->IsEraseShot();
+				if (bEraseShot && life_ != LIFE_SPELL_REGIST)
+					ConvertToItem(false);
+			}
 		}
 		break;
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SPELL:
 	{
 		//自機スペル
-		StgPlayerSpellObject* spell = (StgPlayerSpellObject*)otherTarget->GetObject().GetPointer();
-		if (spell != nullptr) {
-			bool bEraseShot = spell->IsEraseShot();
-			if (bEraseShot && life_ != LIFE_SPELL_REGIST)
-				ConvertToItem(false);
+		if (ptrObj) {
+			StgPlayerSpellObject* spell = (StgPlayerSpellObject*)ptrObj.get();
+			if (spell != nullptr) {
+				bool bEraseShot = spell->IsEraseShot();
+				if (bEraseShot && life_ != LIFE_SPELL_REGIST)
+					ConvertToItem(false);
+			}
 		}
 		break;
 	}
@@ -1473,15 +1481,16 @@ void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	}
 
 	if (itemManager->IsDefaultBonusItemEnable() && !flgPlayerCollision) {
-		ref_count_ptr<StgItemObject>::unsync obj = new StgItemObject_Bonus(stageController_);
-		auto objectManager = stageController_->GetMainObjectManager();
-		int id = objectManager->AddObject(obj);
-		if (id != DxScript::ID_INVALID) {
-			//弾の座標にアイテムを作成する
-			StgItemManager* itemManager = stageController_->GetItemManager();
-			itemManager->AddItem(obj);
-			obj->SetPositionX(posX);
-			obj->SetPositionY(posY);
+		if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
+			shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
+			auto objectManager = stageController_->GetMainObjectManager();
+			int id = objectManager->AddObject(obj);
+			if (id != DxScript::ID_INVALID) {
+				//弾の座標にアイテムを作成する
+				itemManager->AddItem(obj);
+				obj->SetPositionX(posX);
+				obj->SetPositionY(posY);
+			}
 		}
 	}
 }
@@ -1537,6 +1546,8 @@ void StgLaserObject::_AddIntersectionRelativeTarget() {
 		intersectionManager->AddTarget(listTarget[iTarget]);
 }
 void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
+	shared_ptr<StgIntersectionObject> ptrObj = otherTarget->GetObject().lock();
+
 	double damage = 0;
 	int otherType = otherTarget->GetTargetType();
 	switch (otherType) {
@@ -1551,20 +1562,23 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 	case StgIntersectionTarget::TYPE_PLAYER_SHOT:
 	{
 		//自機弾弾
-		StgShotObject* shot = (StgShotObject*)otherTarget->GetObject().GetPointer();
-		if (shot != nullptr) {
-			bool bEraseShot = shot->IsEraseShot();
-			if (bEraseShot && life_ != LIFE_SPELL_REGIST) {
-				damage = shot->GetDamage();
-				ConvertToItem(false);
+		if (ptrObj) {
+			StgShotObject* shot = (StgShotObject*)ptrObj.get();
+			if (shot != nullptr) {
+				bool bEraseShot = shot->IsEraseShot();
+				if (bEraseShot && life_ != LIFE_SPELL_REGIST) {
+					damage = shot->GetDamage();
+					ConvertToItem(false);
+				}
 			}
 		}
+
 		break;
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SPELL:
 	{
 		//自機スペル
-		StgPlayerSpellObject* spell = (StgPlayerSpellObject*)otherTarget->GetObject().GetPointer();
+		StgPlayerSpellObject* spell = (StgPlayerSpellObject*)ptrObj.get();
 		if (spell != nullptr) {
 			bool bEraseShot = spell->IsEraseShot();
 			if (bEraseShot && life_ != LIFE_SPELL_REGIST) {
@@ -1646,7 +1660,7 @@ void StgLooseLaserObject::_DeleteInAutoClip() {
 	if ((posX_ < rect.left && posXE_ < rect.left) || (posX_ > rect.right&& posXE_ > rect.right) ||
 		(posY_ < rect.top && posYE_ < rect.top) || (posY_ > rect.bottom&& posYE_ > rect.bottom)) {
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 
@@ -1662,7 +1676,7 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return res;
 
-	ref_count_ptr<StgShotObject>::unsync obj = GetOwnObject();
+	shared_ptr<StgShotObject> obj = GetOwnObject();
 	if (obj == nullptr)return res;
 
 	float dx = posXE_ - posX_;
@@ -1676,7 +1690,7 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 	DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
 
-	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
+	weak_ptr<StgShotObject> wObj = obj;
 	StgIntersectionTarget_Line::ptr target =
 		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
 	if (target != nullptr) {
@@ -1847,15 +1861,16 @@ void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 		}
 
 		if (itemManager->IsDefaultBonusItemEnable() && delay_ == 0 && !flgPlayerCollision) {
-			ref_count_ptr<StgItemObject>::unsync obj = new StgItemObject_Bonus(stageController_);
-			int id = stageController_->GetMainObjectManager()->AddObject(obj);
-			if (id != DxScript::ID_INVALID) {
-				//弾の座標にアイテムを作成する
-				itemManager->AddItem(obj);
-				obj->SetPositionX(posX);
-				obj->SetPositionY(posY);
+			if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
+				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
+				int id = stageController_->GetMainObjectManager()->AddObject(obj);
+				if (id != DxScript::ID_INVALID) {
+					//弾の座標にアイテムを作成する
+					itemManager->AddItem(obj);
+					obj->SetPositionX(posX);
+					obj->SetPositionY(posY);
+				}
 			}
-
 		}
 	}
 }
@@ -1917,7 +1932,7 @@ void StgStraightLaserObject::_DeleteInAutoClip() {
 	if ((posX_ < rect.left && posXE < rect.left) || (posX_ > rect.right&& posXE > rect.right) ||
 		(posY_ < rect.top && posYE < rect.top) || (posY_ > rect.bottom&& posYE > rect.bottom)) {
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 void StgStraightLaserObject::_DeleteInAutoDeleteFrame() {
@@ -1950,10 +1965,10 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 	DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
-	ref_count_ptr<StgShotObject>::unsync obj = GetOwnObject();
+	shared_ptr<StgShotObject> obj = GetOwnObject();
 	if (obj == nullptr)return res;
 
-	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
+	weak_ptr<StgShotObject> wObj = obj;
 	StgIntersectionTarget_Line::ptr target =
 		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
 	if (target != nullptr) {
@@ -1968,7 +1983,7 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 	}
 	return res;
 }
-void StgStraightLaserObject::_AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, StgShotObject::ReserveShotListData* data) {
+void StgStraightLaserObject::_AddReservedShot(shared_ptr<StgShotObject> obj, StgShotObject::ReserveShotListData* data) {
 	auto objectManager = stageController_->GetMainObjectManager();
 
 	double ownAngle = GetDirectionAngle();
@@ -2158,13 +2173,15 @@ void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision)
 		}
 
 		if (itemManager->IsDefaultBonusItemEnable() && delay_ == 0 && !flgPlayerCollision) {
-			ref_count_ptr<StgItemObject>::unsync obj = new StgItemObject_Bonus(stageController_);
-			int id = stageController_->GetMainObjectManager()->AddObject(obj);
-			if (id != DxScript::ID_INVALID) {
-				//弾の座標にアイテムを作成する
-				itemManager->AddItem(obj);
-				obj->SetPositionX(posX);
-				obj->SetPositionY(posY);
+			if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
+				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
+				int id = stageController_->GetMainObjectManager()->AddObject(obj);
+				if (id != DxScript::ID_INVALID) {
+					//弾の座標にアイテムを作成する
+					itemManager->AddItem(obj);
+					obj->SetPositionX(posX);
+					obj->SetPositionY(posY);
+				}
 			}
 		}
 	}
@@ -2254,7 +2271,7 @@ void StgCurveLaserObject::_DeleteInAutoClip() {
 
 	if (bDelete) {
 		auto objectManager = stageController_->GetMainObjectManager();
-		objectManager->DeleteObject(idObject_);
+		objectManager->DeleteObject(this);
 	}
 }
 std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTargetList() {
@@ -2268,9 +2285,9 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return res;
 
-	ref_count_ptr<StgShotObject>::unsync obj = GetOwnObject();
+	shared_ptr<StgShotObject> obj = GetOwnObject();
 	if (obj == nullptr)return res;
-	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
+	weak_ptr<StgShotObject> wObj = obj;
 
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 
@@ -2499,15 +2516,16 @@ void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 		}
 
 		if (itemManager->IsDefaultBonusItemEnable() && delay_ == 0 && !flgPlayerCollision) {
-			ref_count_ptr<StgItemObject>::unsync obj = new StgItemObject_Bonus(stageController_);
-			int id = stageController_->GetMainObjectManager()->AddObject(obj);
-			if (id != DxScript::ID_INVALID) {
-				//弾の座標にアイテムを作成する
-				itemManager->AddItem(obj);
-				obj->SetPositionX(pos.pos.x);
-				obj->SetPositionY(pos.pos.y);
+			if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
+				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
+				int id = stageController_->GetMainObjectManager()->AddObject(obj);
+				if (id != DxScript::ID_INVALID) {
+					//弾の座標にアイテムを作成する
+					itemManager->AddItem(obj);
+					obj->SetPositionX(pos.pos.x);
+					obj->SetPositionY(pos.pos.y);
+				}
 			}
-
 		}
 	}
 }
