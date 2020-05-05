@@ -27,11 +27,12 @@ D3DMATERIAL9 ColorAccess::SetColor(D3DMATERIAL9 mat, D3DCOLOR color) {
 	mat.Emissive.r *= r; mat.Emissive.g *= g; mat.Emissive.b *= b; mat.Emissive.a *= a;
 	return mat;
 }
-D3DCOLOR& ColorAccess::ApplyAlpha(D3DCOLOR& color, double alpha) {
-	color = SetColorA(color, GetColorA(color) * alpha);
-	color = SetColorR(color, GetColorR(color) * alpha);
-	color = SetColorG(color, GetColorG(color) * alpha);
-	color = SetColorB(color, GetColorB(color) * alpha);
+D3DCOLOR& ColorAccess::ApplyAlpha(D3DCOLOR& color, float alpha) {
+	byte a = ColorAccess::ClampColorRet(((color >> 24) & 0xff) * alpha);
+	byte r = ColorAccess::ClampColorRet(((color >> 16) & 0xff) * alpha);
+	byte g = ColorAccess::ClampColorRet(((color >> 8) & 0xff) * alpha);
+	byte b = ColorAccess::ClampColorRet((color & 0xff) * alpha);
+	color = D3DCOLOR_ARGB(a, r, g, b);
 	return color;
 }
 D3DCOLOR& ColorAccess::SetColorHSV(D3DCOLOR& color, int hue, int saturation, int value) {

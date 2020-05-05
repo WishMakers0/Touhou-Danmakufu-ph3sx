@@ -47,13 +47,18 @@ namespace directx {
 
 		static D3DCOLORVALUE SetColor(D3DCOLORVALUE value, D3DCOLOR color);
 		static D3DMATERIAL9 SetColor(D3DMATERIAL9 mat, D3DCOLOR color);
-		static D3DCOLOR& ApplyAlpha(D3DCOLOR& color, double alpha);
+		static D3DCOLOR& ApplyAlpha(D3DCOLOR& color, float alpha);
 
 		static D3DCOLOR& SetColorHSV(D3DCOLOR& color, int hue, int saturation, int value);
 
 		static void ClampColor(int& color) {
-			if (color > 255) color = 255;
-			if (color < 0) color = 0;
+			if (color > 0xff) color = 0xff;
+			else if (color < 0x00) color = 0x00;
+		}
+		static int ClampColorRet(int color) {
+			if (color > 0xff) color = 0xff;
+			else if (color < 0x00) color = 0x00;
+			return color;
 		}
 	};
 

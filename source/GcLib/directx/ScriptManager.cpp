@@ -366,9 +366,8 @@ void ManagedScript::SetScriptManager(ScriptManager* manager) {
 }
 gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& listValue) {
 	gstd::value res;
-	std::string event = "Event";
 
-	if (!IsEventExists(event)) {
+	if (!IsEventExists("Event")) {
 		//		std::string log = StringUtility::Format("@Event‚ª‚ ‚è‚Ü‚¹‚ñB(%s)", GetPath().c_str());
 		//		throw std::exception(log.c_str());
 		return res;
@@ -382,7 +381,7 @@ gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& list
 	listValueEvent_ = listValue;
 	valueRes_ = gstd::value();
 
-	Run(event);
+	Run("Event");
 	res = GetResultValue();
 
 	//’l‚ğ–ß‚·

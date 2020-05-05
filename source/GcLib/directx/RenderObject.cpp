@@ -165,6 +165,7 @@ RenderObject::RenderObject() {
 
 	bCoordinate2D_ = false;
 
+	bVertexShaderMode_ = false;
 	flgUseVertexBufferMode_ = true;
 
 	filterMin_ = D3DTEXF_LINEAR;
@@ -636,17 +637,16 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 	device->SetFVF(VERTEX_TLX::fvf);
 
 	{
+		size_t countVertex = std::min(GetVertexCount(), 65536U);
+
 		vertCopy_ = vertex_;
-
-		size_t countVertex = GetVertexCount();
-
-//#pragma omp for if(flgUseVertexBufferMode_)
-		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
-			size_t pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)&vertCopy_[pos];
-			D3DXVECTOR4* vPos = &vert->position;
-
-			D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matTransform);
+		if (!bVertexShaderMode_) {
+			for (size_t iVert = 0; iVert < countVertex; ++iVert) {
+				size_t pos = iVert * strideVertexStreamZero_;
+				VERTEX_TLX* vertex = (VERTEX_TLX*)&vertCopy_[pos];
+				D3DXVECTOR4* vPos = &vertex->position;
+				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matTransform);
+			}
 		}
 		
 		{
@@ -901,7 +901,7 @@ void RenderObjectLX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& a
 		IDirect3DIndexBuffer9* indexBuffer = VertexBufferManager::GetBase()->GetIndexBuffer();
 
 		bool bUseIndex = vertexIndices_.size() > 0;
-		size_t countVertex = GetVertexCount();
+		size_t countVertex = std::min(GetVertexCount(), 65536U);
 		size_t countPrim = _GetPrimitiveCount(countVertex);
 
 		if (flgUseVertexBufferMode_) {
@@ -1048,7 +1048,8 @@ void RenderObjectNX::Render(D3DXMATRIX* matTransform) {
 
 					D3DXHANDLE handle = nullptr;
 					if (handle = effect->GetParameterBySemantic(nullptr, "WORLD")) {
-						if (matTransform) effect->SetMatrix(handle, matTransform);
+						effect->SetMatrix(handle, matTransform ? matTransform : 
+							&DirectGraphics::GetBase()->GetCamera()->GetIdentity());
 					}
 					if (handle = effect->GetParameterBySemantic(nullptr, "VIEW")) {
 						D3DXMATRIX matView;
@@ -1518,48 +1519,25 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 
 	bool bCamera = camera->IsEnable() && bPermitCamera_;
 	{
-		vertCopy_ = vertex_;
-		size_t countVertex = GetVertexCount();
-
-		/*
-		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
-			int pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
-			D3DXVECTOR3* vPos = (D3DXVECTOR3*)&vert->position;
-
-			if (bCloseVertexList_) {
-				vPos->x *= scale_.x;
-				vPos->y *= scale_.y;
-				vPos->z *= scale_.z;
-				DxMath::RotatePosFromXYZFactor(*(D3DXVECTOR4*)vPos,
-					(angle_.x == 0.0f) ? nullptr : &angX,
-					(angle_.y == 0.0f) ? nullptr : &angY,
-					(angle_.z == 0.0f) ? nullptr : &angZ);
-				vPos->x += position_.x;
-				vPos->y += position_.y;
-				vPos->z += position_.z;
-			}
-
-			if (bCamera)
-				D3DXVec3TransformCoord(vPos, vPos, &camera->GetMatrix());
-		}
-		*/
+		size_t countVertex = std::min(GetVertexCount(), 65536U);
 
 		D3DXMATRIX matWorld;
 		if (bCloseVertexList_)
 			matWorld = RenderObject::CreateWorldMatrix2D(position_, scale_,
 				angX, angY, angZ, bCamera ? &camera->GetMatrix() : nullptr);
 
-//#pragma omp for
-		for (size_t iVert = 0; iVert < countVertex; ++iVert) {
-			size_t pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)&vertCopy_[pos];
-			D3DXVECTOR4* vPos = &vert->position;
+		vertCopy_ = vertex_;
+		if (!bVertexShaderMode_) {
+			for (size_t iVert = 0; iVert < countVertex; ++iVert) {
+				size_t pos = iVert * strideVertexStreamZero_;
+				VERTEX_TLX* vertex = (VERTEX_TLX*)&vertCopy_[pos];
+				D3DXVECTOR4* vPos = &vertex->position;
 
-			if (bCloseVertexList_)
-				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
-			else if (bCamera)
-				D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &camera->GetMatrix());
+				if (bCloseVertexList_)
+					D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &matWorld);
+				else if (bCamera)
+					D3DXVec3TransformCoord((D3DXVECTOR3*)vPos, (D3DXVECTOR3*)vPos, &camera->GetMatrix());
+			}
 		}
 
 		{

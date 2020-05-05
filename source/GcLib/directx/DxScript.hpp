@@ -44,6 +44,7 @@ namespace directx {
 		OBJ_STRAIGHT_LASER,
 		OBJ_CURVE_LASER,
 		OBJ_ITEM,
+		OBJ_SHOT_PATTERN,
 	};
 	class DxScriptObjectBase {
 		friend DxScript;
@@ -611,7 +612,7 @@ namespace directx {
 		virtual ~DxScriptObjectManager();
 
 		size_t GetMaxObject() { return obj_.size(); }
-		void SetMaxObject(size_t size);
+		bool SetMaxObject(size_t size);
 		size_t GetAliveObjectCount() { return listActiveObject_.size(); }
 		size_t GetRenderBucketCapacity() { return objRender_.size(); }
 		void SetRenderBucketCapacity(size_t capacity);
@@ -761,7 +762,7 @@ namespace directx {
 		static gstd::value Func_ResetShader(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_ResetShaderI(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_IsPixelShaderSupported(gstd::script_machine* machine, int argc, const gstd::value* argv);
-
+		static gstd::value Func_SetEnableAntiAliasing(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dxä÷êîÅFÉJÉÅÉâ3D
 		static gstd::value Func_SetCameraFocusX(gstd::script_machine* machine, int argc, const gstd::value* argv);

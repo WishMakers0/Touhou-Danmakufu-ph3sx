@@ -24,8 +24,8 @@ DxScriptObjectBase::DxScriptObjectBase() {
 	typeObject_ = TypeObject::OBJ_INVALID;
 }
 DxScriptObjectBase::~DxScriptObjectBase() {
-	if (manager_ != nullptr && idObject_ != DxScript::ID_INVALID)
-		manager_->listUnusedIndex_.push_back(idObject_);
+	//if (manager_ != nullptr && idObject_ != DxScript::ID_INVALID)
+	//	manager_->listUnusedIndex_.push_back(idObject_);
 }
 int DxScriptObjectBase::GetRenderPriorityI() {
 	int res = (int)(priRender_ * (manager_->GetRenderBucketCapacity() - 1) + 0.5);
@@ -897,7 +897,7 @@ DxScriptObjectManager::DxScriptObjectManager() {
 DxScriptObjectManager::~DxScriptObjectManager() {
 
 }
-void DxScriptObjectManager::SetMaxObject(size_t size) {
+bool DxScriptObjectManager::SetMaxObject(size_t size) {
 	/*
 	listUnusedIndex_.clear();
 	for (size_t iObj = 0U; iObj < obj_.size(); ++iObj) {
@@ -905,13 +905,13 @@ void DxScriptObjectManager::SetMaxObject(size_t size) {
 		if (obj == nullptr) listUnusedIndex_.push_back(iObj);
 	}
 	*/
-	if (obj_.size() == 131072U) return;
+	if (obj_.size() == 131072U) return false;
 	size = std::min(size, 131072U);
 
-	for (size_t iObj = obj_.size(); iObj < size; ++iObj) {
+	for (size_t iObj = obj_.size(); iObj < size; ++iObj)
 		listUnusedIndex_.push_back(iObj);
-	}
 	obj_.resize(size, nullptr);
+	return true;
 }
 void DxScriptObjectManager::SetRenderBucketCapacity(size_t capacity) {
 	objRender_.resize(capacity);
@@ -929,29 +929,34 @@ void DxScriptObjectManager::_ArrangeActiveObjectList() {
 int DxScriptObjectManager::AddObject(shared_ptr<DxScriptObjectBase> obj, bool bActivate) {
 	int res = DxScript::ID_INVALID;
 
-	auto ExpandContainerCapacity = [&]() {
+	auto ExpandContainerCapacity = [&]() -> bool {
 		size_t oldSize = obj_.size();
-		SetMaxObject(oldSize * 2U);
+		bool res = SetMaxObject(oldSize * 2U);
 		Logger::WriteTop(StringUtility::Format("DxScriptObjectManager: Object pool expansion. [%d->%d]",
 			oldSize, obj_.size()));
+		return res;
 	};
 
 	{
-		do {	//A very rudimentary fix, well as long as it fucking works
-			if (listUnusedIndex_.size() == 0U) ExpandContainerCapacity();
+		do {
+			if (listUnusedIndex_.size() == 0U) {
+				if (!ExpandContainerCapacity()) break;
+			}
 			res = listUnusedIndex_.front();
 			listUnusedIndex_.pop_front();
 		} while (obj_[res] != nullptr);
 
-		obj_[res] = obj;
-		if (bActivate) {
-			obj->bActive_ = true;
-			listActiveObject_.push_back(obj);
-		}
-		obj->idObject_ = res;
-		obj->manager_ = this;
+		if (res != DxScript::ID_INVALID) {
+			obj_[res] = obj;
+			if (bActivate) {
+				obj->bActive_ = true;
+				listActiveObject_.push_back(obj);
+			}
+			obj->idObject_ = res;
+			obj->manager_ = this;
 
-		++totalObjectCreateCount_;
+			++totalObjectCreateCount_;
+		}
 	}
 
 	return res;
@@ -1208,6 +1213,7 @@ function const dxFunction[] =
 	{ "SaveRenderedTextureA2", DxScript::Func_SaveRenderedTextureA2, 6 },
 	{ "SaveRenderedTextureA3", DxScript::Func_SaveRenderedTextureA3, 7 },
 	{ "IsPixelShaderSupported", DxScript::Func_IsPixelShaderSupported, 2 },
+	{ "SetAntiAliasing", DxScript::Func_SetEnableAntiAliasing, 1 },
 	{ "SetShader", DxScript::Func_SetShader, 3 },
 	{ "SetShaderI", DxScript::Func_SetShaderI, 3 },
 	{ "ResetShader", DxScript::Func_ResetShader, 2 },
@@ -2181,8 +2187,8 @@ value DxScript::Func_GetTextureWidth(script_machine* machine, int argc, const va
 	path = PathProperty::GetUnique(path);
 	TextureManager* textureManager = TextureManager::GetBase();
 
-	gstd::ref_count_ptr<TextureData> textureData = textureManager->GetTextureData(path);
-	if (textureData != nullptr) {
+	shared_ptr<TextureData> textureData = textureManager->GetTextureData(path);
+	if (textureData) {
 		D3DXIMAGE_INFO imageInfo = textureData->GetImageInfo();
 		res = imageInfo.Width;
 	}
@@ -2196,8 +2202,8 @@ value DxScript::Func_GetTextureHeight(script_machine* machine, int argc, const v
 	path = PathProperty::GetUnique(path);
 	TextureManager* textureManager = TextureManager::GetBase();
 
-	gstd::ref_count_ptr<TextureData> textureData = textureManager->GetTextureData(path);
-	if (textureData != nullptr) {
+	shared_ptr<TextureData> textureData = textureManager->GetTextureData(path);
+	if (textureData) {
 		D3DXIMAGE_INFO imageInfo = textureData->GetImageInfo();
 		res = imageInfo.Height;
 	}
@@ -2268,7 +2274,7 @@ gstd::value DxScript::Func_SetRenderTarget(gstd::script_machine* machine, int ar
 	std::wstring name = argv[0].as_string();
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
 	if (texture == nullptr)
-		script->RaiseError("The specified render target doesn't exist.");
+		script->RaiseError("The specified render target does not exist.");
 	if (texture->GetType() != TextureData::TYPE_RENDER_TARGET)
 		script->RaiseError("Target texture must be a render target.");
 
@@ -2360,7 +2366,7 @@ gstd::value DxScript::Func_ClearRenderTargetA3(gstd::script_machine* machine, in
 
 	IDirect3DDevice9* device = graphics->GetDevice();
 	graphics->SetRenderTarget(texture);
-	device->Clear(0, &rc, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(ca, cr, cg, cb), 1.0f, 0);
+	device->Clear(1, &rc, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(ca, cr, cg, cb), 1.0f, 0);
 	graphics->SetRenderTarget(current);
 
 	return value(machine->get_engine()->get_boolean_type(), true);
@@ -2470,14 +2476,19 @@ gstd::value DxScript::Func_SaveRenderedTextureA3(gstd::script_machine* machine, 
 	return value();
 }
 gstd::value DxScript::Func_IsPixelShaderSupported(gstd::script_machine* machine, int argc, const gstd::value* argv) {
-	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<Shader> shader = nullptr;
-
 	int major = (int)(argv[0].as_real() + 0.5);
 	int minor = (int)(argv[1].as_real() + 0.5);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	bool res = graphics->IsPixelShaderSupported(major, minor);
+
+	return value(machine->get_engine()->get_boolean_type(), res);
+}
+gstd::value DxScript::Func_SetEnableAntiAliasing(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	bool enable = argv[0].as_boolean();
+
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	bool res = SUCCEEDED(graphics->SetFullscreenAntiAliasing(enable));
 
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -4003,8 +4014,10 @@ value DxScript::Func_ObjMesh_Create(script_machine* machine, int argc, const val
 	DxScript* script = (DxScript*)machine->data;
 	shared_ptr<DxScriptMeshObject> obj = shared_ptr<DxScriptMeshObject>(new DxScriptMeshObject());
 	int id = ID_INVALID;
-	if (obj != nullptr)
+	if (obj != nullptr) {
+		obj->manager_ = script->objManager_.get();
 		id = script->AddObject(obj);
+	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
 }
 value DxScript::Func_ObjMesh_Load(script_machine* machine, int argc, const value* argv) {
@@ -4091,8 +4104,10 @@ value DxScript::Func_ObjText_Create(script_machine* machine, int argc, const val
 	DxScript* script = (DxScript*)machine->data;
 	shared_ptr<DxScriptTextObject> obj = shared_ptr<DxScriptTextObject>(new DxScriptTextObject());
 	int id = ID_INVALID;
-	if (obj != nullptr)
+	if (obj != nullptr) {
+		obj->manager_ = script->objManager_.get();
 		id = script->AddObject(obj);
+	}
 	return value(machine->get_engine()->get_real_type(), (double)id);
 }
 value DxScript::Func_ObjText_SetText(script_machine* machine, int argc, const value* argv) {
@@ -4365,6 +4380,8 @@ gstd::value DxScript::Func_ObjSound_Create(gstd::script_machine* machine, int ar
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
 	shared_ptr<DxSoundObject> obj = shared_ptr<DxSoundObject>(new DxSoundObject());
+	obj->manager_ = script->objManager_.get();
+
 	int id = script->AddObject(obj);
 	return value(machine->get_engine()->get_real_type(), (double)id);
 }

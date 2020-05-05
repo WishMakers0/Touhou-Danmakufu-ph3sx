@@ -28,11 +28,11 @@ namespace directx {
 		for (size_t i = 0; i < 3; ++i) {
 			IDirect3DVertexBuffer9* buffer = nullptr;
 
-			device->CreateVertexBuffer(sizes[i] * 65536, D3DUSAGE_DYNAMIC, fvfs[i], D3DPOOL_DEFAULT, &buffer, nullptr);
+			device->CreateVertexBuffer(sizes[i] * 65536U, D3DUSAGE_DYNAMIC, fvfs[i], D3DPOOL_DEFAULT, &buffer, nullptr);
 
 			vertexBuffers_.push_back(buffer);
 		}
-		device->CreateIndexBuffer(sizeof(uint16_t) * 65536, D3DUSAGE_DYNAMIC, D3DFMT_INDEX16, D3DPOOL_DEFAULT,
+		device->CreateIndexBuffer(sizeof(uint16_t) * 65536U, D3DUSAGE_DYNAMIC, D3DFMT_INDEX16, D3DPOOL_DEFAULT,
 			&indexBuffer_, nullptr);
 
 		thisBase_ = this;

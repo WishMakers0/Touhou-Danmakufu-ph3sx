@@ -139,8 +139,6 @@ namespace directx {
 	**********************************************************/
 	class RenderObject {
 	protected:
-		bool flgUseVertexBufferMode_;
-
 		D3DPRIMITIVETYPE typePrimitive_;//
 		size_t strideVertexStreamZero_;//1頂点のサイズ
 
@@ -163,6 +161,7 @@ namespace directx {
 
 		bool disableMatrixTransform_;
 		bool bVertexShaderMode_;
+		bool flgUseVertexBufferMode_;
 
 		void _SetTextureStageCount(size_t count) { 
 			texture_.resize(count); 
@@ -646,7 +645,7 @@ namespace directx {
 		VERTEX_B4NX* vertex = GetVertex(index);
 		if (vertex == nullptr)return;
 
-		float bias = -0.5f;
+		constexpr float bias = -0.5f;
 		vertex->position.x = x + bias;
 		vertex->position.y = y + bias;
 		vertex->position.z = z;
