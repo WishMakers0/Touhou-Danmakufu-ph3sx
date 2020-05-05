@@ -272,4 +272,4 @@ __pycache__/
 
 /source/GcLib/ext/zlib/
 /library/zlibstatic.lib
-/library/zlibstaticd.lib
+/library/zlibdynamic.lib
