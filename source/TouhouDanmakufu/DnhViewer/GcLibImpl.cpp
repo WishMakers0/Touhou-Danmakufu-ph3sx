@@ -86,13 +86,13 @@ bool EApplication::_Initialize()
 //	systemController->Reset();
 
 	//常駐タスク登録
-	ref_count_ptr<SystemResidentTask> taskResident = new SystemResidentTask();
+	SystemResidentTask* taskResident = new SystemResidentTask();
 	taskManager->AddTask(taskResident);
 	taskManager->AddRenderFunction(TTaskFunction<SystemResidentTask>::Create(
 		taskResident, &SystemResidentTask::RenderFps), SystemResidentTask::TASK_PRI_RENDER_FPS);
 
 	//デバッグタスク登録
-	ref_count_ptr<DebugTask> taskDebug = new DebugTask();
+	DebugTask* taskDebug = new DebugTask();
 	taskManager->AddTask(taskDebug);
 	taskManager->AddWorkFunction(TTaskFunction<DebugTask>::Create(
 		taskDebug, &DebugTask::Work), DebugTask::TASK_PRI_WORK);

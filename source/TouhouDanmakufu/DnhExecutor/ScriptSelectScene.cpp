@@ -124,12 +124,13 @@ void ScriptSelectScene::Work() {
 				SystemController::GetInstance()->GetSystemInformation()->SetLastSelectedScriptPath(pathLastSelected);
 
 				ETaskManager* taskManager = ETaskManager::GetInstance();
-				ref_count_ptr<PlayTypeSelectScene> task = new PlayTypeSelectScene(info);
+
+				shared_ptr<PlayTypeSelectScene> task(new PlayTypeSelectScene(info));
 				taskManager->AddTask(task);
-				taskManager->AddWorkFunction(TTaskFunction<PlayTypeSelectScene>::Create(
-					task, &PlayTypeSelectScene::Work), PlayTypeSelectScene::TASK_PRI_WORK);
-				taskManager->AddRenderFunction(TTaskFunction<PlayTypeSelectScene>::Create(
-					task, &PlayTypeSelectScene::Render), PlayTypeSelectScene::TASK_PRI_RENDER);
+				taskManager->AddWorkFunction(TTaskFunction<PlayTypeSelectScene>::Create(task, 
+					&PlayTypeSelectScene::Work), PlayTypeSelectScene::TASK_PRI_WORK);
+				taskManager->AddRenderFunction(TTaskFunction<PlayTypeSelectScene>::Create(task, 
+					&PlayTypeSelectScene::Render), PlayTypeSelectScene::TASK_PRI_RENDER);
 
 				return;
 			}
@@ -656,12 +657,12 @@ void PlayTypeSelectScene::Work() {
 				taskManager->SetWorkFunctionEnable(false, typeid(PlayTypeSelectScene));
 				taskManager->SetRenderFunctionEnable(false, typeid(PlayTypeSelectScene));
 
-				ref_count_ptr<PlayerSelectScene> task = new PlayerSelectScene(info_);
+				shared_ptr<PlayerSelectScene> task(new PlayerSelectScene(info_));
 				taskManager->AddTask(task);
-				taskManager->AddWorkFunction(TTaskFunction<PlayerSelectScene>::Create(
-					task, &PlayerSelectScene::Work), PlayerSelectScene::TASK_PRI_WORK);
-				taskManager->AddRenderFunction(TTaskFunction<PlayerSelectScene>::Create(
-					task, &PlayerSelectScene::Render), PlayerSelectScene::TASK_PRI_RENDER);
+				taskManager->AddWorkFunction(TTaskFunction<PlayerSelectScene>::Create(task, 
+					&PlayerSelectScene::Work), PlayerSelectScene::TASK_PRI_WORK);
+				taskManager->AddRenderFunction(TTaskFunction<PlayerSelectScene>::Create(task, 
+					&PlayerSelectScene::Render), PlayerSelectScene::TASK_PRI_RENDER);
 			}
 			else {
 				//ƒŠƒvƒŒƒC
@@ -678,8 +679,8 @@ void PlayTypeSelectScene::Work() {
 	}
 	else if (input->GetVirtualKeyState(EDirectInput::KEY_CANCEL) == KEY_PUSH) {
 		ETaskManager* taskManager = ETaskManager::GetInstance();
-		ref_count_ptr<ScriptSelectScene> scriptSelectScene =
-			ref_count_ptr<ScriptSelectScene>::DownCast(taskManager->GetTask(typeid(ScriptSelectScene)));
+
+		auto scriptSelectScene = std::dynamic_pointer_cast<ScriptSelectScene>(taskManager->GetTask(typeid(ScriptSelectScene)));
 		scriptSelectScene->SetActive(true);
 
 		taskManager->RemoveTask(typeid(PlayTypeSelectScene));

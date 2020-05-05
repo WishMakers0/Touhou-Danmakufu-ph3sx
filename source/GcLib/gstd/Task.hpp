@@ -21,16 +21,16 @@ namespace gstd {
 	class TaskFunction : public IStringInfo {
 		friend TaskManager;
 	protected:
-		ref_count_ptr<TaskBase> task_;//タスクへのポインタ
+		shared_ptr<TaskBase> task_;	//タスクへのポインタ
 		int id_;//id
 		bool bEnable_;
 		int delay_;
 	public:
-		TaskFunction() { task_ = NULL; id_ = TASK_FREE_ID; bEnable_ = true; delay_ = 0; }
+		TaskFunction() { task_ = nullptr; id_ = TASK_FREE_ID; bEnable_ = true; delay_ = 0; }
 		virtual ~TaskFunction() {}
 		virtual void Call() = 0;
 
-		ref_count_ptr<TaskBase> GetTask() { return task_; }
+		shared_ptr<TaskBase> GetTask() { return task_; }
 		int GetID() { return id_; }
 		bool IsEnable() { return bEnable_; }
 
@@ -49,18 +49,17 @@ namespace gstd {
 
 		Function pFunc;//メンバ関数ポインタ
 	public:
-		TTaskFunction(ref_count_ptr<T> task, Function func) { task_ = task; pFunc = func; }
+		TTaskFunction(shared_ptr<T> task, Function func) { task_ = task; pFunc = func; }
 		virtual void Call() {
-			if (task_ != NULL)
-				((T*)task_.GetPointer()->*pFunc)();
+			if (task_ != nullptr) ((T*)task_.get()->*pFunc)();
 		}
 
-		static ref_count_ptr<TaskFunction> Create(ref_count_ptr<TaskBase> task, Function func) {
-			ref_count_ptr<T> dTask = ref_count_ptr<T>::DownCast(task);
-			return TTaskFunction<T>::Create(dTask, func);
+		static shared_ptr<TaskFunction> Create(shared_ptr<TaskBase> task, Function func) {
+			shared_ptr<TaskFunction> dTask = std::dynamic_pointer_cast<TaskFunction>(task);
+			return shared_ptr<TTaskFunction<T>>::Create(dTask, func);
 		}
-		static ref_count_ptr<TaskFunction> Create(ref_count_ptr<T> task, Function func) {
-			return new TTaskFunction<T>(task, func);
+		static shared_ptr<TaskFunction> Create(shared_ptr<T> task, Function func) {
+			return shared_ptr<TTaskFunction<T>>(new TTaskFunction<T>(task, func));
 		}
 	};
 
@@ -73,7 +72,6 @@ namespace gstd {
 		int64_t indexTask_;//TaskManagerによってつけられる一意のインデックス
 		int idTask_;//ID
 		int idTaskGroup_;//グループID
-
 	public:
 		TaskBase();
 		virtual ~TaskBase();
@@ -88,35 +86,34 @@ namespace gstd {
 	class TaskManager : public TaskBase {
 		friend TaskInfoPanel;
 	public:
-		typedef std::map<int, std::vector<std::list<ref_count_ptr<TaskFunction> > > > function_map;
+		typedef std::map<int, std::vector<std::list<shared_ptr<TaskFunction>>>> function_map;
 	protected:
 		static gstd::CriticalSection lockStatic_;
-		std::list<ref_count_ptr<TaskBase> > listTask_;//タスクの元クラス
+		std::list<shared_ptr<TaskBase>> listTask_;//タスクの元クラス
 		function_map mapFunc_;//タスク機能のリスト(divFunc, priority, func)
 		int64_t indexTaskManager_;//一意のインデックス
 		ref_count_ptr<TaskInfoPanel> panelInfo_;
 
 		void _ArrangeTask();//必要のなくなった領域削除
 		void _CheckInvalidFunctionDivision(int divFunc);
-
 	public:
 		TaskManager();
 		virtual ~TaskManager();
 		void Clear();//全タスク削除
 		void ClearTask();
-		void AddTask(ref_count_ptr<TaskBase> task);//タスクを追加
-		ref_count_ptr<TaskBase> GetTask(int idTask);//指定したIDのタスクを取得
-		ref_count_ptr<TaskBase> GetTask(const std::type_info& info);
+		void AddTask(shared_ptr<TaskBase> task);//タスクを追加
+		shared_ptr<TaskBase> GetTask(int idTask);//指定したIDのタスクを取得
+		shared_ptr<TaskBase> GetTask(const std::type_info& info);
 		void RemoveTask(TaskBase* task);//指定したタスクを削除
 		void RemoveTask(int idTask);//タスク元IDで削除
 		void RemoveTaskGroup(int idGroup);//タスクをグループで削除
 		void RemoveTask(const std::type_info& info);//クラス型で削除
 		void RemoveTaskWithoutTypeInfo(std::set<const std::type_info*> listInfo);//クラス型以外のタスクを削除
-		std::list<ref_count_ptr<TaskBase> > GetTaskList() { return listTask_; }
+		std::list<shared_ptr<TaskBase>> GetTaskList() { return listTask_; }
 
 		void InitializeFunctionDivision(int divFunc, int maxPri);
 		void CallFunction(int divFunc);//タスク機能実行
-		void AddFunction(int divFunc, ref_count_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);//タスク機能追加
+		void AddFunction(int divFunc, shared_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);//タスク機能追加
 		void RemoveFunction(TaskBase* task);//タスク機能削除
 		void RemoveFunction(TaskBase* task, int divFunc, int idFunc);//タスク機能削除
 		void RemoveFunction(const std::type_info& info);//タスク機能削除
@@ -174,7 +171,6 @@ namespace gstd {
 			DIV_FUNC_WORK,//動作
 			DIV_FUNC_RENDER,//描画
 		};
-
 	public:
 		WorkRenderTaskManager();
 		~WorkRenderTaskManager();
@@ -182,7 +178,7 @@ namespace gstd {
 
 		//動作機能
 		void CallWorkFunction();
-		void AddWorkFunction(ref_count_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);
+		void AddWorkFunction(shared_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);
 		void RemoveWorkFunction(TaskBase* task, int idFunc);
 		void SetWorkFunctionEnable(bool bEnable);
 		void SetWorkFunctionEnable(bool bEnable, int idTask);
@@ -193,7 +189,7 @@ namespace gstd {
 
 		//描画機能
 		void CallRenderFunction();
-		void AddRenderFunction(ref_count_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);
+		void AddRenderFunction(shared_ptr<TaskFunction> func, int pri, int idFunc = TASK_FREE_ID);
 		void RemoveRenderFunction(TaskBase* task, int idFunc);
 		void SetRenderFunctionEnable(bool bEnable);
 		void SetRenderFunctionEnable(bool bEnable, int idTask);
