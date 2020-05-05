@@ -11,9 +11,12 @@
 **********************************************************/
 StgSystemController* StgSystemController::base_ = nullptr;
 StgSystemController::StgSystemController() {
+	stageController_ = nullptr;
+	packageController_ = nullptr;
 }
 StgSystemController::~StgSystemController() {
-
+	ptr_delete(stageController_);
+	ptr_delete(packageController_);
 }
 void StgSystemController::Initialize(ref_count_ptr<StgSystemInformation> infoSystem) {
 	base_ = this;
@@ -205,7 +208,7 @@ void StgSystemController::RenderScriptObject() {
 		bool bReplay = false;
 		size_t countRender = 0;
 		if (scene == StgSystemInformation::SCENE_STG && stageController_ != nullptr) {
-			auto objectManagerStage = stageController_->GetMainObjectManager();
+			StgStageScriptObjectManager* objectManagerStage = stageController_->GetMainObjectManager();
 			countRender = std::max(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
 
 			ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
@@ -213,7 +216,7 @@ void StgSystemController::RenderScriptObject() {
 		}
 
 		if (infoSystem_->IsPackageMode()) {
-			auto objectManagerPackage = packageController_->GetMainObjectManager();
+			DxScriptObjectManager* objectManagerPackage = packageController_->GetMainObjectManager();
 			countRender = std::max(objectManagerPackage->GetRenderBucketCapacity() - 1, countRender);
 		}
 
@@ -266,7 +269,6 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* pRenderListStage = nullptr;
 	std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* pRenderListPackage = nullptr;
 
-
 	int scene = infoSystem_->GetScene();
 	bool bPause = false;
 	if (scene == StgSystemInformation::SCENE_STG) {
@@ -305,13 +307,13 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	ref_count_ptr<StgStageInformation> stageInfo = nullptr;
 	if (bValidStage) {
 		stageInfo = stageController_->GetStageInformation();
-		RECT rcStgFrame = stageInfo->GetStgFrameRect();
+		RECT* rcStgFrame = stageInfo->GetStgFrameRect();
 
 		//pause後に、フォーカスリセット値が上書きされていることがあるので
 		//STGシーン用にリセット値を更新する
 		ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2;
-		pos->x = (rcStgFrame.right - rcStgFrame.left) / 2.0f;
-		pos->y = (rcStgFrame.bottom - rcStgFrame.top) / 2.0f;
+		pos->x = (rcStgFrame->right - rcStgFrame->left) / 2.0f;
+		pos->y = (rcStgFrame->bottom - rcStgFrame->top) / 2.0f;
 		camera2D->SetResetFocus(pos);
 
 		orgFocusPos = camera2D->GetFocusPosition();
@@ -333,10 +335,11 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 		}
 	}
 
-	RECT rcStgFrame = stageInfo->GetStgFrameRect();
-	int stgWidth = rcStgFrame.right - rcStgFrame.left;
-	int stgHeight = rcStgFrame.bottom - rcStgFrame.top;
-	POINT stgCenter = { rcStgFrame.left + stgWidth / 2, rcStgFrame.top + stgHeight / 2 };
+	RECT* rcStgFrame = stageInfo->GetStgFrameRect();
+
+	int stgWidth = rcStgFrame->right - rcStgFrame->left;
+	int stgHeight = rcStgFrame->bottom - rcStgFrame->top;
+	POINT stgCenter = { rcStgFrame->left + stgWidth / 2, rcStgFrame->top + stgHeight / 2 };
 	int priMinStgFrame = stageInfo->GetStgFrameMinPriority();
 	int priMaxStgFrame = stageInfo->GetStgFrameMaxPriority();
 	int priShot = stageInfo->GetShotObjectPriority();
@@ -385,7 +388,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 	camera2D->SetRatioX(focusRatioX);
 	camera2D->SetRatioY(focusRatioY);
 	camera2D->SetAngleZ(focusAngleZ);
-	camera2D->SetClip(rcStgFrame);
+	camera2D->SetClip(*rcStgFrame);
 	camera2D->SetFocus(stgCenter.x + focusPos.x, stgCenter.y + focusPos.y);
 	camera2D->UpdateMatrix();
 
@@ -400,7 +403,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax) {
 
 			camera2D->SetEnable(true);
 
-			graphics->SetViewPort(rcStgFrame.left, rcStgFrame.top, stgWidth, stgHeight);
+			graphics->SetViewPort(rcStgFrame->left, rcStgFrame->top, stgWidth, stgHeight);
 
 			bRunMinStgFrame = true;
 			bClearZBufferFor2DCoordinate = false;
@@ -602,7 +605,7 @@ void StgSystemController::_ControlScene() {
 		if (stageController_ != nullptr) {
 			ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
 			if (!infoStage->IsEnd()) {
-				auto scriptManager = stageController_->GetScriptManager();
+				StgStageScriptManager* scriptManager = stageController_->GetScriptManager();
 				if (scriptManager != nullptr)
 					taskCount = scriptManager->GetAllScriptThreadCount();
 
@@ -626,6 +629,8 @@ void StgSystemController::StartStgScene(ref_count_ptr<StgStageStartData> startDa
 	input->ClearKeyState();
 
 	infoSystem_->SetScene(StgSystemInformation::SCENE_STG);
+
+	ptr_delete(stageController_);
 	stageController_ = new StgStageController(this);
 
 	stageController_->Initialize(startData);
@@ -692,7 +697,6 @@ ref_count_ptr<ReplayInformation> StgSystemController::CreateReplayInformation() 
 			fpsAvarage = fpsAvarage / listStageData.size();
 	}
 	else {
-		ref_count_ptr<StgStageController> stageController = stageController_;
 		ref_count_ptr<ReplayInformation::StageData> replayStageData = infoLastStage->GetReplayData();
 		res->SetStageData(0, replayStageData);
 		fpsAvarage = replayStageData->GetFramePerSecondAvarage();

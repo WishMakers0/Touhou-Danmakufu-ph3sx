@@ -29,14 +29,14 @@ public:
 protected:
 	ref_count_ptr<StgSystemInformation> infoSystem_;
 	ref_count_ptr<ScriptEngineCache> scriptEngineCache_;
-	gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager_;
+	ref_count_ptr<ScriptCommonDataManager> commonDataManager_;
 
 	ref_count_ptr<StgEndScene> endScene_;
 	ref_count_ptr<StgReplaySaveScene> replaySaveScene_;
 
-	ref_count_ptr<StgStageController> stageController_;
+	StgStageController* stageController_;
+	StgPackageController* packageController_;
 
-	ref_count_ptr<StgPackageController> packageController_;
 	ref_count_ptr<StgControlScriptInformation> infoControlScript_;
 
 	virtual void DoEnd() = 0;
@@ -57,14 +57,14 @@ public:
 
 	static StgSystemController* GetBase() { return base_; }
 
-	ref_count_ptr<StgSystemInformation>& GetSystemInformation() { return infoSystem_; }
-	StgStageController* GetStageController() { return stageController_.GetPointer(); }
-	StgPackageController* GetPackageController() { return packageController_.GetPointer(); }
-	ref_count_ptr<StgControlScriptInformation>& GetControlScriptInformation() { return infoControlScript_; }
+	ref_count_ptr<StgSystemInformation> GetSystemInformation() { return infoSystem_; }
+	StgStageController* GetStageController() { return stageController_; }
+	StgPackageController* GetPackageController() { return packageController_; }
+	ref_count_ptr<StgControlScriptInformation> GetControlScriptInformation() { return infoControlScript_; }
 
 
-	gstd::ref_count_ptr<ScriptEngineCache> GetScriptEngineCache() { return scriptEngineCache_; }
-	gstd::ref_count_ptr<ScriptCommonDataManager> GetCommonDataManager() { return commonDataManager_; }
+	ref_count_ptr<ScriptEngineCache> GetScriptEngineCache() { return scriptEngineCache_; }
+	ref_count_ptr<ScriptCommonDataManager> GetCommonDataManager() { return commonDataManager_; }
 
 	void StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData);
 	void StartStgScene(ref_count_ptr<StgStageStartData> startData);

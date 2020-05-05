@@ -49,16 +49,20 @@ public:
 /**********************************************************
 //StgStageScriptObjectManager
 **********************************************************/
+class StgPlayerObject;
 class StgStageScriptObjectManager : public DxScriptObjectManager {
 	StgStageController* stageController_;
-	int idObjPleyer_;
+
+	shared_ptr<StgPlayerObject> ptrObjPlayer_;
+	int idObjPlayer_;
 public:
 	StgStageScriptObjectManager(StgStageController* stageController);
 	~StgStageScriptObjectManager();
 	virtual void RenderObject();
 	virtual void RenderObject(int priMin, int priMax);
 
-	int GetPlayerObjectID() { return idObjPleyer_; }
+	int GetPlayerObjectID() { return idObjPlayer_; }
+	shared_ptr<StgPlayerObject> GetPlayerObjectPtr() { return ptrObjPlayer_; }
 	int CreatePlayerObject();
 };
 
@@ -369,6 +373,24 @@ public:
 	static gstd::value Func_ObjStLaser_SetPermitExpand(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjStLaser_GetPermitExpand(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjCrLaser_SetTipDecrement(gstd::script_machine* machine, int argc, const gstd::value* argv);
+
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_Create);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_Fire);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_FireReturn);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetParentObject);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetPatternType);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetShotType);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetShotCount);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetSpeed);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetAngle);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetBasePoint);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetBasePointOffset);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetBasePointOffsetCircle);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetShootRadius);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetDelay);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetGraphic);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetLaserParameter);
+	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_CopySettings);
 
 	//STG共通関数：アイテムオブジェクト操作
 	static gstd::value Func_ObjItem_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
