@@ -1,13 +1,16 @@
 #pragma once
 
-//------------------------------------------------------------------------------
+//--------------------------Game Version Customization--------------------------
 
 #define GAME_VERSION_TCL
 //#define GAME_VERSION_SP
 
 //------------------------------------------------------------------------------
 
-//Unicode
+
+
+//--------------------------------Force Unicode---------------------------------
+
 #ifdef _MBCS
 #undef _MBCS
 #endif
@@ -21,10 +24,15 @@
 //標準関数対応表
 //http://www1.kokusaika.jp/advisory/org/ja/win32_unicode.html
 
+//------------------------------------------------------------------------------
+
+
 //Win2000以降
 #define _WIN32_WINNT 0x0500
 
-//lib
+
+//------------------------------Windows Libraries-------------------------------
+
 #pragma comment (lib, "winmm.lib")
 #pragma comment (lib, "comctl32.lib")
 #pragma comment (lib, "pdh.lib")
@@ -32,27 +40,36 @@
 #pragma comment (lib, "shlwapi.lib")
 #pragma comment (lib, "psapi.lib")
 
-//pragma
-#pragma warning (disable:4786) //STL Warning抑止
-#pragma warning (disable:4018) //signed と unsigned の数値を比較
-#pragma warning (disable:4244) //'...': conversion from x to y, possible loss of data.
-#pragma warning (disable:4503) //
+//------------------------------------------------------------------------------
 
-#pragma warning (disable:4302) // 切り詰めます。
-#pragma warning (disable:4305) //'...': truncation from 'double' to 'FLOAT'.
-#pragma warning (disable:4819) //ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
-#pragma warning (disable:4996) //This function or variable may be unsafe. 
 
-#pragma warning (disable:26451) //Arithmetic overflow : ..... (io.2)
-#pragma warning (disable:26495) //Variable x is uninitialized. Always initialize a member variable.
-#pragma warning (disable:26812) //The enum type x is unscoped. Prefer 'enum class' over 'enum'.
+
+//----------------------------Warning Suppressions-------------------------------
+
+#pragma warning (disable : 4786) //__declspec attributes before linkage specification are ignored
+#pragma warning (disable : 4018) //signed/unsigned mismatch
+#pragma warning (disable : 4244) //conversion from 'x' to 'y', possible loss of data
+#pragma warning (disable : 4503) //decorated name length exceeded, name was truncated
+
+#pragma warning (disable : 4302) //truncation from 'x' to 'y'
+#pragma warning (disable : 4305) //initializing/argument: truncation from 'x' to 'y'
+#pragma warning (disable : 4819) //character in file can't be represented in the current code page, save file in Unicode
+#pragma warning (disable : 4996) //deprecated code
+
+#pragma warning (disable : 26451) //arithmetic overflow : ..... (io.2)
+#pragma warning (disable : 26495) //variable x is uninitialized
+#pragma warning (disable : 26812) //prefer 'enum class' over 'enum'.
+
+//------------------------------------------------------------------------------
+
 
 //define
 #ifndef STRICT
 #define STRICT 1
 #endif
 
-//--------------------------------STD--------------------------------
+
+//------------------------------Header Includes---------------------------------
 
 //debug
 #ifdef _DEBUG
@@ -99,7 +116,11 @@
 #include <mlang.h>
 #include <psapi.h>
 
-//--------------------------------DIRECTX--------------------------------
+//------------------------------------------------------------------------------
+
+
+
+//-----------------------------------DirectX------------------------------------
 
 //lib
 #pragma comment(lib, "msacm32.lib") //for acm
@@ -128,15 +149,21 @@
 #include <dmusici.h>
 #include <dxerr9.h>
 
-//--------------------------------EXTERNAL--------------------------------
+//------------------------------------------------------------------------------
+
+
+
+//-------------------------------External stuffs--------------------------------
 
 //OpenMP
 #include <omp.h>
 
 //zlib
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
+#define ZLIB_WINAPI
 #include <zlib/zlib.h>
-#pragma comment(lib, "zlibstatic.lib")
+//#pragma comment(lib, "zlibstatic.lib")
+#pragma comment(lib, "zlibdynamic.lib")
 #endif
 
 //libogg + libvorbis
@@ -148,11 +175,11 @@
 #pragma comment(lib, "vorbisfile_static.lib")
 #endif
 
-//----------------------------------------------
+//------------------------------------------------------------------------------
 
-#if defined(UNICODE) || defined(_UNICODE)
-//#pragma comment(linker, "/entry:\"wWinMainCRTStartup\"")
-#endif
+
+
+//-----------------------------------Extras-------------------------------------
 
 //In the case crtdbg is used
 #ifdef _DEBUG
@@ -160,13 +187,19 @@
 #define new __L_DBG_NEW__
 #endif
 
-//Experimental
+//Use std::filesystem for file management
 #define __L_STD_FILESYSTEM
 #ifdef __L_STD_FILESYSTEM
 #include <filesystem>
 namespace stdfs = std::filesystem;
 using path_t = stdfs::path;
 #endif
+
+//Guarantee thread-safety in texture management
+//#define __L_TEXTURE_THREADSAFE
+
+//------------------------------------------------------------------------------
+
 
 //Pointer utilities
 template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
