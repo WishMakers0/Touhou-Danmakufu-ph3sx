@@ -27,7 +27,6 @@ public:
 	void SetBossSceneObject(shared_ptr<StgEnemyBossSceneObject> obj);
 	shared_ptr<StgEnemyBossSceneObject> GetBossSceneObject();
 	std::list<shared_ptr<StgEnemyObject>>& GetEnemyList() { return listObj_; }
-
 };
 
 /**********************************************************
@@ -40,7 +39,7 @@ protected:
 	double life_;
 	double rateDamageShot_;
 	double rateDamageSpell_;
-	int intersectedPlayerShotCount_;
+	size_t intersectedPlayerShotCount_;
 
 	bool bEnableGetIntersectionPositionFetch_;
 
@@ -69,15 +68,15 @@ public:
 	void SetDamageRate(double rateShot, double rateSpell) { rateDamageShot_ = rateShot; rateDamageSpell_ = rateSpell; }
 	double GetShotDamageRate() { return rateDamageShot_; }
 	double GetSpellDamageRate() { return rateDamageSpell_; }
-	int GetIntersectedPlayerShotCount() { return intersectedPlayerShotCount_; }
+	size_t GetIntersectedPlayerShotCount() { return intersectedPlayerShotCount_; }
 
 	void SetEnableGetIntersectionPosition(bool flg) { bEnableGetIntersectionPositionFetch_ = flg; }
 	bool GetEnableGetIntersectionPosition() { return bEnableGetIntersectionPositionFetch_; }
 
 	void AddReferenceToShotIntersection(StgIntersectionTarget::ptr pointer);
 	void AddReferenceToPlayerIntersection(StgIntersectionTarget::ptr pointer);
-	std::vector<std::weak_ptr<StgIntersectionTarget>>* GetIntersectionListShot() { return &ptrIntersectionToShot_; }
-	std::vector<std::weak_ptr<StgIntersectionTarget>>* GetIntersectionListPlayer() { return &ptrIntersectionToPlayer_; }
+	std::vector<weak_ptr<StgIntersectionTarget>>* GetIntersectionListShot() { return &ptrIntersectionToShot_; }
+	std::vector<weak_ptr<StgIntersectionTarget>>* GetIntersectionListPlayer() { return &ptrIntersectionToPlayer_; }
 };
 
 /**********************************************************
@@ -101,8 +100,8 @@ private:
 
 	int dataStep_;
 	int dataIndex_;
-	ref_count_ptr<StgEnemyBossSceneData>::unsync activeData_;
-	std::vector<std::vector<ref_count_ptr<StgEnemyBossSceneData>::unsync > > listData_;
+	shared_ptr<StgEnemyBossSceneData> activeData_;
+	std::vector<std::vector<shared_ptr<StgEnemyBossSceneData>>> listData_;
 
 	bool _NextStep();
 public:
@@ -112,8 +111,8 @@ public:
 	virtual void Render() {}//何もしない
 	virtual void SetRenderState() {}//何もしない
 
-	void AddData(int step, ref_count_ptr<StgEnemyBossSceneData>::unsync data);
-	ref_count_ptr<StgEnemyBossSceneData>::unsync GetActiveData() { return activeData_; }
+	void AddData(int step, shared_ptr<StgEnemyBossSceneData> data);
+	shared_ptr<StgEnemyBossSceneData> GetActiveData() { return activeData_; }
 	void LoadAllScriptInThread();
 
 	int GetRemainStepCount();
@@ -146,7 +145,6 @@ private:
 	int timerSpell_;//タイマー フレーム単位 -1で無効
 	int countPlayerShootDown_;//自機撃破数
 	int countPlayerSpell_;//自機スペル使用数
-
 public:
 	StgEnemyBossSceneData();
 	virtual ~StgEnemyBossSceneData() {}

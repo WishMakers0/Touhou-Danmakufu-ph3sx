@@ -49,7 +49,9 @@ protected:
 	//IDirect3DTexture9* renderTexture_;
 	//IDirect3DSurface9* renderSurface_;
 	IDirect3DVertexBuffer9* vertexBuffer_;
+	IDirect3DIndexBuffer9* indexBuffer_;
 	size_t vertexBufferSize_;
+	size_t indexBufferSize_;
 
 	ID3DXEffect* effectLayer_;
 	D3DXHANDLE handleEffectWorld_;
@@ -84,8 +86,11 @@ public:
 	}
 
 	size_t GetVertexBufferSize() { return vertexBufferSize_; }
+	size_t GetIndexBufferSize() { return indexBufferSize_; }
 	IDirect3DVertexBuffer9* GetVertexBuffer() { return vertexBuffer_; }
+	IDirect3DIndexBuffer9* GetIndexBuffer() { return indexBuffer_; }
 	void _SetVertexBuffer(size_t size);
+	void _SetIndexBuffer(size_t size);
 };
 
 /**********************************************************
@@ -134,7 +139,10 @@ public:
 	};
 private:
 	StgShotDataList* listShotData_;
+
 	int indexTexture_;
+	D3DXVECTOR2 textureSize_;
+
 	int typeRender_;
 	int typeDelayRender_;
 
@@ -156,6 +164,7 @@ public:
 	virtual ~StgShotData();
 
 	int GetTextureIndex() { return indexTexture_; }
+	D3DXVECTOR2& GetTextureSize() { return textureSize_; }
 	int GetRenderType() { return typeRender_; }
 	int GetDelayRenderType() { return typeDelayRender_; }
 	AnimationData* GetData(int frame);
@@ -170,19 +179,13 @@ public:
 
 	int GetFrameCount() { return listAnime_.size(); }
 
-	ref_count_ptr<Texture> GetTexture();
-	StgShotRenderer* GetRenderer();
+	ref_count_ptr<Texture> GetTexture() { return listShotData_->GetTexture(indexTexture_); }
+	StgShotRenderer* GetRenderer() { return GetRenderer(typeRender_); }
 	StgShotRenderer* GetRenderer(int type);
 
 	static bool IsAlphaBlendValidType(int blendType);
 };
 #pragma region StgShotData_impl
-inline ref_count_ptr<Texture> StgShotData::GetTexture() {
-	return listShotData_->GetTexture(indexTexture_);
-}
-inline StgShotRenderer* StgShotData::GetRenderer() {
-	return GetRenderer(typeRender_);
-}
 inline StgShotRenderer* StgShotData::GetRenderer(int blendType) {
 	if (blendType < DirectGraphics::MODE_BLEND_ALPHA || blendType > DirectGraphics::MODE_BLEND_ALPHA_INV)
 		return listShotData_->GetRenderer(indexTexture_, 0);
@@ -206,23 +209,19 @@ inline bool StgShotData::IsAlphaBlendValidType(int blendType) {
 class StgShotRenderer : public RenderObjectTLX {
 	friend class StgShotManager;
 
+	std::vector<uint32_t> vecIndex_;
+
 	size_t countMaxVertex_;
 	size_t countRenderVertex_;
-	void* tmp;
+	size_t countMaxIndex_;
+	size_t countRenderIndex_;
 public:
 	StgShotRenderer();
 	~StgShotRenderer();
 
 	virtual void Render(StgShotManager* manager);
-	void AddVertex(VERTEX_TLX& vertex);
-	void AddSquareVertex(VERTEX_TLX* listVertex) {
-		AddVertex(listVertex[0]);
-		AddVertex(listVertex[2]);
-		AddVertex(listVertex[1]);
-		AddVertex(listVertex[1]);
-		AddVertex(listVertex[2]);
-		AddVertex(listVertex[3]);
-	}
+	void AddSquareVertex(VERTEX_TLX* listVertex);
+	void AddSquareVertex_CurveLaser(VERTEX_TLX* listVertex, bool bAddIndex);
 
 	virtual size_t GetVertexCount() {
 		return std::min(countRenderVertex_, vertex_.size() / strideVertexStreamZero_);
@@ -230,12 +229,32 @@ public:
 	virtual void SetVertexCount(size_t count) {
 		vertex_.resize(count * strideVertexStreamZero_);
 	}
+private:
+	void AddVertex(VERTEX_TLX& vertex) {
+		VERTEX_TLX* data = (VERTEX_TLX*)&vertex_[0];
+		memcpy((VERTEX_TLX*)(data + countRenderVertex_), &vertex, strideVertexStreamZero_);
+		++countRenderVertex_;
+	}
+	void TryExpandVertex(size_t chk) {
+		//Expands the vertex buffer if its size is insufficient for the next batch
+		if (chk < countMaxVertex_ - 6U) return;
+		countMaxVertex_ *= 2U;
+		SetVertexCount(countMaxVertex_);
+	}
+	void TryExpandIndex(size_t chk) {
+		//Expands the index buffer if its size is insufficient for the next batch
+		if (chk < countMaxIndex_ - 6U) return;
+		countMaxIndex_ *= 2U;
+		vecIndex_.resize(countMaxIndex_);
+	}
 };
 
 /**********************************************************
 //StgShotObject
 **********************************************************/
+struct StgPatternShotTransform;
 class StgShotObject : public DxScriptRenderObject, public StgMoveObject, public StgIntersectionObject {
+	friend StgPatternShotTransform;
 public:
 	enum {
 		OWNER_PLAYER = 0,
@@ -250,7 +269,6 @@ public:
 	};
 	class ReserveShotList;
 	class ReserveShotListData;
-
 protected:
 	StgStageController* stageController_;
 
@@ -278,6 +296,8 @@ protected:
 	int frameAutoDelete_;//自動削除フレーム
 	ref_count_ptr<ReserveShotList>::unsync listReserveShot_;
 
+	//std::vector<StgPatternShotTransform> listTranformationShotAct_;
+
 	bool bUserIntersectionMode_;//ユーザ定義あたり判定モード
 	bool bIntersectionEnable_;
 	bool bChangeItemEnable_;
@@ -295,6 +315,7 @@ protected:
 	virtual void _AddReservedShot(shared_ptr<StgShotObject> obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent(bool flgPlayerCollision) {}
 	virtual void _SendDeleteEvent(int bit);
+	//virtual void _ProcessTransformAct();
 public:
 	StgShotObject(StgStageController* stageController);
 	virtual ~StgShotObject();
@@ -312,6 +333,12 @@ public:
 	virtual void SetColor(int r, int g, int b);
 	virtual void SetAlpha(int alpha);
 	virtual void SetRenderState() {}
+
+	/*
+	void SetTransformList(std::vector<StgPatternShotTransform>& listTransform) {
+		listTranformationShotAct_ = listTransform;
+	}
+	*/
 
 	shared_ptr<StgShotObject> GetOwnObject();
 	int GetShotDataID() { return idShotData_; }
@@ -444,7 +471,7 @@ public:
 	void SetIntersectionWidth(int width) { widthIntersection_ = width; }
 	void SetInvalidLength(float start, float end) { invalidLengthStart_ = start; invalidLengthEnd_ = end; }
 	void SetGrazeInvalidFrame(int frame) { frameGrazeInvalidStart_ = frame; }
-	void SetItemDistance(double dist) { itemDistance_ = dist; }
+	void SetItemDistance(double dist) { itemDistance_ = std::max(dist, 0.1); }
 };
 
 /**********************************************************
@@ -535,6 +562,134 @@ public:
 	void SetTipDecrement(double dec) { tipDecrement_ = dec; }
 };
 
+
+/**********************************************************
+//StgPatternShotObjectGenerator (ECL-style bullets firing) [Under construction]
+**********************************************************/
+class StgPatternShotObjectGenerator : public DxScriptObjectBase {
+public:
+	enum {
+		PATTERN_TYPE_FAN = 0,
+		PATTERN_TYPE_FAN_AIMED,
+		PATTERN_TYPE_RING,
+		PATTERN_TYPE_RING_AIMED,
+		PATTERN_TYPE_ARROW,
+		PATTERN_TYPE_ARROW_AIMED,
+		PATTERN_TYPE_MODULATE,
+		PATTERN_TYPE_MODULATE_AIMED,
+		PATTERN_TYPE_SCATTER_ANGLE,
+		PATTERN_TYPE_SCATTER_SPEED,
+		PATTERN_TYPE_SCATTER,
+
+		BASEPOINT_RESET = -256 * 256,
+	};
+private:
+	shared_ptr<StgMoveObject> parent_;
+
+	int idShotData_;
+	int typeOwner_;
+	TypeObject typeShot_;
+	int typePattern_;
+
+	size_t shotWay_;
+	size_t shotStack_;
+
+	//Calculate the sets in order-------------------------------------
+	//Set 1
+	double basePointX_;
+	double basePointY_;
+	//Set 2
+	double basePointOffsetX_;
+	double basePointOffsetY_;
+	//Set 4
+	double fireRadiusOffset_;
+	//-----------------------------------------------------------------
+
+	double speedBase_;
+	double speedArgument_;
+	double angleBase_;
+	double angleArgument_;
+
+	int delay_;
+
+	int laserWidth_;
+	int laserLength_;
+
+	//std::vector<StgPatternShotTransform> listTranformation_;
+public:
+	StgPatternShotObjectGenerator();
+	~StgPatternShotObjectGenerator();
+
+	virtual void Render() {}
+	virtual void SetRenderState() {}
+
+	void CopyFrom(shared_ptr<StgPatternShotObjectGenerator> other) {
+		StgPatternShotObjectGenerator::CopyFrom(other.get());
+	}
+	void CopyFrom(StgPatternShotObjectGenerator* other);
+
+	//void AddTransformation(StgPatternShotTransform& entry) { listTranformation_.push_back(entry); }
+	//void ClearTransformation() { listTranformation_.clear(); }
+
+	void SetParent(shared_ptr<StgMoveObject> obj) { parent_ = obj; }
+
+	void FireSet(void* scriptData, StgStageController* controller, std::vector<double>* idVector);
+
+	void SetGraphic(int id) { idShotData_ = id; }
+	void SetTypeOwner(int type) { typeOwner_ = type; }
+	void SetTypePattern(int type) { typePattern_ = type; }
+	void SetTypeShot(TypeObject type) { typeShot_ = type; }
+
+	void SetWayStack(size_t way, size_t stack) {
+		shotWay_ = way;
+		shotStack_ = stack;
+	};
+
+	void SetBasePoint(double bx, double by) {
+		basePointX_ = bx;
+		basePointY_ = by;
+	}
+	void SetOffsetFromBasePoint(double ox, double oy) {
+		basePointOffsetX_ = ox;
+		basePointOffsetY_ = oy;
+	}
+	void SetRadiusFromFirePoint(double r) { fireRadiusOffset_ = r; }
+
+	void SetSpeed(double base, double arg) {
+		speedBase_ = base;
+		speedArgument_ = arg;
+	}
+	void SetAngle(double base, double arg) {
+		angleBase_ = base;
+		angleArgument_ = arg;
+	}
+
+	void SetDelay(int delay) { delay_ = delay; }
+	void SetLaserArgument(int width, int length) {
+		laserWidth_ = width;
+		laserLength_ = length;
+	}
+};
+struct StgPatternShotTransform {
+	enum : uint8_t {
+		TRANSFORM_WAIT,
+		TRANSFORM_ADD_SPEED_ANGLE,
+		TRANSFORM_ANGULAR_MOVE,
+		TRANSFORM_N_DECEL_CHANGE,
+		TRANSFORM_SPELL_RESIST,
+		TRANSFORM_CHANGE_GRAPHIC,
+		TRANSFORM_DELETE,
+		TRANSFORM_JUMP,
+		TRANSFORM_BLEND_CHANGE,
+		TRANSFORM_CHANGE_ANGLE_TO,
+		TRANSFORM_DISABLE_SHOT,
+		//TRANSFORM_,
+	};
+	uint8_t act;
+	float param_f[4];
+	double param_d[4];
+};
+
 /**********************************************************
 //Inline function implementations
 **********************************************************/
@@ -554,6 +709,7 @@ inline void StgShotObject::_SetVertexPosition(VERTEX_TLX& vertex, float x, float
 	vertex.position.w = w;
 }
 inline void StgShotObject::_SetVertexUV(VERTEX_TLX& vertex, float u, float v) {
+	/*
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return;
 
@@ -562,6 +718,9 @@ inline void StgShotObject::_SetVertexUV(VERTEX_TLX& vertex, float u, float v) {
 	int height = texture->GetHeight();
 	vertex.texcoord.x = u / width;
 	vertex.texcoord.y = v / height;
+	*/
+	vertex.texcoord.x = u;
+	vertex.texcoord.y = v;
 }
 inline void StgShotObject::_SetVertexColorARGB(VERTEX_TLX& vertex, D3DCOLOR color) {
 	vertex.diffuse_color = color;

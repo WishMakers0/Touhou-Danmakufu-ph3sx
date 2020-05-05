@@ -92,12 +92,12 @@ public:
 	StgItemDataList();
 	virtual ~StgItemDataList();
 
-	int GetTextureCount() { return listTexture_.size(); }
-	ref_count_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
-	StgItemRenderer* GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
-	std::vector<StgItemRenderer*>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
+	size_t GetTextureCount() { return listTexture_.size(); }
+	ref_count_ptr<Texture> GetTexture(size_t index) { return listTexture_[index]; }
+	StgItemRenderer* GetRenderer(size_t index, size_t typeRender) { return listRenderer_[typeRender][index]; }
+	std::vector<StgItemRenderer*>* GetRendererList(size_t typeRender) { return &listRenderer_[typeRender]; }
 
-	StgItemData* GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : NULL; }
+	StgItemData* GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : nullptr; }
 
 	bool AddItemDataList(std::wstring path, bool bReload);
 };

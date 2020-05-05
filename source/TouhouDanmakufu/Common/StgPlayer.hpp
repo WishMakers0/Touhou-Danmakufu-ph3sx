@@ -109,7 +109,7 @@ public:
 	double GetSlowSpeed() { return speedSlow_; }
 	void SetSlowSpeed(double speed) { speedSlow_ = speed; }
 
-	RECT GetClip() { return rcClip_; }
+	RECT* GetClip() { return &rcClip_; }
 	void SetClip(RECT rect) { rcClip_ = rect; }
 
 	int GetState() { return state_; }

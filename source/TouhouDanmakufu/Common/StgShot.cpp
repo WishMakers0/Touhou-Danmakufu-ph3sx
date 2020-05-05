@@ -18,7 +18,9 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	//listObj_.reserve(SHOT_MAX);
 
 	vertexBuffer_ = nullptr;
-	_SetVertexBuffer(256 * 256);
+	indexBuffer_ = nullptr;
+	_SetVertexBuffer(8192U);
+	_SetIndexBuffer(16384U);
 
 	/*
 	{
@@ -72,6 +74,7 @@ StgShotManager::~StgShotManager() {
 	}
 
 	ptr_release(vertexBuffer_);
+	ptr_release(indexBuffer_);
 	ptr_delete(listPlayerShotData_);
 	ptr_delete(listEnemyShotData_);
 	/*
@@ -147,7 +150,7 @@ void StgShotManager::Render(int targetPriority) {
 	}
 
 	//•`‰æ
-	int countBlendType = StgShotDataList::RENDER_TYPE_COUNT;
+	size_t countBlendType = StgShotDataList::RENDER_TYPE_COUNT;
 	int blendMode[] =
 	{
 		DirectGraphics::MODE_BLEND_ADD_ARGB,
@@ -165,53 +168,51 @@ void StgShotManager::Render(int targetPriority) {
 	device->SetFVF(VERTEX_TLX::fvf);
 	device->SetVertexDeclaration(shaderManager_->GetVertexDeclarationTLX());
 
+	device->SetStreamSource(0, vertexBuffer_, 0, sizeof(VERTEX_TLX));
+	device->SetIndices(indexBuffer_);
+
 	{
-		//Always render enemy shots above player shots, completely obliterates TAƒ°'s wet dream.
+		effectLayer_->SetTechnique("Render");
 
-		for (size_t iBlend = 0; iBlend < countBlendType; iBlend++) {
-			graphics->SetBlendMode(blendMode[iBlend]);
+		UINT cPass = 1U;
+		effectLayer_->Begin(&cPass, 0);
 
-			std::vector<StgShotRenderer*>* listPlayer =
-				listPlayerShotData_->GetRendererList(blendMode[iBlend] - 1);
+		if (cPass >= 1U) {
+			//Always render enemy shots above player shots, completely obliterates TAƒ°'s wet dream.
+			for (size_t iBlend = 0; iBlend < countBlendType; ++iBlend) {
+				bool hasPolygon = false;
+				std::vector<StgShotRenderer*>* listPlayer =
+					listPlayerShotData_->GetRendererList(blendMode[iBlend] - 1);
 
-			for (size_t iRender = 0U; iRender < listPlayer->size(); iRender++)
-				(*listPlayer)[iRender]->Render(this);
+				//In an attempt to minimize SetBlendMode calls.
+				for (auto itr = listPlayer->begin(); itr != listPlayer->end() && !hasPolygon; ++itr)
+					hasPolygon = (*itr)->countRenderIndex_ >= 3U;
+				if (!hasPolygon) continue;
+
+				graphics->SetBlendMode(blendMode[iBlend]);
+				for (auto itrRender = listPlayer->begin(); itrRender != listPlayer->end(); ++itrRender)
+					(*itrRender)->Render(this);
+			}
+			for (size_t iBlend = 0; iBlend < countBlendType; ++iBlend) {
+				bool hasPolygon = false;
+				std::vector<StgShotRenderer*>* listEnemy =
+					listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
+
+				for (auto itr = listEnemy->begin(); itr != listEnemy->end() && !hasPolygon; ++itr)
+					hasPolygon = (*itr)->countRenderIndex_ >= 3U;
+				if (!hasPolygon) continue;
+
+				graphics->SetBlendMode(blendMode[iBlend]);
+				for (auto itrRender = listEnemy->begin(); itrRender != listEnemy->end(); ++itrRender)
+					(*itrRender)->Render(this);
+			}
 		}
-		for (size_t iBlend = 0; iBlend < countBlendType; iBlend++) {
-			graphics->SetBlendMode(blendMode[iBlend]);
 
-			std::vector<StgShotRenderer*>* listEnemy =
-				listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
-
-			for (size_t iRender = 0U; iRender < listEnemy->size(); iRender++)
-				(*listEnemy)[iRender]->Render(this);
-		}
+		effectLayer_->End();
 	}
 
 	device->SetVertexDeclaration(nullptr);
-
-	/*
-	{
-		device->SetRenderTarget(0, tmpSurface);
-		graphics->SetTextureFilter(DirectGraphics::MODE_TEXTURE_FILTER_POINT, 0);
-		device->SetTexture(0, renderTexture_);
-		VERTEX_TLX tmpVert[] = {
-			VERTEX_TLX(D3DXVECTOR4(0, 0, 1, 1), (D3DCOLOR)0xffffffff, D3DXVECTOR2(0, 0)),
-			VERTEX_TLX(D3DXVECTOR4(vertRTw, 0, 1, 1), (D3DCOLOR)0xffffffff, D3DXVECTOR2(1, 0)),
-			VERTEX_TLX(D3DXVECTOR4(0, vertRTh, 1, 1), (D3DCOLOR)0xffffffff, D3DXVECTOR2(0, 1)),
-			VERTEX_TLX(D3DXVECTOR4(vertRTw, vertRTh, 1, 1), (D3DCOLOR)0xffffffff, D3DXVECTOR2(1, 1)),
-		};
-		D3DXMATRIX matCamera = graphics->GetCamera2D()->GetMatrix();
-		for (int i = 0; i < 4; ++i) {
-			D3DXVECTOR3* vec = (D3DXVECTOR3*)&tmpVert[i].position;
-			D3DXVec3TransformCoord(vec, vec, &matCamera);
-		}
-		device->SetFVF(VERTEX_TLX::fvf);
-		device->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, 6, 2, RTARGET_VERT_INDICES,
-			D3DFMT_INDEX16, tmpVert, sizeof(VERTEX_TLX));
-		device->SetTexture(0, nullptr);
-	}
-	*/
+	device->SetIndices(nullptr);
 
 	if (bEnableFog)
 		graphics->SetFogEnable(true);
@@ -220,12 +221,19 @@ void StgShotManager::_SetVertexBuffer(size_t size) {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
 
-	ptr_release(vertexBuffer_);
-
 	vertexBufferSize_ = size;
-
+	ptr_release(vertexBuffer_);
 	device->CreateVertexBuffer(size * sizeof(VERTEX_TLX), D3DUSAGE_DYNAMIC, VERTEX_TLX::fvf, D3DPOOL_DEFAULT,
 		&vertexBuffer_, nullptr);
+}
+void StgShotManager::_SetIndexBuffer(size_t size) {
+	DirectGraphics* graphics = DirectGraphics::GetBase();
+	IDirect3DDevice9* device = graphics->GetDevice();
+
+	indexBufferSize_ = size;
+	ptr_release(indexBuffer_);
+	device->CreateIndexBuffer(size * sizeof(uint32_t), D3DUSAGE_DYNAMIC, D3DFMT_INDEX32, D3DPOOL_DEFAULT,
+		&indexBuffer_, nullptr);
 }
 
 void StgShotManager::RegistIntersectionTarget() {
@@ -251,14 +259,13 @@ void StgShotManager::RegistIntersectionTarget() {
 
 RECT StgShotManager::GetShotAutoDeleteClipRect() {
 	ref_count_ptr<StgStageInformation> stageInfo = stageController_->GetStageInformation();
-	RECT rcStgFrame = stageInfo->GetStgFrameRect();
-	RECT rcClip = stageInfo->GetShotAutoDeleteClip();
+	RECT* rcStgFrame = stageInfo->GetStgFrameRect();
+	RECT* rcClip = stageInfo->GetShotAutoDeleteClip();
 
-	int width = rcStgFrame.right - rcStgFrame.left;
-	int height = rcStgFrame.bottom - rcStgFrame.top;
-	rcClip.right += width;
-	rcClip.bottom += height;
-	return rcClip;
+	RECT res = { rcClip->left, rcClip->top,
+		rcClip->right + (rcStgFrame->right - rcStgFrame->left),
+		rcClip->bottom + (rcStgFrame->bottom - rcStgFrame->top) };
+	return res;
 }
 
 void StgShotManager::DeleteInCircle(int typeDelete, int typeTo, int typeOwner, int cx, int cy, double radius) {
@@ -488,7 +495,7 @@ bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
 		if (textureIndex < 0) {
 			textureIndex = listTexture_.size();
 			listTexture_.push_back(texture);
-			for (int iRender = 0; iRender < listRenderer_.size(); iRender++) {
+			for (size_t iRender = 0; iRender < listRenderer_.size(); ++iRender) {
 				StgShotRenderer* render = new StgShotRenderer();
 				render->SetTexture(texture);
 				listRenderer_[iRender].push_back(render);
@@ -500,7 +507,14 @@ bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
 		for (size_t iData = 0; iData < listData.size(); iData++) {
 			StgShotData* data = listData[iData];
 			if (data == nullptr)continue;
+
 			data->indexTexture_ = textureIndex;
+			{
+				auto texture = listTexture_[data->indexTexture_];
+				data->textureSize_.x = texture->GetWidth();
+				data->textureSize_.y = texture->GetHeight();
+			}
+
 			if (data->rcDelay_.left < 0) {
 				data->rcDelay_ = rcDelay;
 				data->rcDstDelay_ = rcDelayDest;
@@ -743,6 +757,7 @@ std::vector<std::wstring> StgShotDataList::_GetArgumentList(Scanner& scanner) {
 //StgShotData
 StgShotData::StgShotData(StgShotDataList* listShotData) {
 	listShotData_ = listShotData;
+	textureSize_ = D3DXVECTOR2(0, 0);
 	typeRender_ = DirectGraphics::MODE_BLEND_ALPHA;
 	typeDelayRender_ = DirectGraphics::MODE_BLEND_ADD_ARGB;
 	colorDelay_ = D3DCOLOR_ARGB(255, 255, 255, 255);
@@ -763,7 +778,7 @@ StgShotData::AnimationData* StgShotData::GetData(int frame) {
 	int total = 0;
 
 	std::vector<AnimationData>::iterator itr = listAnime_.begin();
-	for (; itr != listAnime_.end(); itr++) {
+	for (; itr != listAnime_.end(); ++itr) {
 		//AnimationData* anime = itr;
 		total += itr->frame_;
 		if (total >= frame)
@@ -776,61 +791,100 @@ StgShotData::AnimationData* StgShotData::GetData(int frame) {
 //StgShotRenderer
 **********************************************************/
 StgShotRenderer::StgShotRenderer() {
-	countRenderVertex_ = 0;
-	countMaxVertex_ = 256 * 256;
+	countRenderVertex_ = 0U;
+	countMaxVertex_ = 8192U;
+	countRenderIndex_ = 0U;
+	countMaxIndex_ = 16384U;
+
 	SetVertexCount(countMaxVertex_);
+	vecIndex_.resize(countMaxIndex_);
 }
 StgShotRenderer::~StgShotRenderer() {
 
 }
 void StgShotRenderer::Render(StgShotManager* manager) {
-	if (countRenderVertex_ < 3)
+	if (countRenderIndex_ < 3)
 		return;
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
-	gstd::ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture != nullptr)
-		device->SetTexture(0, texture->GetD3DTexture());
-	else
-		device->SetTexture(0, nullptr);
+	gstd::ref_count_ptr<Texture> texture = texture_[0];
+	device->SetTexture(0, texture != nullptr ? texture->GetD3DTexture() : nullptr);
 
-	//device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, (int)(countRenderVertex_ / 3), vertex_.GetPointer(), sizeof(VERTEX_TLX));
-
-	while (countMaxVertex_ > manager->GetVertexBufferSize()) {
-		manager->_SetVertexBuffer(manager->GetVertexBufferSize() * 2);
-	}
 	IDirect3DVertexBuffer9* vBuffer = manager->GetVertexBuffer();
+	IDirect3DIndexBuffer9* iBuffer = manager->GetIndexBuffer();
+	size_t sizeBufferV = manager->GetVertexBufferSize();
+	size_t sizeBufferI = manager->GetIndexBufferSize();
+	while (countMaxVertex_ > sizeBufferV) {
+		manager->_SetVertexBuffer(sizeBufferV * 2);
+		sizeBufferV = manager->GetVertexBufferSize();;
+		device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
+	}
+	while (countMaxIndex_ > sizeBufferI) {
+		manager->_SetIndexBuffer(sizeBufferI * 2);
+		sizeBufferI = manager->GetIndexBufferSize();
+		device->SetIndices(iBuffer);
+	}
 
-	vBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
-	memcpy(tmp, vertex_.data(), countRenderVertex_ * sizeof(VERTEX_TLX));
-	vBuffer->Unlock();
+	{
+		void* tmp;
+		vBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+		memcpy(tmp, vertex_.data(), std::min(countRenderVertex_, sizeBufferV) * sizeof(VERTEX_TLX));
+		vBuffer->Unlock();
+	}
+	{
+		void* tmp;
+		iBuffer->Lock(0, 0, &tmp, D3DLOCK_DISCARD);
+		memcpy(tmp, vecIndex_.data(), std::min(countRenderIndex_, sizeBufferI) * sizeof(uint32_t));
+		iBuffer->Unlock();
+	}
 
-	device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
+	// Moved to StgShotManager
+	//device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
+	//device->SetIndices(iBuffer);
 	{
 		ID3DXEffect*& effect = manager->effectLayer_;
-		effect->SetTechnique("Render");
 
-		UINT cPass = 1;
-		effect->Begin(&cPass, 0);
-		for (UINT iPass = 0; iPass < cPass; ++iPass) {
-			effect->BeginPass(iPass);
-			device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, countRenderVertex_ / 3U);
-			effect->EndPass();
-		}
-		effect->End();
+		effect->BeginPass(0);
+		device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, countRenderVertex_, 0, countRenderIndex_ / 3U);
+		effect->EndPass();
 	}
+	//device->SetIndices(nullptr);
 
-	countRenderVertex_ = 0;
+	countRenderVertex_ = 0U;
+	countRenderIndex_ = 0U;
 }
-void StgShotRenderer::AddVertex(VERTEX_TLX& vertex) {
-	if (countRenderVertex_ == countMaxVertex_ - 1) {
-		countMaxVertex_ *= 2;
-		SetVertexCount(countMaxVertex_);
+void StgShotRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
+	TryExpandVertex(countRenderVertex_ + 4U);
+	memcpy((VERTEX_TLX*)vertex_.data() + countRenderVertex_, listVertex, strideVertexStreamZero_ * 4U);
+
+	TryExpandIndex(countRenderIndex_ + 6U);
+	vecIndex_[countRenderIndex_ + 0] = countRenderVertex_ + 0;
+	vecIndex_[countRenderIndex_ + 1] = countRenderVertex_ + 2;
+	vecIndex_[countRenderIndex_ + 2] = countRenderVertex_ + 1;
+	vecIndex_[countRenderIndex_ + 3] = countRenderVertex_ + 1;
+	vecIndex_[countRenderIndex_ + 4] = countRenderVertex_ + 2;
+	vecIndex_[countRenderIndex_ + 5] = countRenderVertex_ + 3;
+
+	countRenderVertex_ += 4U;
+	countRenderIndex_ += 6U;
+}
+void StgShotRenderer::AddSquareVertex_CurveLaser(VERTEX_TLX* listVertex, bool bAddIndex) {
+	TryExpandVertex(countRenderVertex_ + 2U);
+	memcpy((VERTEX_TLX*)vertex_.data() + countRenderVertex_, listVertex, strideVertexStreamZero_ * 2U);
+
+	if (bAddIndex) {
+		TryExpandIndex(countRenderIndex_ + 6U);
+		vecIndex_[countRenderIndex_ + 0] = countRenderVertex_ + 0;
+		vecIndex_[countRenderIndex_ + 1] = countRenderVertex_ + 2;
+		vecIndex_[countRenderIndex_ + 2] = countRenderVertex_ + 1;
+		vecIndex_[countRenderIndex_ + 3] = countRenderVertex_ + 1;
+		vecIndex_[countRenderIndex_ + 4] = countRenderVertex_ + 2;
+		vecIndex_[countRenderIndex_ + 5] = countRenderVertex_ + 3;
+		countRenderIndex_ += 6U;
 	}
 
-	SetVertex(countRenderVertex_, vertex);
-	countRenderVertex_++;
+	countRenderVertex_ += 2U;
 }
 
 /**********************************************************
@@ -1248,10 +1302,10 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 	}
 	else {
 		//Ž©‹@‚ÌˆÚ“®”ÍˆÍ‚ª•‰‚Ì’l‚ª‰Â”\‚Å‚ ‚ê‚Î“G’e‚Å‚à“o˜^
-		shared_ptr<StgPlayerObject> player = stageController_->GetPlayerObject();
-		if (player != nullptr) {
-			RECT rcClip = player->GetClip();
-			if (rcClip.left < 0 || rcClip.top < 0)
+		StgPlayerObject* player = stageController_->GetPlayerObjectPtr();
+		if (player) {
+			RECT* rcClip = player->GetClip();
+			if (rcClip->left < 0 || rcClip->top < 0)
 				bInvalid = false;
 		}
 	}
@@ -1333,18 +1387,20 @@ void StgNormalShotObject::RenderOnShotManager() {
 		}
 	}
 
-	if (renderer == nullptr)return;
+	if (renderer == nullptr) return;
 
-	double scaleX = 1.0;
-	double scaleY = 1.0;
+	float textureWidth = shotData ? shotData->GetTextureSize().x : 1.0f;
+	float textureHeight = shotData ? shotData->GetTextureSize().y : 1.0f;
+
+	float scaleX = 1.0f;
+	float scaleY = 1.0f;
 
 	RECT* rcSrc;
 	RECT* rcDest;
 	D3DCOLOR color;
 
 	if (delay_ > 0) {
-		double expa = 0.5f + (double)delay_ / 30.0f * 2;
-		if (expa > 2)expa = 2;
+		float expa = std::min(0.5f + delay_ / 30.0f * 2.0f, 2.0f);
 
 		scaleX = expa;
 		scaleY = expa;
@@ -1363,42 +1419,33 @@ void StgNormalShotObject::RenderOnShotManager() {
 		rcDest = anime->GetDest();
 
 		color = color_;
-		double alpha = shotData->GetAlpha() / 255.0;
-		if (frameFadeDelete_ >= 0)
-			alpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE;
 
-		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
-		if (bValidAlpha) {
-			int colorA = ColorAccess::GetColorA(color);
-			color = ColorAccess::SetColorA(color, alpha * colorA);
+		float alphaRate = shotData->GetAlpha() / 255.0f;
+		if (frameFadeDelete_ >= 0) alphaRate *= (float)frameFadeDelete_ / FRAME_FADEDELETE;
+
+		if (StgShotData::IsAlphaBlendValidType(shotBlendType)) {
+			byte alpha = ColorAccess::ClampColorRet(((color >> 24) & 0xff) * alphaRate);
+			color = (color & 0x00ffffff) | (alpha << 24);
 		}
 		else {
-			color = ColorAccess::ApplyAlpha(color, alpha);
+			color = ColorAccess::ApplyAlpha(color, alphaRate);
 		}
 	}
 
 	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//ÚGƒeƒXƒg
 
 	VERTEX_TLX verts[4];
-	/*
-	int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
-	int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
-	int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
-	int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
-	*/
 	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
 	LONG* ptrDst = reinterpret_cast<LONG*>(rcDest);
-
-//#pragma omp parallel for
-	for (size_t iVert = 0; iVert < 4; iVert++) {
+	for (size_t iVert = 0U; iVert < 4U; ++iVert) {
 		VERTEX_TLX vt;
 
-		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, ptrSrc[iVert | 0b1] / textureHeight);
 		_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 		_SetVertexColorARGB(vt, color);
 
-		double px = vt.position.x * scaleX;
-		double py = vt.position.y * scaleY;
+		float px = vt.position.x * scaleX;
+		float py = vt.position.y * scaleY;
 		vt.position.x = (px * c_ - py * s_) + position_.x;
 		vt.position.y = (px * s_ + py * c_) + position_.y;
 		vt.position.z = position_.z;
@@ -1513,9 +1560,7 @@ void StgNormalShotObject::SetShotDataID(int id) {
 			RandProvider* rand = stageInfo->GetRandProvider();
 			angularVelocity_ = rand->GetReal(avMin, avMax);
 		}
-
 	}
-
 }
 
 /**********************************************************
@@ -1542,7 +1587,7 @@ void StgLaserObject::_AddIntersectionRelativeTarget() {
 
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 	std::vector<StgIntersectionTarget::ptr> listTarget = GetIntersectionTargetList();
-	for (int iTarget = 0; iTarget < listTarget.size(); iTarget++)
+	for (size_t iTarget = 0; iTarget < listTarget.size(); iTarget++)
 		intersectionManager->AddTarget(listTarget[iTarget]);
 }
 void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget) {
@@ -1737,8 +1782,11 @@ void StgLooseLaserObject::RenderOnShotManager() {
 
 	if (renderer == nullptr)return;
 
-	double scaleX = 1.0;
-	double scaleY = 1.0;
+	float textureWidth = shotData ? shotData->GetTextureSize().x : 1.0f;
+	float textureHeight = shotData ? shotData->GetTextureSize().y : 1.0f;
+
+	float scaleX = 1.0f;
+	float scaleY = 1.0f;
 	double renderC = 1.0;
 	double renderS = 0.0;
 
@@ -1748,8 +1796,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	D3DCOLOR color;
 
 	if (delay_ > 0) {
-		double expa = 0.5f + (double)delay_ / 30.0f * 2;
-		if (expa > 3.5)expa = 3.5;
+		float expa = std::min(0.5f + delay_ / 30.0f * 2.0f, 3.5f);
 
 		scaleX = expa;
 		scaleY = expa;
@@ -1777,19 +1824,16 @@ void StgLooseLaserObject::RenderOnShotManager() {
 		rcSrc = anime->GetSource();
 
 		color = color_;
-		double alpha = shotData->GetAlpha() / 255.0;
-		if (frameFadeDelete_ >= 0)
-			alpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE;
 
-		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
-		if (bValidAlpha) {
-			//ƒ¿—LŒø
-			int colorA = ColorAccess::GetColorA(color);
-			color = ColorAccess::SetColorA(color, alpha * colorA);
+		float alphaRate = shotData->GetAlpha() / 255.0f;
+		if (frameFadeDelete_ >= 0) alphaRate *= (float)frameFadeDelete_ / FRAME_FADEDELETE;
+
+		if (StgShotData::IsAlphaBlendValidType(shotBlendType)) {
+			byte alpha = ColorAccess::ClampColorRet(((color >> 24) & 0xff) * alphaRate);
+			color = (color & 0x00ffffff) | (alpha << 24);
 		}
 		else {
-			//ƒ¿–³Œø
-			color = ColorAccess::ApplyAlpha(color, alpha);
+			color = ColorAccess::ApplyAlpha(color, alphaRate);
 		}
 
 		//color = ColorAccess::ApplyAlpha(color, alpha);
@@ -1798,24 +1842,17 @@ void StgLooseLaserObject::RenderOnShotManager() {
 
 
 	VERTEX_TLX verts[4];
-	/*
-	int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
-	int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
-	int destY[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
-	int destX[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
-	*/
 	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
 	LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
-
-	for (int iVert = 0; iVert < 4; iVert++) {
+	for (size_t iVert = 0U; iVert < 4U; iVert++) {
 		VERTEX_TLX vt;
 
-		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+		_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, ptrSrc[iVert | 0b1] / textureHeight);
 		_SetVertexPosition(vt, ptrDst[iVert | 0b1], ptrDst[(iVert & 0b1) << 1]);
 		_SetVertexColorARGB(vt, color);
 
-		double px = vt.position.x * scaleX;
-		double py = vt.position.y * scaleY;
+		float px = vt.position.x * scaleX;
+		float py = vt.position.y * scaleY;
 		vt.position.x = (px * renderC - py * renderS) + position_.x;
 		vt.position.y = (px * renderS + py * renderC) + position_.y;
 		vt.position.z = position_.z;
@@ -1836,8 +1873,8 @@ void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	int ex = GetPositionX();
 	int ey = GetPositionY();
 
-	float dx = posXE_ - posX_;
-	float dy = posYE_ - posY_;
+	double dx = posXE_ - posX_;
+	double dy = posYE_ - posY_;
 	double length = (double)sqrt(dx * dx + dy * dy);
 
 	std::vector<double> listPos;
@@ -2013,7 +2050,10 @@ void StgStraightLaserObject::RenderOnShotManager() {
 	if (!IsVisible())return;
 
 	StgShotData* shotData = _GetShotData();
-	if (shotData == nullptr)return;
+	if (shotData == nullptr) return;
+
+	float textureWidth = shotData ? shotData->GetTextureSize().x : 1.0f;
+	float textureHeight = shotData ? shotData->GetTextureSize().y : 1.0f;
 
 	int objBlendType = GetBlendType();
 	int shotBlendType = objBlendType;
@@ -2026,7 +2066,7 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		else {
 			renderer = shotData->GetRenderer(objBlendType);
 		}
-		if (renderer == nullptr)return;
+		if (renderer == nullptr) return;
 
 		RECT* rcSrc;
 		RECT rcDest;
@@ -2037,45 +2077,32 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		//rcDest = anime->rcDst_;
 
 		color = color_;
-		double alpha = shotData->GetAlpha() / 255.0;
-		if (frameFadeDelete_ >= 0)
-			alpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE_LASER;
 
-		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
-		if (bValidAlpha) {
-			//ƒ¿—LŒø
-			int colorA = ColorAccess::GetColorA(color);
-			color = ColorAccess::SetColorA(color, alpha * colorA);
+		float alphaRate = shotData->GetAlpha() / 255.0f;
+		if (frameFadeDelete_ >= 0) alphaRate *= (float)frameFadeDelete_ / FRAME_FADEDELETE;
+
+		if (StgShotData::IsAlphaBlendValidType(shotBlendType)) {
+			byte alpha = ColorAccess::ClampColorRet(((color >> 24) & 0xff) * alphaRate);
+			color = (color & 0x00ffffff) | (alpha << 24);
 		}
 		else {
-			//ƒ¿–³Œø
-			color = ColorAccess::ApplyAlpha(color, alpha);
+			color = ColorAccess::ApplyAlpha(color, alphaRate);
 		}
 
-		//		if(delay_ > 0)
-		//			SetRect(&rcDest, -16, length_, 16, 0);
-		//		else
 		SetRect(&rcDest, -widthRender_ / 2, length_, widthRender_ / 2, 0);
 
 		VERTEX_TLX verts[4];
-		/*
-		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
-		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
-		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
-		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
-		*/
 		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
 		LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
-
-		for (size_t iVert = 0; iVert < 4; iVert++) {
+		for (size_t iVert = 0U; iVert < 4U; ++iVert) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, ptrSrc[iVert | 0b1] / textureHeight);
 			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
-			double px = vt.position.x * scaleX_ * scale_.x;
-			double py = vt.position.y * scale_.y;
+			float px = vt.position.x * scaleX_ * scale_.x;
+			float py = vt.position.y * scale_.y;
 
 			vt.position.x = (px * s_ + py * c_) + position_.x;
 			vt.position.y = (-px * c_ + py * s_) + position_.y;
@@ -2112,24 +2139,17 @@ void StgStraightLaserObject::RenderOnShotManager() {
 		SetRect(&rcDest, -sourceWidth, -sourceWidth, sourceWidth, sourceWidth);
 
 		VERTEX_TLX verts[4];
-		/*
-		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
-		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
-		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
-		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
-		*/
 		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
 		LONG* ptrDst = reinterpret_cast<LONG*>(&rcDest);
-
-		for (size_t iVert = 0; iVert < 4; iVert++) {
+		for (size_t iVert = 0U; iVert < 4U; ++iVert) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, ptrSrc[iVert | 0b1] / textureHeight);
 			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
-			double px = vt.position.x;
-			double py = vt.position.y;
+			float px = vt.position.x;
+			float py = vt.position.y;
 			vt.position.x = (px * s_ + py * c_) + position_.x;
 			vt.position.y = (-px * c_ + py * s_) + position_.y;
 			vt.position.z = position_.z;
@@ -2196,6 +2216,8 @@ StgCurveLaserObject::StgCurveLaserObject(StgStageController* stageController) : 
 
 	invalidLengthStart_ = 0.0f;
 	invalidLengthEnd_ = 0.0f;
+
+	itemDistance_ = 6.0;
 }
 void StgCurveLaserObject::Work() {
 	_Move();
@@ -2258,7 +2280,7 @@ void StgCurveLaserObject::_DeleteInAutoClip() {
 
 	size_t i = 0;
 	for (; itr != listPosition_.end(); ++itr, ++i) {
-		if (i % 2 == 1) continue;	//lmao
+		//if (i % 2 == 1) continue;	//lmao
 
 		LaserNode& pos = (*itr);
 		bool bXOut = pos.pos.x < rect.left || pos.pos.x > rect.right;
@@ -2356,6 +2378,9 @@ void StgCurveLaserObject::RenderOnShotManager() {
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 	StgShotRenderer* renderer = nullptr;
 
+	float textureWidth = shotData ? shotData->GetTextureSize().x : 1.0f;
+	float textureHeight = shotData ? shotData->GetTextureSize().y : 1.0f;
+
 	if ((delay_ > 0) /*&& (listPosition_.size() <= length_)*/) {
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
@@ -2370,8 +2395,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		RECT* rcSrc = shotData->GetDelayRect();
 		RECT* rcDest = shotData->GetDelayDest();
 
-		double expa = 0.5f + (double)delay_ / 30.0f * 2;
-		if (expa > 3.5)expa = 3.5;
+		float expa = std::min(0.5f + delay_ / 30.0f * 2.0f, 3.5f);
 
 		double sX = listPosition_.back().pos.x;
 		double sY = listPosition_.back().pos.y;
@@ -2379,24 +2403,17 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		D3DCOLOR color = shotData->GetDelayColor();
 
 		VERTEX_TLX verts[4];
-		/*
-		int srcX[] = { rcSrc->left, rcSrc->right, rcSrc->left, rcSrc->right };
-		int srcY[] = { rcSrc->top, rcSrc->top, rcSrc->bottom, rcSrc->bottom };
-		int destX[] = { rcDest->left, rcDest->right, rcDest->left, rcDest->right };
-		int destY[] = { rcDest->top, rcDest->top, rcDest->bottom, rcDest->bottom };
-		*/
 		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
 		LONG* ptrDst = reinterpret_cast<LONG*>(rcDest);
-
-		for (size_t iVert = 0; iVert < 4; iVert++) {
+		for (size_t iVert = 0U; iVert < 4U; iVert++) {
 			VERTEX_TLX vt;
 
-			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1], ptrSrc[iVert | 0b1]);
+			_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, ptrSrc[iVert | 0b1] / textureHeight);
 			_SetVertexPosition(vt, ptrDst[(iVert & 0b1) << 1], ptrDst[iVert | 0b1]);
 			_SetVertexColorARGB(vt, color);
 
-			double px = vt.position.x * expa;
-			double py = vt.position.y * expa;
+			float px = vt.position.x * expa;
+			float py = vt.position.y * expa;
 			vt.position.x = (px * c_ - py * s_) + sX;
 			vt.position.y = (px * s_ + py * c_) + sY;
 			vt.position.z = position_.z;
@@ -2407,7 +2424,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 		renderer->AddSquareVertex(verts);
 	}
-	{
+	if (listPosition_.size() > 1U) {
 		int objBlendType = GetBlendType();
 		int shotBlendType = objBlendType;
 		if (objBlendType == DirectGraphics::MODE_BLEND_NONE) {
@@ -2423,68 +2440,54 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 		size_t countPos = listPosition_.size();
 		size_t countRect = countPos - 1U;
+		size_t halfPos = countPos / 2U;
 
-		double baseAlpha = shotData->GetAlpha() / 255.0;
-		if (frameFadeDelete_ >= 0)
-			baseAlpha = (double)frameFadeDelete_ / (double)FRAME_FADEDELETE;
+		float alphaRateShot = shotData->GetAlpha() / 255.0f;
+		if (frameFadeDelete_ >= 0) alphaRateShot *= (float)frameFadeDelete_ / FRAME_FADEDELETE;
 
-		double tAlpha = ColorAccess::GetColorA(color_);
-		double dAlpha = tAlpha / (double)countRect * 2.0 * tipDecrement_;
+		float baseAlpha = (color_ >> 24) & 0xff;
+		float tipAlpha = baseAlpha * (1.0f - tipDecrement_);
+
 		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
-		int baseColorA = ColorAccess::GetColorA(color_);
 
 		RECT* rcSrcOrg = shotData->GetData(frameWork_)->GetSource();
 		double rcInc = (double)(rcSrcOrg->bottom - rcSrcOrg->top) / countRect;
 		double rectV = rcSrcOrg->top;
 
-		double srcX[] = { (double)rcSrcOrg->left, (double)rcSrcOrg->right };
+		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrcOrg);
 
-		VERTEX_TLX oldVerts[2];
 		std::list<LaserNode>::iterator itr = listPosition_.begin();
-		for (size_t iPos = 0; iPos < countRect; ++iPos) {
-			std::list<LaserNode>::iterator itrNext = std::next(itr);
-
-			double thisAlpha = tAlpha;
-			if (iPos > countRect / 2)
-				thisAlpha -= dAlpha;
-			else if (iPos < countRect / 2)
-				thisAlpha = iPos * 256 / (countRect / 2) + (255 - tipDecrement_ * 255.);
-			thisAlpha = std::max(0.0, thisAlpha);
+		size_t iPos = 0U;
+		for (std::list<LaserNode>::iterator itr = listPosition_.begin(); itr != listPosition_.end(); ++itr, ++iPos) {
+			float nodeAlpha = baseAlpha;
+			if (iPos > halfPos)
+				nodeAlpha = Math::Lerp::Linear(baseAlpha, tipAlpha, (iPos - halfPos + 1) / (float)halfPos);
+			else if (iPos < halfPos)
+				nodeAlpha = Math::Lerp::Linear(tipAlpha, baseAlpha, iPos / (halfPos - 1.0f));
+			nodeAlpha = std::max(0.0f, nodeAlpha);
 
 			D3DCOLOR thisColor = color_;
 			if (bValidAlpha) {
-				thisColor = ColorAccess::SetColorA(thisColor, thisAlpha * baseColorA * baseAlpha);
+				byte alpha = ColorAccess::ClampColorRet(nodeAlpha * alphaRateShot);
+				thisColor = (thisColor & 0x00ffffff) | (alpha << 24);
 			}
 			else {
-				thisColor = ColorAccess::ApplyAlpha(thisColor, thisAlpha * baseAlpha / 255.0);
+				thisColor = ColorAccess::ApplyAlpha(thisColor, nodeAlpha * alphaRateShot);
 			}
 
-			LaserNode& posCurr = *itr;
-			LaserNode& posNext = *itrNext;
-
-			VERTEX_TLX verts[4];
-			Position* destPos[] = { 
-				&posCurr.vertOff[0], &posCurr.vertOff[1], 
-				&posNext.vertOff[0], &posNext.vertOff[1]
-			};
-			for (size_t iVert = (iPos > 0U ? 2U : 0U); iVert < 4U; ++iVert) {
+			VERTEX_TLX verts[2];
+			for (size_t iVert = 0U; iVert < 2U; ++iVert) {
 				VERTEX_TLX vt;
 
-				_SetVertexUV(vt, srcX[iVert % 2U], rectV + iVert / 2U * rcInc);
-				_SetVertexPosition(vt, destPos[iVert]->x, destPos[iVert]->y, position_.z);
+				_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, rectV / textureHeight);
+				_SetVertexPosition(vt, itr->vertOff[iVert].x, itr->vertOff[iVert].y, position_.z);
 				_SetVertexColorARGB(vt, thisColor);
 
 				verts[iVert] = vt;
 			}
-
-			if (iPos > 0U)
-				memcpy(verts, oldVerts, sizeof(VERTEX_TLX) * 2U);
-			memcpy(oldVerts, &verts[2], sizeof(VERTEX_TLX) * 2U);
-
-			renderer->AddSquareVertex(verts);
+			renderer->AddSquareVertex_CurveLaser(verts, std::next(itr) != listPosition_.end());
 
 			rectV += rcInc;
-			++itr;
 		}
 	}
 }
@@ -2496,36 +2499,295 @@ void StgCurveLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 	//assert(scriptItem != nullptr);
 
 	std::vector<double> listPos;
-	listPos.resize(2);
 	std::vector<gstd::value> listScriptValue;
-	listScriptValue.resize(4);
+	if (scriptItem) {
+		listPos.resize(2);
+		listScriptValue.resize(4);
+		listScriptValue[0] = scriptItem->CreateRealValue(idObject_);
+		listScriptValue[2] = scriptItem->CreateBooleanValue(flgPlayerCollision);
+		listScriptValue[3] = scriptItem->CreateRealValue(GetShotDataID());
+	}
 
-	std::list<LaserNode>::iterator itr = listPosition_.begin();
-	for (; itr != listPosition_.end(); itr++) {
-		LaserNode& pos = (*itr);
+	size_t countToItem = 0U;
 
-		if (scriptItem != nullptr) {
-			listPos[0] = pos.pos.x;
-			listPos[1] = pos.pos.y;
-
-			listScriptValue[0] = scriptItem->CreateRealValue(idObject_);
+	auto RequestItem = [&](double ix, double iy) {
+		if (scriptItem) {
+			listPos[0] = ix;
+			listPos[1] = iy;
 			listScriptValue[1] = scriptItem->CreateRealArrayValue(listPos);
-			listScriptValue[2] = scriptItem->CreateBooleanValue(flgPlayerCollision);
-			listScriptValue[3] = scriptItem->CreateRealValue(GetShotDataID());
 			scriptItem->RequestEvent(StgStageScript::EV_DELETE_SHOT_TO_ITEM, listScriptValue);
 		}
-
 		if (itemManager->IsDefaultBonusItemEnable() && delay_ == 0 && !flgPlayerCollision) {
 			if (itemManager->GetItemCount() < StgItemManager::ITEM_MAX) {
 				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
-				int id = stageController_->GetMainObjectManager()->AddObject(obj);
-				if (id != DxScript::ID_INVALID) {
-					//’e‚ÌÀ•W‚ÉƒAƒCƒeƒ€‚ðì¬‚·‚é
+				if (stageController_->GetMainObjectManager()->AddObject(obj) != DxScript::ID_INVALID) {
 					itemManager->AddItem(obj);
-					obj->SetPositionX(pos.pos.x);
-					obj->SetPositionY(pos.pos.y);
+					obj->SetPositionX(ix);
+					obj->SetPositionY(iy);
 				}
 			}
+		}
+		++countToItem;
+	};
+
+	double lengthAcc = 0.0;
+	for (std::list<LaserNode>::iterator itr = listPosition_.begin(); itr != listPosition_.end(); itr++) {
+		std::list<LaserNode>::iterator itrNext = std::next(itr);
+		if (itrNext == listPosition_.end()) break;
+
+		Position& pos = (*itr).pos;
+		Position& posNext = (*itrNext).pos;
+		double nodeDist = hypot(posNext.x - pos.x, posNext.y - pos.y);
+		lengthAcc += nodeDist;
+
+		double createDist = 0U;
+		while (lengthAcc >= itemDistance_) {
+			double lerpMul = (itemDistance_ >= nodeDist) ? 0.0 : (createDist / nodeDist);
+			RequestItem(Math::Lerp::Linear(pos.x, posNext.x, lerpMul), Math::Lerp::Linear(pos.y, posNext.y, lerpMul));
+			createDist += itemDistance_;
+			lengthAcc -= itemDistance_;
+		}
+	}
+}
+
+
+/**********************************************************
+//StgPatternShotObjectGenerator (ECL-style bullets firing) [Under construction]
+**********************************************************/
+StgPatternShotObjectGenerator::StgPatternShotObjectGenerator() {
+	parent_ = nullptr;
+	idShotData_ = -1;
+	typeOwner_ = StgShotObject::OWNER_ENEMY;
+	typePattern_ = PATTERN_TYPE_FAN;
+	typeShot_ = TypeObject::OBJ_SHOT;
+
+	shotWay_ = 1U;
+	shotStack_ = 1U;
+
+	basePointX_ = BASEPOINT_RESET;
+	basePointY_ = BASEPOINT_RESET;
+	basePointOffsetX_ = 0;
+	basePointOffsetY_ = 0;
+	fireRadiusOffset_ = 0;
+
+	speedBase_ = 1;
+	speedArgument_ = 1;
+	angleBase_ = 0;
+	angleArgument_ = 0;
+
+	delay_ = 0;
+
+	laserWidth_ = 16;
+	laserLength_ = 64;
+}
+StgPatternShotObjectGenerator::~StgPatternShotObjectGenerator() {
+	parent_ = nullptr;
+}
+
+void StgPatternShotObjectGenerator::CopyFrom(StgPatternShotObjectGenerator* other) {
+	parent_ = other->parent_;
+	//listTranformation_ = other->listTranformation_;
+
+	idShotData_ = other->idShotData_;
+	//typeOwner_ = other->typeOwner_;
+	typeShot_ = other->typeShot_;
+	typePattern_ = other->typePattern_;
+
+	shotWay_ = other->shotWay_;
+	shotStack_ = other->shotStack_;
+
+	basePointX_ = other->basePointX_;
+	basePointY_ = other->basePointY_;
+	basePointOffsetX_ = other->basePointOffsetX_;
+	basePointOffsetY_ = other->basePointOffsetY_;
+	fireRadiusOffset_ = other->fireRadiusOffset_;
+
+	speedBase_ = other->speedBase_;
+	speedArgument_ = other->speedArgument_;
+	angleBase_ = other->angleBase_;
+	angleArgument_ = other->angleArgument_;
+
+	delay_ = other->delay_;
+
+	laserWidth_ = other->laserWidth_;
+	laserLength_ = other->laserLength_;
+}
+
+void StgPatternShotObjectGenerator::FireSet(void* scriptData, StgStageController* controller, std::vector<double>* idVector) {
+	if (idVector) idVector->clear();
+
+	StgStageScript* script = (StgStageScript*)scriptData;
+	StgPlayerObject* objPlayer = controller->GetPlayerObjectPtr();
+	StgStageScriptObjectManager* objManager = controller->GetMainObjectManager();
+	StgShotManager* shotManager = controller->GetShotManager();
+	RandProvider* randGenerator = controller->GetStageInformation()->GetRandProvider();
+
+	if (idShotData_ < 0) return;
+	if (shotWay_ == 0U || shotStack_ == 0U) return;
+
+	double basePosX = (parent_ != nullptr && basePointX_ == BASEPOINT_RESET) ? parent_->GetPositionX() : basePointX_;
+	double basePosY = (parent_ != nullptr && basePointY_ == BASEPOINT_RESET) ? parent_->GetPositionY() : basePointY_;
+	basePosX += basePointOffsetX_;
+	basePosY += basePointOffsetY_;
+
+	auto __CreateShot = [&](double _x, double _y, double _ss, double _sa) -> bool {
+		if (shotManager->GetShotCountAll() >= StgShotManager::SHOT_MAX) return false;
+
+		shared_ptr<StgShotObject> objShot = nullptr;
+		switch (typeShot_) {
+		case TypeObject::OBJ_SHOT:
+		{
+			shared_ptr<StgNormalShotObject> ptrShot = std::make_shared<StgNormalShotObject>(controller);
+			objShot = ptrShot;
+			break;
+		}
+		case TypeObject::OBJ_LOOSE_LASER:
+		{
+			shared_ptr<StgLooseLaserObject> ptrShot = std::make_shared<StgLooseLaserObject>(controller);
+			ptrShot->SetLength(laserLength_);
+			ptrShot->SetRenderWidth(laserWidth_);
+			objShot = ptrShot;
+			break;
+		}
+		case TypeObject::OBJ_CURVE_LASER:
+		{
+			shared_ptr<StgCurveLaserObject> ptrShot = std::make_shared<StgCurveLaserObject>(controller);
+			ptrShot->SetLength(laserLength_);
+			ptrShot->SetRenderWidth(laserWidth_);
+			objShot = ptrShot;
+			break;
+		}
+		}
+
+		if (objShot == nullptr) return false;
+
+		objShot->SetX(_x);
+		objShot->SetY(_y);
+		objShot->SetSpeed(_ss);
+		objShot->SetDirectionAngle(_sa);
+		objShot->SetShotDataID(idShotData_);
+		objShot->SetDelay(delay_);
+		objShot->SetOwnerType(typeOwner_);
+
+		int idRes = script->AddObject(objShot);
+		if (idRes == DxScript::ID_INVALID) return false;
+
+		shotManager->AddShot(objShot);
+
+		if (idVector) idVector->push_back(idRes);
+		return true;
+	};
+
+	{
+		switch (typePattern_) {
+		case PATTERN_TYPE_FAN:
+		case PATTERN_TYPE_FAN_AIMED:
+		{
+			double ini_angle = angleBase_;
+			if (objPlayer != nullptr && typePattern_ == PATTERN_TYPE_FAN_AIMED)
+				ini_angle += atan2(objPlayer->GetY() - basePosY, objPlayer->GetX() - basePosX);
+			double ang_off_way = (double)(shotWay_ / 2U) - (shotWay_ % 2U == 0U ? 0.5 : 0.0);
+
+			for (size_t iWay = 0U; iWay < shotWay_; ++iWay) {
+				double sa = ini_angle + (iWay - ang_off_way) * angleArgument_;
+				double r_fac[2] = { cos(sa), sin(sa) };
+				for (size_t iStack = 0U; iStack < shotStack_; ++iStack) {
+					double ss = speedBase_;
+					if (shotStack_ > 1U) ss += (speedArgument_ - speedBase_) * (iStack / (double)(shotStack_ - 1U));
+
+					double sx = basePosX + fireRadiusOffset_ * r_fac[0];
+					double sy = basePosY + fireRadiusOffset_ * r_fac[1];
+					__CreateShot(sx, sy, ss, sa);
+				}
+			}
+			break;
+		}
+		case PATTERN_TYPE_RING:
+		case PATTERN_TYPE_RING_AIMED:
+		{
+			double ini_angle = angleBase_;
+			if (objPlayer != nullptr && typePattern_ == PATTERN_TYPE_RING_AIMED)
+				ini_angle += atan2(objPlayer->GetY() - basePosY, objPlayer->GetX() - basePosX);
+
+			for (size_t iWay = 0U; iWay < shotWay_; ++iWay) {
+				double sa_b = ini_angle + (GM_PI_X2 / (double)shotWay_) * iWay;
+				for (size_t iStack = 0U; iStack < shotStack_; ++iStack) {
+					double ss = speedBase_;
+					if (shotStack_ > 1U) ss += (speedArgument_ - speedBase_) * (iStack / (double)(shotStack_ - 1U));
+
+					double sa = sa_b + iStack * angleArgument_;
+					double r_fac[2] = { cos(sa), sin(sa) };
+
+					double sx = basePosX + fireRadiusOffset_ * r_fac[0];
+					double sy = basePosY + fireRadiusOffset_ * r_fac[1];
+					__CreateShot(sx, sy, ss, sa);
+				}
+			}
+			break;
+		}
+		case PATTERN_TYPE_ARROW:
+		case PATTERN_TYPE_ARROW_AIMED:
+		{
+			double ini_angle = angleBase_;
+			if (objPlayer != nullptr && typePattern_ == PATTERN_TYPE_ARROW_AIMED)
+				ini_angle += atan2(objPlayer->GetY() - basePosY, objPlayer->GetX() - basePosX);
+			size_t stk_cen = shotStack_ / 2U;
+
+			for (size_t iStack = 0U; iStack < shotStack_; ++iStack) {
+				double ss = speedBase_;
+				if (shotStack_ > 1) {
+					if (shotStack_ % 2U == 0U) {
+						if (shotStack_ > 2U) {
+							double tmp = (iStack < stk_cen) ? (stk_cen - iStack - 1U) : (iStack - stk_cen);
+							ss = speedBase_ + (speedArgument_ - speedBase_) * (tmp / (stk_cen - 1));
+						}
+					}
+					else {
+						double tmp = abs((double)iStack - stk_cen);
+						ss = speedBase_ + (speedArgument_ - speedBase_) * (tmp / std::max(1U, stk_cen - 1U));
+					}
+				}
+
+				for (size_t iWay = 0U; iWay < shotWay_; ++iWay) {
+					double sa = ini_angle + (GM_PI_X2 / (double)shotWay_) * iWay;
+					if (shotStack_ > 1U) {
+						sa += (double)((shotStack_ % 2U == 0) ?
+							((double)iStack - (stk_cen - 0.5)) : ((double)iStack - stk_cen)) * angleArgument_;
+					}
+
+					double r_fac[2] = { cos(sa), sin(sa) };
+
+					double sx = basePosX + fireRadiusOffset_ * r_fac[0];
+					double sy = basePosY + fireRadiusOffset_ * r_fac[1];
+					__CreateShot(sx, sy, ss, sa);
+				}
+			}
+			break;
+		}
+		case PATTERN_TYPE_SCATTER_ANGLE:
+		case PATTERN_TYPE_SCATTER_SPEED:
+		case PATTERN_TYPE_SCATTER:
+		{
+			double ini_angle = angleBase_;
+
+			for (size_t iWay = 0U; iWay < shotWay_; ++iWay) {
+				for (size_t iStack = 0U; iStack < shotStack_; ++iStack) {
+					double ss = speedBase_  + (speedArgument_ - speedBase_) * 
+						((shotStack_ > 1U && typePattern_ == PATTERN_TYPE_SCATTER_ANGLE) ? 
+						(iStack / (double)(shotStack_ - 1U)) : randGenerator->GetReal());
+
+					double sa = ini_angle + ((typePattern_ == PATTERN_TYPE_SCATTER_SPEED) ? 
+						(GM_PI_X2 / (double)shotWay_ * iWay) + angleArgument_ * iStack : 
+						randGenerator->GetReal(-angleArgument_, angleArgument_));
+					double r_fac[2] = { cos(sa), sin(sa) };
+
+					double sx = basePosX + fireRadiusOffset_ * r_fac[0];
+					double sy = basePosY + fireRadiusOffset_ * r_fac[1];
+					__CreateShot(sx, sy, ss, sa);
+				}
+			}
+			break;
+		}
 		}
 	}
 }

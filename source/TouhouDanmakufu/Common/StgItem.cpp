@@ -834,6 +834,7 @@ void StgItemObject::_CreateScoreItem() {
 		obj->SetX(posX_);
 		obj->SetY(posY_);
 		obj->SetScore(score_);
+
 		objectManager->AddObject(obj);
 		itemManager->AddItem(obj);
 	}
@@ -1181,7 +1182,7 @@ void StgItemObject_User::Intersect(StgIntersectionTarget::ptr ownTarget, StgInte
 StgMovePattern_Item::StgMovePattern_Item(StgMoveObject* target) : StgMovePattern(target) {
 	frame_ = 0;
 	typeMove_ = MOVE_DOWN;
-	speed_ = 3;
+	speed_ = 0;
 	angDirection_ = Math::DegreeToRadian(270);
 	ZeroMemory(&posTo_, sizeof(POINT));
 }
@@ -1192,8 +1193,8 @@ void StgMovePattern_Item::Move() {
 	double px = target_->GetPositionX();
 	double py = target_->GetPositionY();
 	if (typeMove_ == MOVE_TOPLAYER || itemObject->IsMoveToPlayer()) {
-		if (frame_ == 0) speed_ = 6;
-		speed_ += 0.025;
+		if (frame_ == 0) speed_ = 5;
+		speed_ += 0.05;
 		shared_ptr<StgPlayerObject> objPlayer = stageController->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - py, objPlayer->GetX() - px);
 		angDirection_ = angle;

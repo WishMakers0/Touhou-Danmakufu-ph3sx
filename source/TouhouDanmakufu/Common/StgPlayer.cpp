@@ -11,9 +11,9 @@ StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveO
 	typeObject_ = TypeObject::OBJ_PLAYER;
 
 	infoPlayer_ = new StgPlayerInformation();
-	RECT rcStgFrame = stageController_->GetStageInformation()->GetStgFrameRect();
-	int stgWidth = rcStgFrame.right - rcStgFrame.left;
-	int stgHeight = rcStgFrame.bottom - rcStgFrame.top;
+	RECT* rcStgFrame = stageController_->GetStageInformation()->GetStgFrameRect();
+	int stgWidth = rcStgFrame->right - rcStgFrame->left;
+	int stgHeight = rcStgFrame->bottom - rcStgFrame->top;
 
 	SetRenderPriority(0.30);
 	speedFast_ = 4;
@@ -48,18 +48,10 @@ StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveO
 }
 StgPlayerObject::~StgPlayerObject() {}
 void StgPlayerObject::_InitializeRebirth() {
-	RECT rcStgFrame = stageController_->GetStageInformation()->GetStgFrameRect();
-	int stgWidth = rcStgFrame.right - rcStgFrame.left;
-	int stgHeight = rcStgFrame.bottom - rcStgFrame.top;
+	RECT* rcStgFrame = stageController_->GetStageInformation()->GetStgFrameRect();
 
-	if (rebirthX_ == REBIRTH_DEFAULT)
-		SetX(stgWidth / 2.0);
-	else
-		SetX(rebirthX_);
-	if (rebirthY_ == REBIRTH_DEFAULT)
-		SetY(rcStgFrame.bottom - 48);
-	else
-		SetY(rebirthY_);
+	SetX((rebirthX_ == REBIRTH_DEFAULT) ? (rcStgFrame->right - rcStgFrame->left) / 2.0 : rebirthX_);
+	SetY((rebirthY_ == REBIRTH_DEFAULT) ? rcStgFrame->bottom - 48 : rebirthY_);
 }
 void StgPlayerObject::Work() {
 	EDirectInput* input = EDirectInput::GetInstance();
@@ -334,8 +326,8 @@ bool StgPlayerObject::IsPermitSpell() {
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 	bool bEnemyLastSpell = false;
 	shared_ptr<StgEnemyBossSceneObject> objBossScene = enemyManager->GetBossSceneObject();
-	if (objBossScene != nullptr) {
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = objBossScene->GetActiveData();
+	if (objBossScene) {
+		shared_ptr<StgEnemyBossSceneData> data = objBossScene->GetActiveData();
 		if (data != nullptr && data->IsLastSpell())
 			bEnemyLastSpell = true;
 	}

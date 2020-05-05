@@ -446,8 +446,19 @@ void StgStageController::RenderToTransitionTexture() {
 
 	graphics->EndScene();
 	graphics->SetRenderTarget(nullptr);
-}
 
+	/*
+	if (false) {
+		static int count = 0;
+		std::wstring path = PathProperty::GetModuleDirectory() + StringUtility::FormatToWide("tempRT_transition\\temp_%04d.png", count);
+		RECT rect = { 0, 0, 640, 480 };
+		IDirect3DSurface9* pBackSurface = texture->GetD3DSurface();
+		D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_PNG, pBackSurface, nullptr, &rect);
+		count++;
+	}
+	*/
+}
+/*
 shared_ptr<DxScriptObjectBase> StgStageController::GetMainRenderObject(int idObject) {
 	return objectManagerMain_->GetObject(idObject);
 }
@@ -456,6 +467,7 @@ shared_ptr<StgPlayerObject> StgStageController::GetPlayerObject() {
 	if (idPlayer == DxScript::ID_INVALID)return nullptr;
 	return std::dynamic_pointer_cast<StgPlayerObject>(GetMainRenderObject(idPlayer));
 }
+*/
 
 /**********************************************************
 //StgStageInformation

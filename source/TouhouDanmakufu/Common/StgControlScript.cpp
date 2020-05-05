@@ -408,10 +408,8 @@ gstd::value StgControlScript::Func_GetStgFrameLeft(gstd::script_machine* machine
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != nullptr) {
-		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
-		res = rect.left;
-	}
+	if (stageController != nullptr)
+		res = stageController->GetStageInformation()->GetStgFrameRect()->left;
 	return value(machine->get_engine()->get_real_type(), res);
 }
 gstd::value StgControlScript::Func_GetStgFrameTop(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -419,10 +417,8 @@ gstd::value StgControlScript::Func_GetStgFrameTop(gstd::script_machine* machine,
 	StgStageController* stageController = script->systemController_->GetStageController();
 
 	double res = 0;
-	if (stageController != nullptr) {
-		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
-		res = rect.top;
-	}
+	if (stageController != nullptr)
+		res = stageController->GetStageInformation()->GetStgFrameRect()->top;
 	return value(machine->get_engine()->get_real_type(), res);
 }
 gstd::value StgControlScript::Func_GetStgFrameWidth(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -431,8 +427,8 @@ gstd::value StgControlScript::Func_GetStgFrameWidth(gstd::script_machine* machin
 
 	double res = 0;
 	if (stageController != nullptr) {
-		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
-		res = res = rect.right - rect.left;
+		RECT* rect = stageController->GetStageInformation()->GetStgFrameRect();
+		res = rect->right - rect->left;
 	}
 	return value(machine->get_engine()->get_real_type(), res);
 }
@@ -442,8 +438,8 @@ gstd::value StgControlScript::Func_GetStgFrameHeight(gstd::script_machine* machi
 
 	double res = 0;
 	if (stageController != nullptr) {
-		RECT rect = stageController->GetStageInformation()->GetStgFrameRect();
-		res = res = rect.bottom - rect.top;
+		RECT* rect = stageController->GetStageInformation()->GetStgFrameRect();
+		res = rect->bottom - rect->top;
 	}
 	return value(machine->get_engine()->get_real_type(), res);
 }
@@ -569,8 +565,6 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 	ETextureManager* textureManager = ETextureManager::GetInstance();
 	StgSystemController* systemController = script->systemController_;
 
-	//script->criticalSection_.Enter();
-
 	std::wstring name = argv[0].as_string();
 	int priMin = (int)argv[1].as_real();
 	int priMax = (int)argv[2].as_real();
@@ -578,11 +572,12 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
-	if (texture == nullptr)
-		textureManager->GetTexture(name);
-	if (texture == nullptr && textureManager->IsDataExists(name)) {
-		texture = new Texture();
-		texture->CreateRenderTarget(name);
+	if (texture == nullptr) {
+		texture = textureManager->GetTexture(name);
+		if (textureManager->IsDataExists(name)) {
+			texture = new Texture();
+			texture->CreateRenderTarget(name);
+		}
 	}
 
 	graphics->SetRenderTarget(texture);
@@ -592,27 +587,12 @@ gstd::value StgControlScript::Func_RenderToTextureA1(gstd::script_machine* machi
 
 	graphics->EndScene();
 	graphics->SetRenderTarget(nullptr);
-	/*
-		{
-			static int count = 0;
-			std::string path = StringUtility::Format("R:/TEMP/temp_%04d.bmp", count);
-			RECT rect = {0, 0, 640, 480};
-			IDirect3DSurface9* pBackSurface = texture->GetD3DSurface();
-			D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
-									pBackSurface, nullptr, &rect );
-			count++;
-		}
-	*/
-
-	//script->criticalSection_.Leave();
 
 	return value();
 }
 gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgControlScript* script = (StgControlScript*)machine->data;
 	ETextureManager* textureManager = ETextureManager::GetInstance();
-
-	//script->criticalSection_.Enter();
 
 	std::wstring name = argv[0].as_string();
 	int id = (int)argv[1].as_real();
@@ -623,12 +603,12 @@ gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machi
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<Texture> texture = script->_GetTexture(name);
-	if (texture == nullptr)
-		textureManager->GetTexture(name);
-
-	if (texture == nullptr && textureManager->IsDataExists(name)) {
-		texture = new Texture();
-		texture->CreateRenderTarget(name);
+	if (texture == nullptr) {
+		texture = textureManager->GetTexture(name);
+		if (textureManager->IsDataExists(name)) {
+			texture = new Texture();
+			texture->CreateRenderTarget(name);
+		}
 	}
 
 	graphics->SetRenderTarget(texture);
@@ -638,8 +618,6 @@ gstd::value StgControlScript::Func_RenderToTextureB1(gstd::script_machine* machi
 
 	graphics->EndScene();
 	graphics->SetRenderTarget(nullptr);
-
-	//script->criticalSection_.Leave();
 
 	return value();
 }
@@ -714,7 +692,7 @@ gstd::value StgControlScript::Func_SaveSnapShotA3(gstd::script_machine* machine,
 	int rcTop = (int)argv[2].as_real();
 	int rcRight = (int)argv[3].as_real();
 	int rcBottom = (int)argv[4].as_real();
-	int imgFormat = (int)argv[6].as_real();
+	int imgFormat = (int)argv[5].as_real();
 
 	if (imgFormat < 0)
 		imgFormat = 0;
@@ -1090,13 +1068,10 @@ LRESULT ScriptInfoPanel::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 void ScriptInfoPanel::_TerminateScriptAll() {
 	ETaskManager* taskManager = ETaskManager::GetInstance();
-	std::list<ref_count_ptr<TaskBase> > listTask = taskManager->GetTaskList();
-	std::list<ref_count_ptr<TaskBase> >::iterator itr = listTask.begin();
-	for (; itr != listTask.end(); itr++) {
-		ref_count_ptr<StgSystemController> systemController =
-			ref_count_ptr<StgSystemController>::DownCast(*itr);
-		if (systemController != nullptr) {
-			systemController->TerminateScriptAll();
-		}
+	std::list<shared_ptr<TaskBase>> listTask = taskManager->GetTaskList();
+	std::list<shared_ptr<TaskBase>>::iterator itr = listTask.begin();
+	for (; itr != listTask.end(); ++itr) {
+		StgSystemController* systemController = (StgSystemController*)((*itr).get());
+		if (systemController) systemController->TerminateScriptAll();
 	}
 }

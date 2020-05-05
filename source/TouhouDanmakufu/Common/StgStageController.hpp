@@ -27,9 +27,8 @@ private:
 
 	ref_count_ptr<StgPauseScene> pauseManager_;
 	ref_count_ptr<KeyReplayManager> keyReplayManager_;
-	std::shared_ptr<StgStageScriptObjectManager> objectManagerMain_;
-	//ref_count_ptr<StgStageScriptObjectManager> _objectManagerMain_;	//Why do I have to do this
-	std::shared_ptr<StgStageScriptManager> scriptManager_;
+	shared_ptr<StgStageScriptObjectManager> objectManagerMain_;
+	shared_ptr<StgStageScriptManager> scriptManager_;
 	StgEnemyManager* enemyManager_;
 	StgShotManager* shotManager_;
 	StgItemManager* itemManager_;
@@ -56,8 +55,9 @@ public:
 	StgIntersectionManager* GetIntersectionManager() { return intersectionManager_; }
 	ref_count_ptr<StgPauseScene> GetPauseManager() { return pauseManager_; }
 
-	shared_ptr<DxScriptObjectBase> GetMainRenderObject(int idObject);
-	shared_ptr<StgPlayerObject> GetPlayerObject();
+	shared_ptr<DxScriptObjectBase> GetMainRenderObject(int idObject) { return objectManagerMain_->GetObject(idObject); }
+	shared_ptr<StgPlayerObject> GetPlayerObject() { return objectManagerMain_->GetPlayerObjectPtr(); }
+	StgPlayerObject* GetPlayerObjectPtr() { return objectManagerMain_->GetPlayerObjectPtr().get(); }
 
 	StgSystemController* GetSystemController() { return systemController_; }
 	ref_count_ptr<StgSystemInformation> GetSystemInformation() { return infoSystem_; }
@@ -132,7 +132,7 @@ public:
 	ref_count_ptr<ReplayInformation::StageData> GetReplayData() { return replayStageData_; }
 	void SetReplayData(ref_count_ptr<ReplayInformation::StageData> data) { replayStageData_ = data; }
 
-	RECT GetStgFrameRect() { return rcStgFrame_; }
+	RECT* GetStgFrameRect() { return &rcStgFrame_; }
 	void SetStgFrameRect(RECT rect, bool bUpdateFocusResetValue = true);
 	int GetStgFrameMinPriority() { return priMinStgFrame_; }
 	void SetStgFrameMinPriority(int pri) { priMinStgFrame_ = pri; }
@@ -144,7 +144,7 @@ public:
 	void SetItemObjectPriority(int pri) { priItemObject_ = pri; }
 	int GetCameraFocusPermitPriority() { return priCameraFocusPermit_; }
 	void SetCameraFocusPermitPriority(int pri) { priCameraFocusPermit_ = pri; }
-	RECT GetShotAutoDeleteClip() { return rcShotAutoDeleteClip_; }
+	RECT* GetShotAutoDeleteClip() { return &rcShotAutoDeleteClip_; }
 	void SetShotAutoDeleteClip(RECT rect) { rcShotAutoDeleteClip_ = rect; }
 
 	RandProvider* GetRandProvider() { return rand_; }
