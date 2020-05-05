@@ -28,8 +28,18 @@
 #include "Logger.hpp"
 #include "LightweightVector.hpp"
 
-//重複宣言チェックをしない
-//#define __SCRIPT_H__NO_CHECK_DUPLICATED
+//-------------------------------------SCRIPT OPTIONS-------------------------------------
+
+//Forbid duplicated variable declaration
+#define __SCRIPT_H__CHECK_NO_DUPLICATED
+
+//Use inline operations
+#define __SCRIPT_H__INLINE_OPERATION
+
+//Discards empty 'if' and 'loop' blocks
+#define __SCRIPT_H__BLOCK_OPTIMIZE
+
+//----------------------------------------------------------------------------------------
 
 //-------- 汎用
 namespace gstd {
@@ -291,11 +301,11 @@ namespace gstd {
 			if (data) data.reset();
 		}
 		struct body {
-			type_data* type;
+			type_data* type = nullptr;
 			std::vector<value> array_value;
 
 			union {
-				double real_value;
+				double real_value = 0.0;
 				wchar_t char_value;
 				bool boolean_value;
 			};
@@ -411,13 +421,15 @@ namespace gstd {
 			pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
 			pc_compare_le, pc_compare_ne, 
 			pc_dup_n,
-			pc_for,
+			pc_for, pc_for_each_and_push_first,
 			pc_loop_ascent, pc_loop_descent, pc_loop_count, pc_loop_if, pc_loop_continue, pc_continue_marker, pc_loop_back,
 			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait,
 
+#ifdef __SCRIPT_H__INLINE_OPERATION
 			//Inline operations
 			pc_inline_inc, pc_inline_dec,
 			pc_inline_add, pc_inline_sub, pc_inline_mul, pc_inline_div, pc_inline_mod, pc_inline_pow,
+#endif
 		};
 
 		struct block;
@@ -585,7 +597,7 @@ namespace gstd {
 
 			std::shared_ptr<environment> parent;
 			script_engine::block* sub;
-			size_t ip;
+			int ip;
 			variables_t variables;
 			stack_t stack;
 			bool has_result;
