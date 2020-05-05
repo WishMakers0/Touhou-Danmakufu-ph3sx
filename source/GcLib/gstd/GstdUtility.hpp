@@ -200,6 +200,30 @@ namespace gstd {
 		}
 
 		static inline const double Round(double val) { return floorl(val + 0.5); }
+
+		class Lerp {
+		public:
+			template<typename T, typename L>
+			static inline T Linear(T a, T b, L x) {
+				return a + (b - a) * x;
+			}
+			template<typename T, typename L>
+			static inline T Smooth(T a, T b, L x) {
+				return a + x * x * ((L)3 - (L)2 * x) * (b - a);
+			}
+			template<typename T, typename L>
+			static inline T Smoother(T a, T b, L x) {
+				return a + x * x * x * (x * (x * (L)6 - (L)15) + (L)10) * (b - a);
+			}
+			template<typename T, typename L>
+			static inline T Accelerate(T a, T b, L x) {
+				return a + x * x * (b - a);
+			}
+			template<typename T, typename L>
+			static inline T Decelerate(T a, T b, L x) {
+				return a + ((L)1 - ((L)1 - x) * ((L)1 - x)) * (b - a);
+			}
+		};
 	};
 
 	//================================================================
@@ -334,8 +358,10 @@ namespace gstd {
 		//Returns the directory of the executable.
 		static std::wstring GetModuleDirectory() {
 #ifdef __L_STD_FILESYSTEM
-			std::wstring p = ReplaceYenToSlash(stdfs::current_path()) + L"/";
-			return p;
+			wchar_t modulePath[_MAX_PATH];
+			ZeroMemory(modulePath, sizeof(modulePath));
+			GetModuleFileName(NULL, modulePath, _MAX_PATH - 1);
+			return ReplaceYenToSlash(stdfs::path(modulePath).parent_path()) + L"/";
 #else
 			wchar_t modulePath[_MAX_PATH];
 			ZeroMemory(modulePath, sizeof(modulePath));

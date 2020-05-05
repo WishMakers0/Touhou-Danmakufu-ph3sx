@@ -1048,39 +1048,31 @@ value ScriptClientBase::Func_Interpolate_Linear(script_machine* machine, int arg
 	double a = argv[0].as_real();
 	double b = argv[1].as_real();
 	double x = argv[2].as_real();
-	double res = a + x * (b - a);
-	return value(machine->get_engine()->get_real_type(), res);
+	return value(machine->get_engine()->get_real_type(), Math::Lerp::Linear(a, b, x));
 }
 value ScriptClientBase::Func_Interpolate_Smooth(script_machine* machine, int argc, const value* argv) {
 	double a = argv[0].as_real();
 	double b = argv[1].as_real();
 	double x = argv[2].as_real();
-	double res = a + x * x * (3.0 - 2.0 * x) * (b - a);
-	return value(machine->get_engine()->get_real_type(), res);
+	return value(machine->get_engine()->get_real_type(), Math::Lerp::Smooth(a, b, x));
 }
 value ScriptClientBase::Func_Interpolate_Smoother(script_machine* machine, int argc, const value* argv) {
 	double a = argv[0].as_real();
 	double b = argv[1].as_real();
 	double x = argv[2].as_real();
-	double res = a + x * x * x * (x * (x * 6.0 - 15.0) + 10.0) * (b - a);
-	return value(machine->get_engine()->get_real_type(), res);
+	return value(machine->get_engine()->get_real_type(), Math::Lerp::Smoother(a, b, x));
 }
 value ScriptClientBase::Func_Interpolate_Accelerate(script_machine* machine, int argc, const value* argv) {
 	double a = argv[0].as_real();
 	double b = argv[1].as_real();
 	double x = argv[2].as_real();
-	double res = a + x * x * (b - a);
-	return value(machine->get_engine()->get_real_type(), res);
+	return value(machine->get_engine()->get_real_type(), Math::Lerp::Accelerate(a, b, x));
 }
 value ScriptClientBase::Func_Interpolate_Decelerate(script_machine* machine, int argc, const value* argv) {
 	double a = argv[0].as_real();
 	double b = argv[1].as_real();
 	double x = argv[2].as_real();
-
-	double y = 1.0 - x;
-	double res = a + (1.0 - y * y) * (b - a);
-
-	return value(machine->get_engine()->get_real_type(), res);
+	return value(machine->get_engine()->get_real_type(), Math::Lerp::Decelerate(a, b, x));
 }
 value ScriptClientBase::Func_Interpolate_Modulate(script_machine* machine, int argc, const value* argv) {
 	double a = argv[0].as_real();
