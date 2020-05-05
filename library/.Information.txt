@@ -1,6 +1,6 @@
 Missing libraries:
 	[zlib 1.2.11] 		-> https://www.zlib.net/
-		zlibstatic.lib or zlibdynamic.lib (with zlib.dll)
+		zlibstatic.lib
 			- Release configuration
 	[libogg 1.3.4]		-> https://xiph.org/
 		ogg_static.lib
