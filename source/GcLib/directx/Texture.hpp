@@ -27,7 +27,7 @@ namespace directx {
 	protected:
 		int type_;
 		TextureManager* manager_;
-		IDirect3DTexture9 *pTexture_;
+		IDirect3DTexture9* pTexture_;
 		D3DXIMAGE_INFO infoImage_;
 		std::wstring name_;
 		volatile bool bLoad_;
@@ -53,8 +53,8 @@ namespace directx {
 		friend TextureManager;
 		friend TextureInfoPanel;
 	protected:
-		gstd::ref_count_ptr<TextureData> data_;
-		TextureData* _GetTextureData() { return data_.GetPointer(); }
+		shared_ptr<TextureData> data_;
+		TextureData* _GetTextureData() { return data_.get(); }
 	public:
 		Texture();
 		Texture(Texture* texture);
@@ -75,7 +75,7 @@ namespace directx {
 
 		int GetWidth();
 		int GetHeight();
-		bool IsLoad() { return data_ != NULL && data_->bLoad_; }
+		bool IsLoad() { return data_ != nullptr && data_->bLoad_; }
 
 		static size_t GetFormatBPP(D3DFORMAT format);
 	};
@@ -92,8 +92,9 @@ namespace directx {
 		static const std::wstring TARGET_TRANSITION;
 	protected:
 		gstd::CriticalSection lock_;
-		std::map<std::wstring, gstd::ref_count_ptr<Texture> > mapTexture_;
-		std::map<std::wstring, gstd::ref_count_ptr<TextureData> > mapTextureData_;
+
+		std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
+		std::map<std::wstring, shared_ptr<TextureData>> mapTextureData_;
 		gstd::ref_count_ptr<TextureInfoPanel> panelInfo_;
 
 		void _ReleaseTextureData(std::wstring name);
@@ -116,7 +117,7 @@ namespace directx {
 		void ReleaseDxResource();
 		void RestoreDxResource();
 
-		gstd::ref_count_ptr<TextureData> GetTextureData(std::wstring name);
+		shared_ptr<TextureData> GetTextureData(std::wstring name);
 		gstd::ref_count_ptr<Texture> CreateFromFile(std::wstring path, bool genMipmap, bool flgNonPowerOfTwo);//テクスチャを読み込みます。TextureDataは保持しますが、Textureは保持しません。
 		gstd::ref_count_ptr<Texture> CreateRenderTarget(std::wstring name, size_t width = 0U, size_t height = 0U);
 		gstd::ref_count_ptr<Texture> GetTexture(std::wstring name);//作成済みのテクスチャを取得します
