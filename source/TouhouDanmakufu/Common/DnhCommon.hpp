@@ -161,9 +161,12 @@ private:
 
 	bool bVSync_;
 	bool referenceRasterizer_;
+	D3DMULTISAMPLE_TYPE multiSamples_;
 
 	int padIndex_;
 	std::map<int, ref_count_ptr<VirtualKey>> mapKey_;
+
+	std::wstring pathExeLaunch_;
 
 	bool bLogWindow_;
 	bool bLogFile_;
@@ -195,6 +198,11 @@ public:
 	void SetEnableVSync(bool b) { bVSync_ = b; }
 	bool IsEnableRef() { return referenceRasterizer_; }
 	void SetEnableRef(bool b) { referenceRasterizer_ = b; }
+	D3DMULTISAMPLE_TYPE GetMultiSampleType() { return multiSamples_; }
+	void SetMultiSampleType(D3DMULTISAMPLE_TYPE type) { multiSamples_ = type; }
+
+	std::wstring GetExePath() { return pathExeLaunch_; }
+	void SetExePath(std::wstring str) { pathExeLaunch_ = str; }
 
 	int GetPadIndex() { return padIndex_; }
 	void SetPadIndex(int index) { padIndex_ = index; }

@@ -41,8 +41,9 @@ public:
 class DevicePanel : public WPanel {
 protected:
 	WComboBox comboWindowSize_;
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	WComboBox comboMultisample_;
 
+	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 public:
 	DevicePanel();
 	~DevicePanel();
@@ -97,13 +98,15 @@ protected:
 		ROW_MOUSE_UNVISIBLE,
 	};
 	ref_count_ptr<WListView> viewOption_;
+	ref_count_ptr<WEditBox> exePath_;
 
 	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 public:
 	OptionPanel();
 	~OptionPanel();
 	bool Initialize(HWND hParent);
+
+	std::wstring GetExecutablePath() { return exePath_->GetText(); }
 
 	void ReadConfiguration();
 	void WriteConfiguration();

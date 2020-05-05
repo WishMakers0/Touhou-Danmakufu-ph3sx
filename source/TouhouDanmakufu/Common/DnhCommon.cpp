@@ -412,6 +412,9 @@ DnhConfiguration::DnhConfiguration() {
 
 	bVSync_ = true;
 	referenceRasterizer_ = false;
+	multiSamples_ = D3DMULTISAMPLE_NONE;
+
+	pathExeLaunch_ = DNH_EXE_DEFAULT;
 
 	//ÉLÅ[ìoò^
 	padIndex_ = 0;
@@ -484,6 +487,10 @@ bool DnhConfiguration::LoadConfigFile() {
 	modeColor_ = record.GetRecordAsInteger("modeColor");
 	bVSync_ = record.GetRecordAsBoolean("bVSync");
 	referenceRasterizer_ = record.GetRecordAsBoolean("bDeviceREF");
+	record.GetRecord<DWORD>("typeMultiSamples", (DWORD&)multiSamples_);
+
+	pathExeLaunch_ = record.GetRecordAsStringW("pathLaunch");
+	if (pathExeLaunch_.size() == 0) pathExeLaunch_ = DNH_EXE_DEFAULT;
 
 	if (record.IsExists("padIndex"))
 		padIndex_ = record.GetRecordAsInteger("padIndex");
@@ -524,6 +531,9 @@ bool DnhConfiguration::SaveConfigFile() {
 	record.SetRecordAsInteger("modeColor", modeColor_);
 	record.SetRecordAsBoolean("bVSync", bVSync_);
 	record.SetRecordAsBoolean("bDeviceREF", referenceRasterizer_);
+	record.SetRecord<DWORD>("typeMultiSamples", (DWORD&)multiSamples_);
+
+	record.SetRecordAsStringW("pathLaunch", pathExeLaunch_);
 
 	record.SetRecordAsInteger("padIndex", padIndex_);
 	ByteBuffer bufKey;

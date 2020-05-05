@@ -37,6 +37,7 @@ namespace directx {
 		bool bUseTripleBuffer_;
 		bool bVSync_;
 		bool bPseudoFullScreen_;
+		D3DMULTISAMPLE_TYPE typeSamples_;
 	public:
 		DirectGraphicsConfig();
 		virtual ~DirectGraphicsConfig();
@@ -58,6 +59,8 @@ namespace directx {
 		void SetVSyncEnable(bool bEnable) { bVSync_ = bEnable; }
 		bool IsPseudoFullScreen() { return bPseudoFullScreen_; }
 		void SetbPseudoFullScreen(bool b) { bPseudoFullScreen_ = b; }
+		D3DMULTISAMPLE_TYPE GetMultiSampleType() { return typeSamples_; }
+		void SetMultiSampleType(D3DMULTISAMPLE_TYPE type) { typeSamples_ = type; }
 	};
 
 	class DirectGraphicsListener {
@@ -106,6 +109,8 @@ namespace directx {
 		int modeScreen_;
 		std::list<DirectGraphicsListener*> listListener_;
 
+		std::map<D3DMULTISAMPLE_TYPE, bool> mapSupportMultisamples_;
+
 		int previousBlendMode_;
 
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
@@ -141,11 +146,13 @@ namespace directx {
 		IDirect3DDevice9* GetDevice() { return pDevice_; }
 		DirectGraphicsConfig& GetConfigData() { return config_; }
 
+		IDirect3DSurface9* GetBaseSurface() { return pBackSurf_; }
+
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
 		void BeginScene(bool bClear = true);//ï`âÊäJén
 		void EndScene();//ï`âÊèIóπ
 		void ClearRenderTarget();
-		void ClearRenderTarget(RECT rect);
+		void ClearRenderTarget(RECT* rect);
 		void SetRenderTarget(gstd::ref_count_ptr<Texture> texture);
 		gstd::ref_count_ptr<Texture> GetRenderTarget() { return textureTarget_; }
 
@@ -170,6 +177,9 @@ namespace directx {
 
 		void SetDirectionalLight(D3DVECTOR& dir);
 #endif
+		void SetMultiSampleType(D3DMULTISAMPLE_TYPE type);
+		HRESULT SetFullscreenAntiAliasing(bool bEnable);
+		bool IsSupportMultiSample(D3DMULTISAMPLE_TYPE type);
 
 		void SetViewPort(int x, int y, int width, int height);
 		void ResetViewPort();

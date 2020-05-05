@@ -19,6 +19,7 @@ DirectGraphicsConfig::DirectGraphicsConfig() {
 	bUseTripleBuffer_ = true;
 	bVSync_ = false;
 	bPseudoFullScreen_ = true;
+	typeSamples_ = D3DMULTISAMPLE_NONE;
 }
 DirectGraphicsConfig::~DirectGraphicsConfig() {
 
@@ -84,52 +85,53 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 	//FullScreenMode‚ÌÝ’è
 	ZeroMemory(&d3dppFull_, sizeof(D3DPRESENT_PARAMETERS));
 	d3dppFull_.hDeviceWindow = hWnd;
-	d3dppFull_.BackBufferWidth = config_.GetScreenWidth();
-	d3dppFull_.BackBufferHeight = config_.GetScreenHeight();
+	d3dppFull_.BackBufferWidth = config.GetScreenWidth();
+	d3dppFull_.BackBufferHeight = config.GetScreenHeight();
 	d3dppFull_.Windowed = FALSE;
 	d3dppFull_.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dppFull_.BackBufferFormat = config_.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT ? 
+	d3dppFull_.BackBufferFormat = config.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT ? 
 		D3DFMT_X4R4G4B4 : D3DFMT_X8R8G8B8;
-	d3dppFull_.BackBufferCount = config_.IsTripleBufferEnable() ? 2 : 1;
+	d3dppFull_.BackBufferCount = 1;
 	d3dppFull_.EnableAutoDepthStencil = TRUE;
 	d3dppFull_.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dppFull_.MultiSampleType = D3DMULTISAMPLE_NONE;
-	d3dppFull_.PresentationInterval = config_.IsVSyncEnable() ? D3DPRESENT_INTERVAL_ONE :  D3DPRESENT_INTERVAL_IMMEDIATE;
+	d3dppFull_.PresentationInterval = config.IsVSyncEnable() ? D3DPRESENT_INTERVAL_ONE :  D3DPRESENT_INTERVAL_IMMEDIATE;
 	d3dppFull_.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
 
 	//WindowMode‚ÌÝ’è
 	D3DDISPLAYMODE dmode;
 	HRESULT hrAdapt = pDirect3D_->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &dmode);
 	ZeroMemory(&d3dppWin_, sizeof(D3DPRESENT_PARAMETERS));
-	d3dppWin_.BackBufferWidth = config_.GetScreenWidth();
-	d3dppWin_.BackBufferHeight = config_.GetScreenHeight();
+	d3dppWin_.BackBufferWidth = config.GetScreenWidth();
+	d3dppWin_.BackBufferHeight = config.GetScreenHeight();
 	d3dppWin_.Windowed = TRUE;
 	d3dppWin_.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dppWin_.BackBufferFormat = D3DFMT_UNKNOWN;
 	d3dppWin_.hDeviceWindow = hWnd;
-	d3dppWin_.BackBufferCount = config_.IsTripleBufferEnable() ? 2 : 1;
+	d3dppWin_.BackBufferCount = 1;
 	d3dppWin_.EnableAutoDepthStencil = TRUE;
 	d3dppWin_.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dppWin_.MultiSampleType = D3DMULTISAMPLE_NONE;
 	d3dppWin_.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	d3dppWin_.FullScreen_RefreshRateInHz = 0;
 
-	if (!config_.IsWindowed()) {//FullScreenMode
+	if (!config.IsWindowed()) {//FullScreenMode
 		::SetWindowLong(hWnd, GWL_STYLE, wndStyleFull_);
 		::ShowWindow(hWnd, SW_SHOW);
 	}
 
 	int countAdapt = pDirect3D_->GetAdapterCount();
 
+	D3DDEVTYPE deviceType = config.IsReferenceEnable() ? D3DDEVTYPE_REF : D3DDEVTYPE_HAL;
 	{
-		D3DPRESENT_PARAMETERS d3dpp = config_.IsWindowed() ? d3dppWin_ : d3dppFull_;
-		modeScreen_ = config_.IsWindowed() ? SCREENMODE_WINDOW : SCREENMODE_FULLSCREEN;
+		D3DPRESENT_PARAMETERS d3dpp = config.IsWindowed() ? d3dppWin_ : d3dppFull_;
+		modeScreen_ = config.IsWindowed() ? SCREENMODE_WINDOW : SCREENMODE_FULLSCREEN;
 
 		constexpr DWORD modeBase = D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE;
 
 		HRESULT hrDevice = E_FAIL;
 
-		if (config_.IsReferenceEnable()) {
+		if (config.IsReferenceEnable()) {
 			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd,
 				D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
 		}
@@ -157,11 +159,47 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 				Logger::WriteTop("DirectGraphics: Cannot create device with HAL.");
 				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd,
 					D3DCREATE_SOFTWARE_VERTEXPROCESSING | modeBase, &d3dpp, &pDevice_);
+				deviceType = D3DDEVTYPE_REF;
 			}
 		}
 
 		if (FAILED(hrDevice)) {
 			throw gstd::wexception("IDirect3DDevice9::CreateDevice failure.");
+		}
+	}
+
+	{
+		D3DMULTISAMPLE_TYPE chkSamples[] = {
+			D3DMULTISAMPLE_NONE,
+			D3DMULTISAMPLE_2_SAMPLES,
+			D3DMULTISAMPLE_3_SAMPLES,
+			D3DMULTISAMPLE_4_SAMPLES,
+		};
+		for (size_t i = 0; i < sizeof(chkSamples) / sizeof(D3DMULTISAMPLE_TYPE); ++i) {
+			HRESULT hrColor = pDirect3D_->CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, deviceType,
+				config.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT ? D3DFMT_X4R4G4B4 : D3DFMT_X8R8G8B8,
+				FALSE, chkSamples[i], nullptr);
+			HRESULT hrDepth = pDirect3D_->CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, deviceType,
+				D3DFMT_D16, FALSE, chkSamples[i], nullptr);
+			mapSupportMultisamples_.insert(std::make_pair(chkSamples[i], SUCCEEDED(hrColor) && SUCCEEDED(hrDepth)));
+		}
+
+		if (!IsSupportMultiSample(config.GetMultiSampleType())) {
+			Logger::WriteTop("DirectGraphics: Sampling type not supported on this device, falling back to D3DMULTISAMPLE_NONE.");
+		}
+		else if (config.GetMultiSampleType() != D3DMULTISAMPLE_NONE) {
+			std::map<D3DMULTISAMPLE_TYPE, std::string> mapSampleIndex = {
+				{ D3DMULTISAMPLE_NONE, "D3DMULTISAMPLE_NONE" },
+				{ D3DMULTISAMPLE_2_SAMPLES, "D3DMULTISAMPLE_2_SAMPLES" },
+				{ D3DMULTISAMPLE_3_SAMPLES, "D3DMULTISAMPLE_3_SAMPLES" },
+				{ D3DMULTISAMPLE_4_SAMPLES, "D3DMULTISAMPLE_4_SAMPLES" },
+			};
+
+			Logger::WriteTop("DirectGraphics: Anti-aliasing available [" + mapSampleIndex[config.GetMultiSampleType()] + "]");
+
+			SetMultiSampleType(config.GetMultiSampleType());
+			pDevice_->Reset(config.IsWindowed() ? &d3dppWin_ : &d3dppFull_);
+			SetFullscreenAntiAliasing(true);
 		}
 	}
 
@@ -255,6 +293,7 @@ void DirectGraphics::_InitializeDeviceState() {
 	pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
 	pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192));
 	SetLightingEnable(true);
+	SetSpecularEnable(false);
 
 	D3DVECTOR dir;
 	dir.x = -1;
@@ -293,8 +332,7 @@ void DirectGraphics::RemoveDirectGraphicsListener(DirectGraphicsListener* listen
 	}
 }
 void DirectGraphics::BeginScene(bool bClear) {
-	if (bClear)
-		ClearRenderTarget();
+	if (bClear) ClearRenderTarget();
 	pDevice_->BeginScene();
 
 	if (camera_->thisViewChanged_ || camera_->thisProjectionChanged_) {
@@ -317,21 +355,29 @@ void DirectGraphics::EndScene() {
 	}
 }
 void DirectGraphics::ClearRenderTarget() {
+	/*
 	if (textureTarget_ == nullptr) {
 		pDevice_->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
 	}
 	else {
 		pDevice_->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
 	}
+	*/
+	pDevice_->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+		textureTarget_  != nullptr ? D3DCOLOR_ARGB(0, 0, 0, 0) : D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 }
-void DirectGraphics::ClearRenderTarget(RECT rect) {
-	D3DRECT rcDest = { rect.left, rect.top, rect.right, rect.bottom };
+void DirectGraphics::ClearRenderTarget(RECT* rect) {
+	//D3DRECT rcDest = { rect.left, rect.top, rect.right, rect.bottom };
+	/*
 	if (textureTarget_ == nullptr) {
-		pDevice_->Clear(1, &rcDest, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
+		pDevice_->Clear(1, (D3DRECT*)rect, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
 	}
 	else {
-		pDevice_->Clear(1, &rcDest, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
+		pDevice_->Clear(1, (D3DRECT*)rect, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
 	}
+	*/
+	pDevice_->Clear(1, (D3DRECT*)rect, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 
+		textureTarget_ != nullptr ? D3DCOLOR_ARGB(0, 0, 0, 0) : D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 }
 void DirectGraphics::SetRenderTarget(gstd::ref_count_ptr<Texture> texture) {
 	textureTarget_ = texture;
@@ -525,8 +571,7 @@ void DirectGraphics::SetFogEnable(bool bEnable) {
 bool DirectGraphics::IsFogEnable() {
 	DWORD fog = FALSE;
 	pDevice_->GetRenderState(D3DRS_FOGENABLE, &fog);
-	bool res = fog == TRUE;
-	return res;
+	return (fog == TRUE);
 }
 void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end) {
 	SetFogEnable(bEnable);
@@ -565,9 +610,15 @@ DWORD DirectGraphics::GetTextureFilter(int stage) {
 	DWORD mode;
 	pDevice_->GetSamplerState(stage, D3DSAMP_MINFILTER, &mode);
 	switch (mode) {
-	case D3DTEXF_NONE:res = MODE_TEXTURE_FILTER_NONE; break;
-	case D3DTEXF_POINT:res = MODE_TEXTURE_FILTER_POINT; break;
-	case D3DTEXF_LINEAR:res = MODE_TEXTURE_FILTER_LINEAR; break;
+	case D3DTEXF_NONE:
+		res = MODE_TEXTURE_FILTER_NONE; 
+		break;
+	case D3DTEXF_POINT:
+		res = MODE_TEXTURE_FILTER_POINT; 
+		break;
+	case D3DTEXF_LINEAR:
+		res = MODE_TEXTURE_FILTER_LINEAR; 
+		break;
 	}
 	return res;
 }
@@ -586,6 +637,24 @@ void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir) {
 	pDevice_->LightEnable(0, TRUE);
 }
 #endif
+void DirectGraphics::SetMultiSampleType(D3DMULTISAMPLE_TYPE type) {
+	if (IsSupportMultiSample(type)) {
+		d3dppWin_.MultiSampleType = type;
+		d3dppFull_.MultiSampleType = type;
+	}
+	else {
+		d3dppWin_.MultiSampleType = D3DMULTISAMPLE_NONE;
+		d3dppFull_.MultiSampleType = D3DMULTISAMPLE_NONE;
+	}
+}
+HRESULT DirectGraphics::SetFullscreenAntiAliasing(bool bEnable) {
+	return pDevice_->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, bEnable ? TRUE : FALSE);
+}
+bool DirectGraphics::IsSupportMultiSample(D3DMULTISAMPLE_TYPE type) {
+	auto itr = mapSupportMultisamples_.find(type);
+	if (itr == mapSupportMultisamples_.end()) return false;
+	return itr->second;
+}
 
 void DirectGraphics::SetViewPort(int x, int y, int width, int height) {
 	D3DVIEWPORT9 viewPort;

@@ -21,7 +21,12 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 
 		EApplication* app = EApplication::CreateInstance();
 		app->Initialize();
-		app->Run();
+
+		if (app->IsRun()) {
+			bool bInit = app->_Initialize();
+			if (bInit) app->Run();
+			app->_Finalize();
+		}
 	}
 
 	EApplication::DeleteInstance();

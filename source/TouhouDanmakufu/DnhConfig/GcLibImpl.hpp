@@ -10,10 +10,10 @@
 class EApplication : public Singleton<EApplication>, public Application {
 	friend Singleton<EApplication>;
 	EApplication();
-protected:
+public:
+	~EApplication();
+
 	bool _Initialize();
 	bool _Loop();
 	bool _Finalize();
-public:
-	~EApplication();
 };

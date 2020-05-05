@@ -7,10 +7,8 @@
 //MainWindow
 **********************************************************/
 MainWindow::MainWindow() {
-
 }
 MainWindow::~MainWindow() {
-
 }
 bool MainWindow::Initialize() {
 	hWnd_ = ::CreateDialog((HINSTANCE)GetWindowLong(NULL, GWL_HINSTANCE),
@@ -116,16 +114,9 @@ void MainWindow::_RunExecutor() {
 	ZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(STARTUPINFO);
 
-#if defined(GAME_VERSION_TCL)
-	std::wstring command = L"th_tcl.exe";
-#elif defined(GAME_VERSION_SP)
-	std::wstring command = L"th_sp.exe";
-#else
-	std::wstring command = L"th_dnh_ph3sx.exe";
-#endif
 	BOOL res = ::CreateProcess(
 		NULL,
-		(wchar_t*)command.c_str(),
+		(wchar_t*)panelOption_->GetExecutablePath().c_str(),
 		NULL, NULL,
 		TRUE, 0,
 		NULL, NULL,
@@ -205,6 +196,28 @@ bool DevicePanel::Initialize(HWND hParent) {
 	SetWindowPos(comboWindowSize_.GetWindowHandle(), NULL, 0, 0,
 		comboWindowSize_.GetClientWidth(), 200, SWP_NOMOVE);
 
+	comboMultisample_.Attach(::GetDlgItem(hWnd_, IDC_COMBO_MULTISAMPLE));
+	{
+		D3DMULTISAMPLE_TYPE listSamples[] = {
+			D3DMULTISAMPLE_NONE,
+			D3DMULTISAMPLE_2_SAMPLES,
+			D3DMULTISAMPLE_3_SAMPLES,
+			D3DMULTISAMPLE_4_SAMPLES
+		};
+		std::wstring listText[] = {
+			L"None (Default)",
+			L"2x",
+			L"3x",
+			L"4x"
+		};
+
+		for (size_t i = 0; i < sizeof(listSamples) / sizeof(D3DMULTISAMPLE_TYPE); ++i) {
+			comboMultisample_.AddString(listText[i]);
+		}
+	}
+	SetWindowPos(comboMultisample_.GetWindowHandle(), NULL, 0, 0,
+		comboMultisample_.GetClientWidth(), 200, SWP_NOMOVE);
+
 	return true;
 }
 LRESULT DevicePanel::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -224,6 +237,16 @@ void DevicePanel::ReadConfiguration() {
 
 	int windowSize = config->GetWindowSize();
 	comboWindowSize_.SetSelectedIndex(windowSize);
+
+	{
+		std::map<D3DMULTISAMPLE_TYPE, int> mapSampleIndex = {
+			{ D3DMULTISAMPLE_NONE, 0 },
+			{ D3DMULTISAMPLE_2_SAMPLES, 1 },
+			{ D3DMULTISAMPLE_3_SAMPLES, 2 },
+			{ D3DMULTISAMPLE_4_SAMPLES, 3 },
+		};
+		comboMultisample_.SetSelectedIndex(mapSampleIndex[config->GetMultiSampleType()]);
+	}
 
 	int fpsType = config->GetFpsType();
 	switch (fpsType) {
@@ -257,6 +280,18 @@ void DevicePanel::WriteConfiguration() {
 
 	int windowSize = comboWindowSize_.GetSelectedIndex();
 	config->SetWindowSize(windowSize);
+
+	{
+		std::map<int, D3DMULTISAMPLE_TYPE> mapIndexSample = {
+			{ 0, D3DMULTISAMPLE_NONE },
+			{ 1, D3DMULTISAMPLE_2_SAMPLES },
+			{ 2, D3DMULTISAMPLE_3_SAMPLES },
+			{ 3, D3DMULTISAMPLE_4_SAMPLES },
+		};
+
+		int multiSample = comboMultisample_.GetSelectedIndex();
+		config->SetMultiSampleType(mapIndexSample[multiSample]);
+	}
 
 	int fpsType = DnhConfiguration::FPS_NORMAL;
 	if (SendDlgItemMessage(hWnd_, IDC_RADIO_FPS_1, BM_GETCHECK, 0, 0))
@@ -472,9 +507,52 @@ bool OptionPanel::Initialize(HWND hParent) {
 	viewOption_->SetText(ROW_LOG_FILE, 0, L"Save LogWindow logs to file");
 	viewOption_->SetText(ROW_MOUSE_UNVISIBLE, 0, L"Hide mouse cursor");
 
+	HWND hPathBox = ::GetDlgItem(hWnd_, IDC_TEXT_EXE_PATH);
+
+	exePath_ = new WEditBox();
+	exePath_->Attach(hPathBox);
+
+	//executorPath_ = DNH_EXE_DEFAULT;
+
 	return true;
 }
 LRESULT OptionPanel::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+	case WM_COMMAND:
+	{
+		switch (wParam & 0xffff) {
+		case IDC_BUTTON_EXE_PATH_BROWSE:
+		{
+			wchar_t filename[MAX_PATH];
+			ZeroMemory(filename, sizeof(filename));
+
+			OPENFILENAME ofn;
+			ZeroMemory(&ofn, sizeof(ofn));
+			ofn.lStructSize = sizeof(ofn);
+			ofn.hwndOwner = hWnd_;
+			ofn.lpstrFilter = L"Executable\0*.exe\0";
+			ofn.lpstrFile = filename;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrTitle = L"Select game executable";
+			ofn.lpstrInitialDir = PathProperty::GetModuleDirectory().c_str();
+			ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST;
+
+			if (GetOpenFileName(&ofn)) {
+				std::wstring fileNameStr = filename;
+				stdfs::path fileNameP = fileNameStr;
+				std::wstring dir = PathProperty::ReplaceYenToSlash(fileNameP.parent_path()) + L"/";
+				std::wstring moduleDir = PathProperty::GetModuleDirectory();
+				if (dir == moduleDir) fileNameStr = fileNameP.filename();
+
+				exePath_->SetText(fileNameStr);
+			}
+
+			break;
+		}
+		}
+		break;
+	}
+	}
 	return WPanel::_WindowProcedure(hWnd, uMsg, wParam, lParam);
 }
 void OptionPanel::ReadConfiguration() {
@@ -486,6 +564,9 @@ void OptionPanel::ReadConfiguration() {
 		ListView_SetItemState(hListOption, ROW_LOG_FILE, INDEXTOSTATEIMAGEMASK(2), LVIS_STATEIMAGEMASK);
 	if (!config->IsMouseVisible())
 		ListView_SetItemState(hListOption, ROW_MOUSE_UNVISIBLE, INDEXTOSTATEIMAGEMASK(2), LVIS_STATEIMAGEMASK);
+
+	std::wstring pathExe = config->GetExePath();
+	exePath_->SetText(pathExe);
 }
 void OptionPanel::WriteConfiguration() {
 	DnhConfiguration* config = DnhConfiguration::GetInstance();
@@ -493,5 +574,9 @@ void OptionPanel::WriteConfiguration() {
 	config->SetLogWindow(ListView_GetCheckState(hListOption, ROW_LOG_WINDOW) ? true : false);
 	config->SetLogFile(ListView_GetCheckState(hListOption, ROW_LOG_FILE) ? true : false);
 	config->SetMouseVisible(ListView_GetCheckState(hListOption, ROW_MOUSE_UNVISIBLE) ? false : true);
+	{
+		std::wstring str = exePath_->GetText();
+		config->SetExePath(str.size() > 0U ? str : DNH_EXE_DEFAULT);
+	}
 }
 

@@ -87,9 +87,15 @@ BEGIN
                     BS_AUTORADIOBUTTON | WS_GROUP,11,13,49,10
     CONTROL         "Windowed",IDC_RADIO_WINDOW,"Button",BS_AUTORADIOBUTTON,70,
                     13,38,10
-    GROUPBOX        "Window Size",IDC_STATIC,6,32,120,29
+					
+    GROUPBOX        "Window Size",IDC_STATIC,6,32,92,29
     COMBOBOX        IDC_COMBO_WINDOWSIZE,13,43,71,30,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
+					
+	GROUPBOX        "Anti-Aliasing",IDC_STATIC,102,32,92,29
+    COMBOBOX        IDC_COMBO_MULTISAMPLE,109,43,71,30,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+					
     GROUPBOX        "Screen Refresh Rate",IDC_STATIC,6,65,188,24
     CONTROL         "1/1 (Recommended)",IDC_RADIO_FPS_1,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP,11,75,70,10
@@ -99,10 +105,12 @@ BEGIN
                     26,10
     CONTROL         "Variable",IDC_RADIO_FPS_AUTO,"Button",BS_AUTORADIOBUTTON,149,75,
 					42,10
+					
 	GROUPBOX        "Color Mode",IDC_STATIC,6,93,120,24
 	CONTROL         "32 bit (Default)",IDC_RADIO_COLOR_32,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP,11,103,70,10
     CONTROL         "16 bit",IDC_RADIO_COLOR_16,"Button",BS_AUTORADIOBUTTON,78,103,36,10
+	
 	GROUPBOX        "Graphics",IDC_STATIC,6,122,170,74
 	CONTROL         "Enable Vertical Sync (Recommended)",IDC_VSYNC,"Button",BS_AUTOCHECKBOX,
 					11,133,160,10
@@ -126,9 +134,12 @@ IDD_PANEL_OPTION DIALOG DISCARDABLE  0, 0, 209, 167
 STYLE WS_CHILD
 FONT 9, "‚l‚r ‚oƒSƒVƒbƒN"
 BEGIN
+	GROUPBOX        "Game Executable Path",IDC_STATIC,7,3,194,29
+	EDITTEXT        IDC_TEXT_EXE_PATH,13,14,149,14,ES_LEFT | ES_AUTOHSCROLL
+	PUSHBUTTON      "Browse",IDC_BUTTON_EXE_PATH_BROWSE,166,14,29,13
     CONTROL         "List1",IDC_LIST_OPTION,"SysListView32",LVS_REPORT | 
                     LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | 
-                    WS_BORDER | WS_TABSTOP,7,7,194,193
+                    WS_BORDER | WS_TABSTOP,7,36,194,164
 END
 
 
