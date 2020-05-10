@@ -681,8 +681,7 @@ StgItemObject::StgItemObject(StgStageController* stageController) : StgMoveObjec
 	frameWork_ = 0;
 
 	int priItemI = stageController_->GetStageInformation()->GetItemObjectPriority();
-	double priItemD = (double)priItemI / (stageController_->GetMainObjectManager()->GetRenderBucketCapacity() - 1);
-	SetRenderPriority(priItemD);
+	SetRenderPriorityI(priItemI);
 }
 void StgItemObject::Work() {
 	bool bDefaultMovePattern = std::dynamic_pointer_cast<StgMovePattern_Item>(GetPattern()) != nullptr;

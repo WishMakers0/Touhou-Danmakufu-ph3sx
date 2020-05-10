@@ -54,12 +54,12 @@ namespace directx {
 		TypeObject typeObject_;
 		int64_t idScript_;
 		DxScriptObjectManager* manager_;
-		double priRender_;
+		int priRender_;
 		bool bVisible_;
 		bool bDeleted_;
 		bool bActive_;
 
-		std::unordered_map<std::wstring, gstd::value> mapObjectValue_;
+		std::unordered_map<size_t, gstd::value> mapObjectValue_;
 	public:
 		DxScriptObjectBase();
 		virtual ~DxScriptObjectBase();
@@ -77,15 +77,23 @@ namespace directx {
 		void SetActive(bool bActive) { bActive_ = bActive; }
 		bool IsVisible() { return bVisible_; }
 
-		double GetRenderPriority() { return priRender_; }
-		int GetRenderPriorityI();
-		void SetRenderPriority(double pri) { priRender_ = pri; }
-		void SetRenderPriorityI(int pri);
+		double GetRenderPriority();
+		int GetRenderPriorityI() { return priRender_; }
+		void SetRenderPriority(double pri);
+		void SetRenderPriorityI(int pri) { priRender_ = pri; }
 
-		bool IsObjectValueExists(std::wstring key) { return mapObjectValue_.find(key) != mapObjectValue_.end(); }
-		gstd::value GetObjectValue(std::wstring key) { return mapObjectValue_[key]; }
-		void SetObjectValue(std::wstring key, gstd::value val) { mapObjectValue_[key] = val; }
-		void DeleteObjectValue(std::wstring key) { mapObjectValue_.erase(key); }
+		bool IsObjectValueExists(size_t hash) { return mapObjectValue_.find(hash) != mapObjectValue_.end(); }
+		gstd::value GetObjectValue(size_t hash) { return mapObjectValue_[hash]; }
+		void SetObjectValue(size_t hash, gstd::value val) { mapObjectValue_[hash] = val; }
+		void DeleteObjectValue(size_t hash) { mapObjectValue_.erase(hash); }
+
+		static inline const size_t GetKeyHash(std::wstring& hash) {
+			return std::hash<std::wstring>{}(hash);
+		}
+		bool IsObjectValueExists(std::wstring key);
+		gstd::value GetObjectValue(std::wstring key);
+		void SetObjectValue(std::wstring key, gstd::value val);
+		void DeleteObjectValue(std::wstring key);
 	};
 
 	/**********************************************************
@@ -831,6 +839,11 @@ namespace directx {
 		static gstd::value Func_Obj_SetValue(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_Obj_DeleteValue(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_Obj_IsValueExists(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_Obj_GetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_Obj_GetValueDR(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_Obj_SetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_Obj_DeleteValueR(gstd::script_machine* machine, int argc, const gstd::value* argv);
+		static gstd::value Func_Obj_IsValueExistsR(gstd::script_machine* machine, int argc, const gstd::value* argv);
 		static gstd::value Func_Obj_GetType(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 		//Dx関数：オブジェクト操作(RenderObject)

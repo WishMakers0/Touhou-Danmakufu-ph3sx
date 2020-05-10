@@ -15,50 +15,10 @@ StgShotManager::StgShotManager(StgStageController* stageController) {
 	listPlayerShotData_ = new StgShotDataList();
 	listEnemyShotData_ = new StgShotDataList();
 
-	//listObj_.reserve(SHOT_MAX);
-
 	vertexBuffer_ = nullptr;
 	indexBuffer_ = nullptr;
 	_SetVertexBuffer(8192U);
 	_SetIndexBuffer(16384U);
-
-	/*
-	{
-		DirectGraphics* graphics = DirectGraphics::GetBase();
-		IDirect3DDevice9* device = graphics->GetDevice();
-		RECT rcStg = stageController->GetStageInformation()->GetStgFrameRect();
-		size_t stgWidth = rcStg.right - rcStg.left;
-		size_t stgHeight = rcStg.bottom - rcStg.top;
-		size_t width = 2U;
-		size_t height = 2U;
-		while (width <= stgWidth) {
-			width = width << 1;
-		}
-		while (height <= stgHeight) {
-			height = height << 1;
-		}
-		HRESULT hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
-			&renderTexture_, nullptr);
-		if (FAILED(hr)) {
-			size_t sqSize = std::max(width, height);
-			width = sqSize;
-			height = sqSize;
-			hr = device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
-				&renderTexture_, nullptr);
-			if (FAILED(hr)) {
-				char str[1024];
-				sprintf_s(str, "Error %08x: Unable to create the shot layer render target.", hr);
-				throw gstd::wexception(std::string(str));
-			}
-		}
-		renderTexture_->GetSurfaceLevel(0, &renderSurface_);
-		uint16_t tmpIndex[] = { 0, 1, 2, 2, 1, 3 };
-		memcpy_s(const_cast<uint16_t*>(RTARGET_VERT_INDICES), sizeof(tmpIndex), tmpIndex, sizeof(tmpIndex));
-
-		vertRTw = width;
-		vertRTh = height;
-	}
-	*/
 
 	RenderShaderManager* shaderManager_ = ShaderManager::GetBase()->GetRenderLib();
 	effectLayer_ = shaderManager_->GetRender2DShader();
@@ -77,16 +37,6 @@ StgShotManager::~StgShotManager() {
 	ptr_release(indexBuffer_);
 	ptr_delete(listPlayerShotData_);
 	ptr_delete(listEnemyShotData_);
-	/*
-	if (renderTexture_) {
-		renderTexture_->Release();
-		renderTexture_ = nullptr;
-	}
-	if (renderSurface_) {
-		renderSurface_->Release();
-		renderSurface_ = nullptr;
-	}
-	*/
 }
 void StgShotManager::Work() {
 	std::list<shared_ptr<StgShotObject>>::iterator itr = listObj_.begin();
@@ -186,7 +136,7 @@ void StgShotManager::Render(int targetPriority) {
 
 				//In an attempt to minimize SetBlendMode calls.
 				for (auto itr = listPlayer->begin(); itr != listPlayer->end() && !hasPolygon; ++itr)
-					hasPolygon = (*itr)->countRenderIndex_ >= 3U;
+					hasPolygon = (*itr)->countRenderVertex_ >= 3U;
 				if (!hasPolygon) continue;
 
 				graphics->SetBlendMode(blendMode[iBlend]);
@@ -199,7 +149,7 @@ void StgShotManager::Render(int targetPriority) {
 					listEnemyShotData_->GetRendererList(blendMode[iBlend] - 1);
 
 				for (auto itr = listEnemy->begin(); itr != listEnemy->end() && !hasPolygon; ++itr)
-					hasPolygon = (*itr)->countRenderIndex_ >= 3U;
+					hasPolygon = (*itr)->countRenderVertex_ >= 3U;
 				if (!hasPolygon) continue;
 
 				graphics->SetBlendMode(blendMode[iBlend]);
@@ -854,6 +804,19 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 	countRenderVertex_ = 0U;
 	countRenderIndex_ = 0U;
 }
+/*
+void StgShotRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
+	TryExpandVertex(countRenderVertex_ + 6U);
+
+	VERTEX_TLX arrangedVerts[] = {
+		listVertex[0], listVertex[2], listVertex[1],
+		listVertex[1], listVertex[2], listVertex[3]
+	};
+	memcpy((VERTEX_TLX*)vertex_.data() + countRenderVertex_, arrangedVerts, strideVertexStreamZero_ * 6U);
+
+	countRenderVertex_ += 6U;
+}
+*/
 void StgShotRenderer::AddSquareVertex(VERTEX_TLX* listVertex) {
 	TryExpandVertex(countRenderVertex_ + 4U);
 	memcpy((VERTEX_TLX*)vertex_.data() + countRenderVertex_, listVertex, strideVertexStreamZero_ * 4U);
@@ -918,11 +881,10 @@ StgShotObject::StgShotObject(StgStageController* stageController) : StgMoveObjec
 	bChangeItemEnable_ = true;
 
 	hitboxScaleX_ = 1.0f;
-	int priShotI = stageController_->GetStageInformation()->GetShotObjectPriority();
 	hitboxScaleY_ = 1.0f;
 
-	double priShotD = (double)priShotI / (stageController_->GetMainObjectManager()->GetRenderBucketCapacity() - 1);
-	SetRenderPriority(priShotD);
+	int priShotI = stageController_->GetStageInformation()->GetShotObjectPriority();
+	SetRenderPriorityI(priShotI);
 }
 StgShotObject::~StgShotObject() {
 	if (listReserveShot_ != nullptr) {
@@ -1259,11 +1221,9 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 
 		StgIntersectionTarget_Circle::ptr target =
 			std::shared_ptr<StgIntersectionTarget_Circle>(new StgIntersectionTarget_Circle);
-		if (target != nullptr) {
-			if (typeOwner_ == OWNER_PLAYER)
-				target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
-			else
-				target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY_SHOT);
+		if (target) {
+			target->SetTargetType(typeOwner_ == OWNER_PLAYER ?
+				StgIntersectionTarget::TYPE_PLAYER_SHOT : StgIntersectionTarget::TYPE_ENEMY_SHOT);
 			target->SetObject(wObj);
 			AddIntersectionRelativeTarget(target);
 		}
@@ -1325,7 +1285,7 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 	StgShotData* shotData = _GetShotData();
 	if (shotData == nullptr)return res;
 
-	DxCircle* listCircle = shotData->GetIntersectionCircleList();
+	DxCircle* circle = shotData->GetIntersectionCircleList();
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 
 	{
@@ -1333,21 +1293,20 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 			std::shared_ptr<StgIntersectionTarget_Circle>(new StgIntersectionTarget_Circle);
 		StgIntersectionTarget_Circle::ptr cTarget = std::dynamic_pointer_cast<StgIntersectionTarget_Circle>(target);
 
-		if (cTarget != nullptr) {
-			DxCircle circle = *listCircle;
-			if (circle.GetX() != 0 || circle.GetY() != 0) {
-				double px = circle.GetX() * c_ - (-circle.GetY()) * s_;
-				double py = circle.GetX() * s_ + (-circle.GetY()) * c_;
-				circle.SetX(px + posX_);
-				circle.SetY(py + posY_);
+		if (cTarget) {
+			if (circle->GetX() != 0 || circle->GetY() != 0) {
+				double px = circle->GetX() * c_ - (-circle->GetY()) * s_;
+				double py = circle->GetX() * s_ + (-circle->GetY()) * c_;
+				circle->SetX(px + posX_);
+				circle->SetY(py + posY_);
 			}
 			else {
-				circle.SetX(circle.GetX() + posX_);
-				circle.SetY(circle.GetY() + posY_);
+				circle->SetX(posX_);
+				circle->SetY(posY_);
 			}
-			circle.SetR(circle.GetR() * ((hitboxScaleX_ + hitboxScaleY_) / 2));
+			circle->SetR(circle->GetR() * ((hitboxScaleX_ + hitboxScaleY_) / 2.0f));
 
-			cTarget->SetCircle(circle);
+			cTarget->SetCircle(*circle);
 
 			res.push_back(target);
 		}
@@ -1738,11 +1697,9 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	weak_ptr<StgShotObject> wObj = obj;
 	StgIntersectionTarget_Line::ptr target =
 		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
-	if (target != nullptr) {
-		if (typeOwner_ == OWNER_PLAYER)
-			target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
-		else
-			target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY_SHOT);
+	if (target) {
+		target->SetTargetType(typeOwner_ == OWNER_PLAYER ?
+			StgIntersectionTarget::TYPE_PLAYER_SHOT : StgIntersectionTarget::TYPE_ENEMY_SHOT);
 		target->SetObject(wObj);
 		target->SetLine(line);
 
@@ -2008,11 +1965,9 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 	weak_ptr<StgShotObject> wObj = obj;
 	StgIntersectionTarget_Line::ptr target =
 		std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
-	if (target != nullptr) {
-		if (typeOwner_ == OWNER_PLAYER)
-			target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
-		else
-			target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY_SHOT);
+	if (target) {
+		target->SetTargetType(typeOwner_ == OWNER_PLAYER ?
+			StgIntersectionTarget::TYPE_PLAYER_SHOT : StgIntersectionTarget::TYPE_ENEMY_SHOT);
 		target->SetObject(wObj);
 		target->SetLine(line);
 
@@ -2275,16 +2230,15 @@ void StgCurveLaserObject::_DeleteInAutoClip() {
 	StgShotManager* shotManager = stageController_->GetShotManager();
 	RECT rect = shotManager->GetShotAutoDeleteClipRect();
 
-	bool bDelete = listPosition_.size() > 0;
-	std::list<LaserNode>::iterator itr = listPosition_.begin();
+	bool bDelete = listPosition_.size() > 0U;
 
 	size_t i = 0;
-	for (; itr != listPosition_.end(); ++itr, ++i) {
-		//if (i % 2 == 1) continue;	//lmao
+	for (std::list<LaserNode>::iterator itr = listPosition_.begin(); itr != listPosition_.end(); ++itr, ++i) {
+		if (i % 2 == 1) continue;	//lmao
 
-		LaserNode& pos = (*itr);
-		bool bXOut = pos.pos.x < rect.left || pos.pos.x > rect.right;
-		bool bYOut = pos.pos.y < rect.top || pos.pos.y > rect.bottom;
+		Position* pos = &(itr->pos);
+		bool bXOut = pos->x < rect.left || pos->x > rect.right;
+		bool bYOut = pos->y < rect.top || pos->y > rect.bottom;
 		if (!bXOut && !bYOut) {
 			bDelete = false;
 			break;
@@ -2355,11 +2309,9 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 		DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
 		StgIntersectionTarget_Line::ptr target =
 			std::shared_ptr<StgIntersectionTarget_Line>(new StgIntersectionTarget_Line);
-		if (target != nullptr) {
-			if (typeOwner_ == OWNER_PLAYER)
-				target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
-			else
-				target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY_SHOT);
+		if (target) {
+			target->SetTargetType(typeOwner_ == OWNER_PLAYER ? 
+				StgIntersectionTarget::TYPE_PLAYER_SHOT : StgIntersectionTarget::TYPE_ENEMY_SHOT);
 			target->SetObject(wObj);
 			target->SetLine(line);
 
@@ -2381,7 +2333,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 	float textureWidth = shotData ? shotData->GetTextureSize().x : 1.0f;
 	float textureHeight = shotData ? shotData->GetTextureSize().y : 1.0f;
 
-	if ((delay_ > 0) /*&& (listPosition_.size() <= length_)*/) {
+	if (delay_ > 0) {
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
 			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
@@ -2440,7 +2392,7 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 		size_t countPos = listPosition_.size();
 		size_t countRect = countPos - 1U;
-		size_t halfPos = countPos / 2U;
+		size_t halfPos = countRect / 2U;
 
 		float alphaRateShot = shotData->GetAlpha() / 255.0f;
 		if (frameFadeDelete_ >= 0) alphaRateShot *= (float)frameFadeDelete_ / FRAME_FADEDELETE;
@@ -2451,10 +2403,12 @@ void StgCurveLaserObject::RenderOnShotManager() {
 		bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
 
 		RECT* rcSrcOrg = shotData->GetData(frameWork_)->GetSource();
-		double rcInc = (double)(rcSrcOrg->bottom - rcSrcOrg->top) / countRect;
-		double rectV = rcSrcOrg->top;
+		double rcInc = ((double)(rcSrcOrg->bottom - rcSrcOrg->top) / countRect) / textureHeight;
+		double rectV = (rcSrcOrg->top) / textureHeight;
 
 		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrcOrg);
+
+		VERTEX_TLX verts[2];
 
 		std::list<LaserNode>::iterator itr = listPosition_.begin();
 		size_t iPos = 0U;
@@ -2475,7 +2429,6 @@ void StgCurveLaserObject::RenderOnShotManager() {
 				thisColor = ColorAccess::ApplyAlpha(thisColor, nodeAlpha * alphaRateShot);
 			}
 
-			VERTEX_TLX verts[2];
 			for (size_t iVert = 0U; iVert < 2U; ++iVert) {
 				VERTEX_TLX vt;
 

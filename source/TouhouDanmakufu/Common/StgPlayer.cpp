@@ -15,7 +15,7 @@ StgPlayerObject::StgPlayerObject(StgStageController* stageController) : StgMoveO
 	int stgWidth = rcStgFrame->right - rcStgFrame->left;
 	int stgHeight = rcStgFrame->bottom - rcStgFrame->top;
 
-	SetRenderPriority(0.30);
+	SetRenderPriorityI(30);
 	speedFast_ = 4;
 	speedSlow_ = 1.6;
 	SetRect(&rcClip_, 0, 0, stgWidth, stgHeight);

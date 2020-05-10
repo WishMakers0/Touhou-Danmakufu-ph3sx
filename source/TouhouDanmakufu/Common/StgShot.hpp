@@ -46,8 +46,6 @@ protected:
 
 	std::bitset<BIT_EV_DELETE_COUNT> listDeleteEventEnable_;
 
-	//IDirect3DTexture9* renderTexture_;
-	//IDirect3DSurface9* renderSurface_;
 	IDirect3DVertexBuffer9* vertexBuffer_;
 	IDirect3DIndexBuffer9* indexBuffer_;
 	size_t vertexBufferSize_;
@@ -80,10 +78,7 @@ public:
 	void GetValidRenderPriorityList(std::vector<PriListBool>& list);
 
 	void SetDeleteEventEnableByType(int type, bool bEnable);
-	bool IsDeleteEventEnable(int bit) {
-		bool res = listDeleteEventEnable_[bit];
-		return res;
-	}
+	bool IsDeleteEventEnable(int bit) { return listDeleteEventEnable_[bit]; }
 
 	size_t GetVertexBufferSize() { return vertexBufferSize_; }
 	size_t GetIndexBufferSize() { return indexBufferSize_; }
@@ -116,7 +111,7 @@ public:
 	StgShotDataList();
 	virtual ~StgShotDataList();
 
-	int GetTextureCount() { return listTexture_.size(); }
+	size_t GetTextureCount() { return listTexture_.size(); }
 	ref_count_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
 	StgShotRenderer* GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
 	std::vector<StgShotRenderer*>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
@@ -230,7 +225,7 @@ public:
 		vertex_.resize(count * strideVertexStreamZero_);
 	}
 private:
-	void AddVertex(VERTEX_TLX& vertex) {
+	inline void AddVertex(VERTEX_TLX& vertex) {
 		VERTEX_TLX* data = (VERTEX_TLX*)&vertex_[0];
 		memcpy((VERTEX_TLX*)(data + countRenderVertex_), &vertex, strideVertexStreamZero_);
 		++countRenderVertex_;

@@ -15,7 +15,7 @@ using namespace directx;
 **********************************************************/
 DxScriptObjectBase::DxScriptObjectBase() {
 	bVisible_ = true;
-	priRender_ = 0.5;
+	priRender_ = 50;
 	bDeleted_ = false;
 	bActive_ = false;
 	manager_ = nullptr;
@@ -27,9 +27,24 @@ DxScriptObjectBase::~DxScriptObjectBase() {
 	//if (manager_ != nullptr && idObject_ != DxScript::ID_INVALID)
 	//	manager_->listUnusedIndex_.push_back(idObject_);
 }
-int DxScriptObjectBase::GetRenderPriorityI() {
-	int res = (int)(priRender_ * (manager_->GetRenderBucketCapacity() - 1) + 0.5);
-	return res;
+void DxScriptObjectBase::SetRenderPriority(double pri) {
+	priRender_ = pri * (manager_->GetRenderBucketCapacity() - 1U);
+}
+double DxScriptObjectBase::GetRenderPriority() {
+	return (double)priRender_ / (manager_->GetRenderBucketCapacity() - 1U);
+}
+
+bool DxScriptObjectBase::IsObjectValueExists(std::wstring key) { 
+	return IsObjectValueExists(GetKeyHash(key));
+}
+gstd::value DxScriptObjectBase::GetObjectValue(std::wstring key) { 
+	return GetObjectValue(GetKeyHash(key));
+}
+void DxScriptObjectBase::SetObjectValue(std::wstring key, gstd::value val) { 
+	SetObjectValue(GetKeyHash(key), val);
+}
+void DxScriptObjectBase::DeleteObjectValue(std::wstring key) { 
+	DeleteObjectValue(GetKeyHash(key));
 }
 
 /**********************************************************
@@ -1037,10 +1052,11 @@ void DxScriptObjectManager::DeleteObjectByScriptID(int64_t idScript) {
 void DxScriptObjectManager::AddRenderObject(shared_ptr<DxScriptObjectBase> obj) {
 	if (!obj->IsVisible())return;
 
-	int renderSize = objRender_.size();
-	double pri = obj->priRender_;
-	int tPri = (int)(pri * (objRender_.size() - 1) + 0.5);
-	if (tPri > objRender_.size() - 1)tPri = objRender_.size() - 1;
+	size_t renderSize = objRender_.size();
+
+	int tPri = obj->priRender_;
+	if (tPri < 0) tPri = 0;
+	else if (tPri > renderSize - 1) tPri = renderSize - 1;
 	objRender_[tPri].push_back(obj);
 }
 void DxScriptObjectManager::WorkObject() {
@@ -1283,6 +1299,11 @@ function const dxFunction[] =
 	{ "Obj_SetValue", DxScript::Func_Obj_SetValue, 3 },
 	{ "Obj_DeleteValue", DxScript::Func_Obj_DeleteValue, 2 },
 	{ "Obj_IsValueExists", DxScript::Func_Obj_IsValueExists, 2 },
+	{ "Obj_GetValueR", DxScript::Func_Obj_GetValueR, 2 },
+	{ "Obj_GetValueDR", DxScript::Func_Obj_GetValueDR, 3 },
+	{ "Obj_SetValueR", DxScript::Func_Obj_SetValueR, 3 },
+	{ "Obj_DeleteValueR", DxScript::Func_Obj_DeleteValueR, 2 },
+	{ "Obj_IsValueExistsR", DxScript::Func_Obj_IsValueExistsR, 2 },
 	{ "Obj_GetType", DxScript::Func_Obj_GetType, 1 },
 
 	//Dx関数：オブジェクト操作(RenderObject)
@@ -2071,7 +2092,7 @@ gstd::value DxScript::Func_GetMouseState(gstd::script_machine* machine, int argc
 gstd::value DxScript::Func_GetVirtualKeyState(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	double res = KEY_FREE;
 	VirtualKeyManager* input = dynamic_cast<VirtualKeyManager*>(DirectInput::GetBase());
-	if (input != nullptr) {
+	if (input) {
 		int id = (int)(argv[0].as_real());
 		res = input->GetVirtualKeyState(id);
 	}
@@ -2903,8 +2924,7 @@ value DxScript::Func_Obj_IsVisible(script_machine* machine, int argc, const valu
 	int id = (int)argv[0].as_real();
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	bool res = false;
-	if (obj != nullptr)
-		res = obj->bVisible_;
+	if (obj) res = obj->bVisible_;
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
 value DxScript::Func_Obj_SetRenderPriority(script_machine* machine, int argc, const value* argv) {
@@ -2912,10 +2932,15 @@ value DxScript::Func_Obj_SetRenderPriority(script_machine* machine, int argc, co
 	int id = (int)argv[0].as_real();
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr)return value();
+
+	size_t maxPri = script->GetObjectManager()->GetRenderBucketCapacity() - 1U;
 	double pri = argv[1].as_real();
-	if (pri < 0)pri = 0;
-	else if (pri > 1)pri = 1;
-	obj->priRender_ = pri;
+
+	if (pri < 0) pri = 0;
+	else if (pri > 1) pri = 1;
+
+	obj->priRender_ = pri * maxPri;
+
 	return value();
 }
 value DxScript::Func_Obj_SetRenderPriorityI(script_machine* machine, int argc, const value* argv) {
@@ -2924,13 +2949,14 @@ value DxScript::Func_Obj_SetRenderPriorityI(script_machine* machine, int argc, c
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr)return value();
 
-	int pos = (int)(argv[1].as_real() + 0.5);
-	int size = script->GetObjectManager()->GetRenderBucketCapacity();
-	double pri = (double)pos / (double)(size - 1);
+	int pri = Math::Round(argv[1].as_real());
+	size_t maxPri = script->GetObjectManager()->GetRenderBucketCapacity() - 1U;
 
-	if (pri < 0)pri = 0;
-	else if (pri > 1)pri = 1;
+	if (pri < 0) pri = 0;
+	else if (pri > maxPri) pri = maxPri;
+
 	obj->priRender_ = pri;
+
 	return value();
 }
 gstd::value DxScript::Func_Obj_GetRenderPriority(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2939,8 +2965,9 @@ gstd::value DxScript::Func_Obj_GetRenderPriority(gstd::script_machine* machine, 
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj != nullptr)
-		res = obj->GetRenderPriority();
+	if (obj)
+		res = obj->GetRenderPriorityI() / (double)(script->GetObjectManager()->GetRenderBucketCapacity() - 1U);
+
 	return value(machine->get_engine()->get_real_type(), res);
 }
 gstd::value DxScript::Func_Obj_GetRenderPriorityI(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2949,8 +2976,8 @@ gstd::value DxScript::Func_Obj_GetRenderPriorityI(gstd::script_machine* machine,
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj != nullptr)
-		res = obj->GetRenderPriorityI();
+	if (obj) res = obj->GetRenderPriorityI();
+
 	return value(machine->get_engine()->get_real_type(), res);
 }
 
@@ -2962,7 +2989,7 @@ gstd::value DxScript::Func_Obj_GetValue(gstd::script_machine* machine, int argc,
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr) return value();
 
-	auto itr = obj->mapObjectValue_.find(key);
+	auto itr = obj->mapObjectValue_.find(DxScriptObjectBase::GetKeyHash(key));
 	if (itr == obj->mapObjectValue_.end()) return value();
 
 	return itr->second;
@@ -2976,7 +3003,7 @@ gstd::value DxScript::Func_Obj_GetValueD(gstd::script_machine* machine, int argc
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr) return def;
 
-	auto itr = obj->mapObjectValue_.find(key);
+	auto itr = obj->mapObjectValue_.find(DxScriptObjectBase::GetKeyHash(key));
 	if (itr == obj->mapObjectValue_.end()) return def;
 
 	return itr->second;
@@ -2988,9 +3015,8 @@ gstd::value DxScript::Func_Obj_SetValue(gstd::script_machine* machine, int argc,
 	gstd::value val = argv[2];
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj == nullptr)return value();
+	if (obj) obj->SetObjectValue(key, val);
 
-	obj->SetObjectValue(key, val);
 	return value();
 }
 gstd::value DxScript::Func_Obj_DeleteValue(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -2999,9 +3025,8 @@ gstd::value DxScript::Func_Obj_DeleteValue(gstd::script_machine* machine, int ar
 	std::wstring key = argv[1].as_string();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj == nullptr)return value();
+	if (obj) obj->DeleteObjectValue(key);
 
-	obj->DeleteObjectValue(key);
 	return value();
 }
 gstd::value DxScript::Func_Obj_IsValueExists(gstd::script_machine* machine, int argc, const gstd::value* argv) {
@@ -3009,19 +3034,84 @@ gstd::value DxScript::Func_Obj_IsValueExists(gstd::script_machine* machine, int 
 	int id = (int)argv[0].as_real();
 	std::wstring key = argv[1].as_string();
 
-	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj == nullptr)return value();
+	bool res = false;
 
-	bool res = obj->IsObjectValueExists(key);
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj) res = obj->IsObjectValueExists(key);
+
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
-value DxScript::Func_Obj_GetType(script_machine* machine, int argc, const value* argv) {
-	double res = (int)TypeObject::OBJ_INVALID;
+
+gstd::value DxScript::Func_Obj_GetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
+	size_t key = (size_t)argv[1].as_real();
+
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj == nullptr) return value();
+
+	auto itr = obj->mapObjectValue_.find(key);
+	if (itr == obj->mapObjectValue_.end()) return value();
+
+	return itr->second;
+}
+gstd::value DxScript::Func_Obj_GetValueDR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	size_t key = (size_t)argv[1].as_real();
+	gstd::value def = argv[2];
+
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj == nullptr) return def;
+
+	auto itr = obj->mapObjectValue_.find(key);
+	if (itr == obj->mapObjectValue_.end()) return def;
+
+	return itr->second;
+}
+gstd::value DxScript::Func_Obj_SetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	size_t key = (size_t)argv[1].as_real();
+	gstd::value val = argv[2];
+
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj) obj->SetObjectValue(key, val);
+
+	return value();
+}
+gstd::value DxScript::Func_Obj_DeleteValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	size_t key = (size_t)argv[1].as_real();
+
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj) obj->DeleteObjectValue(key);
+
+	return value();
+}
+gstd::value DxScript::Func_Obj_IsValueExistsR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	size_t key = (size_t)argv[1].as_real();
+
+	bool res = false;
+
+	DxScriptObjectBase* obj = script->GetObjectPointer(id);
+	if (obj) res = obj->IsObjectValueExists(key);
+
+	return value(machine->get_engine()->get_boolean_type(), res);
+}
+
+value DxScript::Func_Obj_GetType(script_machine* machine, int argc, const value* argv) {
+	DxScript* script = (DxScript*)machine->data;
+	int id = (int)argv[0].as_real();
+
+	double res = (int)TypeObject::OBJ_INVALID;
+
 	DxScriptObjectBase* obj = dynamic_cast<DxScriptObjectBase*>(script->GetObjectPointer(id));
-	if (obj != nullptr)
-		res = (int)obj->GetObjectType();
+	if (obj) res = (int)obj->GetObjectType();
+
 	return value(machine->get_engine()->get_real_type(), res);
 }
 

@@ -59,7 +59,7 @@ StgEnemyObject::StgEnemyObject(StgStageController* stageController) : StgMoveObj
 	stageController_ = stageController;
 	typeObject_ = TypeObject::OBJ_ENEMY;
 
-	SetRenderPriority(0.40);
+	SetRenderPriorityI(40);
 
 	life_ = 0;
 	rateDamageShot_ = 100;

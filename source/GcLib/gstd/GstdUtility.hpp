@@ -199,7 +199,7 @@ namespace gstd {
 			};
 		}
 
-		static inline const double Round(double val) { return floorl(val + 0.5); }
+		static inline const double Round(double val) { return std::round(val); }
 
 		class Lerp {
 		public:
