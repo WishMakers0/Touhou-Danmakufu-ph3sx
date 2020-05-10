@@ -43,149 +43,6 @@
 
 //-------- 汎用
 namespace gstd {
-	/*
-	template<typename T>
-	class lightweight_vector {
-	public:
-		size_t length;
-		size_t capacity;
-		T* at;
-
-		lightweight_vector() : length(0), capacity(0), at(nullptr) {}
-
-		lightweight_vector(lightweight_vector const& source);
-
-		~lightweight_vector() {
-			ptr_delete_scalar(at);
-		}
-
-		lightweight_vector& operator=(lightweight_vector const& source);
-
-		void expand();
-
-		void push_back(T const& value) {
-			if (length == capacity) expand();
-			at[length] = value;
-			++length;
-		}
-
-		void pop_back() {
-			--length;
-			std::destroy_at(&at[length]);
-		}
-
-		void clear() {
-			length = 0;
-		}
-
-		void release() {
-			length = 0;
-			if (at) capacity = 0;
-			ptr_delete_scalar(at);
-		}
-
-		size_t size() const {
-			return length;
-		}
-
-		T& operator[] (size_t i) {
-			return at[i];
-		}
-
-		T const& operator[] (size_t i) const {
-			return at[i];
-		}
-
-		T& back() {
-			return at[length - 1];
-		}
-
-		T* begin() {
-			return &at[0];
-		}
-
-		void erase(T* pos);
-		void insert(T* pos, T const& value);
-	};
-
-	template<typename T>
-	lightweight_vector<T>::lightweight_vector(lightweight_vector const& source) {
-		length = source.length;
-		capacity = source.capacity;
-
-		if (source.capacity > 0) {
-			at = new T[source.capacity];
-			memcpy(at, source.at, length * sizeof(T));
-		}
-		else {
-			at = nullptr;
-		}
-	}
-
-	template<typename T>
-	lightweight_vector<T>& lightweight_vector<T>::operator=(lightweight_vector<T> const& source) {
-		if (this == std::addressof(source)) return *this;
-
-		ptr_delete_scalar(at);
-
-		length = source.length;
-		capacity = source.capacity;
-
-		if (source.capacity > 0) {
-			at = new T[source.capacity];
-			memcpy(at, source.at, length * sizeof(T));
-		}
-		else {
-			at = nullptr;
-		}
-
-		return *this;
-	}
-
-	template<typename T>
-	void lightweight_vector<T>::expand() {
-		if (capacity == 0) {
-			//delete[] at;
-			capacity = 0x4;
-			at = new T[capacity];
-		}
-		else {
-			if (capacity < 0x400000)
-				capacity = capacity << 1;
-			else if (capacity == 0x400000)
-				capacity = 0x500000;
-			else
-				throw gstd::wexception("Cannot expand array any further. (max = 5242880)");
-
-			T* n = new T[capacity];
-			memcpy(n, at, length * sizeof(T));
-			delete[] at;
-			at = n;
-		}
-	}
-
-	template<typename T>
-	void lightweight_vector<T>::erase(T* pos) {
-		--length;
-		for (T* i = pos; i < at + length; ++i) {
-			*i = *(i + 1);
-		}
-	}
-	template<typename T>
-	void lightweight_vector<T>::insert(T* pos, T const& value) {
-		if (length == capacity) {
-			size_t pos_index = pos - at;
-			expand();
-			pos = at + pos_index;
-		}
-		for (T* i = at + length; i > pos; --i) {
-			*i = *(i - 1);
-		}
-		*pos = value;
-		++length;
-	}
-	*/
-
 	//-------- ここから
 
 	class type_data {
@@ -263,11 +120,15 @@ namespace gstd {
 			data->type = t;
 			data->real_value = v;
 		}
-
 		void set(type_data* t, bool v) {
 			unique();
 			data->type = t;
 			data->boolean_value = v;
+		}
+		void set(type_data* t, std::vector<value>& v) {
+			unique();
+			data->type = t;
+			data->array_value = v;
 		}
 
 		void append(type_data* t, value const& x);
@@ -415,20 +276,26 @@ namespace gstd {
 
 		//中間コード
 		enum class command_kind : uint8_t {
-			pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, 
+			pc_var_alloc, pc_assign, pc_assign_writable, pc_break_loop, pc_break_routine, 
 			pc_call, pc_call_and_push_result, pc_call_and_assign,
 			pc_case_begin, pc_case_end, pc_case_if, pc_case_if_not, pc_case_next, 
 			pc_compare_e, pc_compare_g, pc_compare_ge, pc_compare_l,
 			pc_compare_le, pc_compare_ne, 
 			pc_dup_n,
 			pc_for, pc_for_each_and_push_first,
-			pc_loop_ascent, pc_loop_descent, pc_loop_count, pc_loop_if, pc_loop_continue, pc_continue_marker, pc_loop_back,
+			pc_compare_and_loop_ascent, pc_compare_and_loop_descent,
+			pc_loop_count, pc_loop_if, pc_loop_continue, pc_continue_marker, pc_loop_back,
+			pc_construct_array,
 			pc_pop, pc_push_value, pc_push_variable, pc_push_variable_writable, pc_swap, pc_yield, pc_wait,
 
 #ifdef __SCRIPT_H__INLINE_OPERATION
 			//Inline operations
 			pc_inline_inc, pc_inline_dec,
+			pc_inline_add_asi, pc_inline_sub_asi, pc_inline_mul_asi, pc_inline_div_asi, pc_inline_mod_asi, pc_inline_pow_asi,
+			pc_inline_neg, pc_inline_not, pc_inline_abs,
 			pc_inline_add, pc_inline_sub, pc_inline_mul, pc_inline_div, pc_inline_mod, pc_inline_pow,
+			pc_inline_app, pc_inline_cat,
+			pc_inline_cmp_e, pc_inline_cmp_g, pc_inline_cmp_ge, pc_inline_cmp_l, pc_inline_cmp_le, pc_inline_cmp_ne,
 #endif
 		};
 
@@ -585,10 +452,10 @@ namespace gstd {
 
 		bool bTerminate;
 
-		//typedef script_vector<value> variables_t;
-		//typedef script_vector<value> stack_t;
-		typedef std::vector<value> variables_t;
-		typedef std::vector<value> stack_t;
+		typedef script_vector<value> variables_t;
+		typedef script_vector<value> stack_t;
+		//typedef std::vector<value> variables_t;
+		//typedef std::vector<value> stack_t;
 
 		class environment {
 		public:
@@ -621,7 +488,7 @@ namespace gstd {
 		}
 
 		void advance();
-		value* find_variable_symbol(environment_ptr current_env, script_engine::code* var_data);
+		value* find_variable_symbol(environment* current_env, script_engine::code* var_data);
 	public:
 		size_t get_thread_count() { return threads.size(); }
 	};

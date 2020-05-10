@@ -200,7 +200,7 @@ value value::new_from(value const& source) {
 class parser_error : public gstd::wexception {
 public:
 	parser_error(std::wstring const& the_message) : gstd::wexception(the_message) {}
-
+	parser_error(std::string const& the_message) : gstd::wexception(the_message) {}
 private:
 
 };
@@ -221,6 +221,7 @@ enum class token_kind : uint8_t {
 	tk_REAL, tk_RETURN,
 	tk_SUB, tk_TASK, tk_TIMES, tk_WHILE, tk_YIELD, tk_WAIT,
 	tk_TRUE, tk_FALSE,
+	tk_const,
 	/*tk_bitwise_not, tk_bitwise_and, tk_bitwise_or, tk_bitwise_xor, tk_bitwise_left, tk_bitwise_right,*/
 };
 
@@ -534,8 +535,7 @@ void scanner::advance() {
 			ch = next_char();
 		}
 		else {
-			std::wstring error = L"Invalid period(.) placement.\r\n";
-			throw parser_error(error);
+			throw parser_error("Invalid period(.) placement.\r\n");
 		}
 		break;
 
@@ -594,7 +594,7 @@ void scanner::advance() {
 			if (string_value.size() == 1)
 				char_value = string_value[0];
 			else
-				throw parser_error(L"A value of type char may only be one character long.");
+				throw parser_error("A value of type char may only be one character long.");
 		}
 	}
 	break;
@@ -627,8 +627,7 @@ void scanner::advance() {
 			break;
 		default:
 		{
-			std::wstring error = L"Invalid character.\r\n";
-			throw parser_error(error);
+			throw parser_error("Invalid character.\r\n");
 		}
 		}
 	}
@@ -720,13 +719,7 @@ void scanner::advance() {
 			*/
 
 			size_t strHash = std::hash<std::string>{}(word);
-
-			/*
-			{
-				size_t tHash = std::hash<std::string>{}("for");
-				std::string tmp = StringUtility::Format("%08x", tHash);
-			}
-			*/
+			static_assert(sizeof(size_t) == 4U, "The script lexer only supports size_t of 4 bytes.");
 
 			switch (strHash) {
 			case 0xc606a268:	//alternative
@@ -809,6 +802,9 @@ void scanner::advance() {
 				break;
 			case 0x0b069958:	//false
 				next = token_kind::tk_FALSE;
+				break;
+			case 0x664fd1d4:	//const
+				next = token_kind::tk_const;
 				break;
 			}
 		}
@@ -977,7 +973,7 @@ value divide(script_machine* machine, int argc, value const* argv) {
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-value remainder(script_machine* machine, int argc, value const* argv) {
+value remainder_(script_machine* machine, int argc, value const* argv) {
 	double x = argv[0].as_real();
 	double y = argv[1].as_real();
 	return value(machine->get_engine()->get_real_type(), fmodl2(x, y));
@@ -1285,23 +1281,21 @@ value erase(script_machine* machine, int argc, value const* argv) {
 	return result;
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
+bool append_check(script_machine* machine, size_t arg0_size, type_data* arg0_type, type_data* arg1_type) {
+	if (arg0_type->get_kind() != type_data::type_kind::tk_array) {
+		machine->raise_error(L"This value type does not support the array append operation.\r\n");
+		return false;
+	}
+	if (arg0_size > 0U && arg0_type->get_element() != arg1_type) {
+		machine->raise_error(L"Variable type mismatch.\r\n");
+		return false;
+	}
+	return true;
+}
 value append(script_machine* machine, int argc, value const* argv) {
 	assert(argc == 2);
 
-	if (argv[0].get_type()->get_kind() != type_data::type_kind::tk_array) {
-		std::wstring error = L"This value type does not support the array append operation.\r\n";
-		machine->raise_error(error);
-		return value();
-	}
-
-	if (argv[0].length_as_array() > 0 && argv[0].get_type()->get_element() != argv[1].get_type()) {
-		std::wstring error = L"Variable type mismatch.\r\n";
-		machine->raise_error(error);
-		return value();
-	}
+	append_check(machine, argv[0].length_as_array(), argv[0].get_type(), argv[1].get_type());
 
 	value result = argv[0];
 	result.append(machine->get_engine()->get_array_type(argv[1].get_type()), argv[1]);
@@ -1489,7 +1483,7 @@ function const operations[] = {
 	{ "subtract", subtract, 2 },
 	{ "multiply", multiply, 2 },
 	{ "divide", divide, 2 },
-	{ "remainder", remainder, 2 },
+	{ "remainder", remainder_, 2 },
 	{ "modc", modc, 2 },
 	{ "power", power, 2 },
 	{ "index_", index, 2 },
@@ -1524,7 +1518,7 @@ public:
 		script_engine::block* sub;
 		int variable;
 		bool can_overload = true;
-		bool can_modify = true;
+		bool can_modify = true;		//Applies to the scripter, not the engine
 	};
 
 	struct scope_t : public std::multimap<std::string, symbol> {
@@ -1608,11 +1602,14 @@ private:
 	symbol* search_in(scope_t* scope, std::string const& name);
 	symbol* search_in(scope_t* scope, std::string const& name, int argc);
 	symbol* search_result();
-	void scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result, int initVar = 0);
+	int scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result, int initVar = 0);
 	void write_operation(script_engine::block* block, scanner* lex, char const* name, int clauses);
 	void write_operation(script_engine::block* block, scanner* lex, const symbol* s, int clauses);
 
-	void parser_assert(bool expr, std::wstring error) {
+	inline static void parser_assert(bool expr, std::wstring error) {
+		if (!expr) throw parser_error(error);
+	}
+	inline static void parser_assert(bool expr, std::string error) {
 		if (!expr) throw parser_error(error);
 	}
 
@@ -1627,8 +1624,9 @@ void parser::scope_t::singular_insert(std::string name, symbol& s, int argc) {
 		symbol* sPrev = &(itr.first->second);
 
 		if (!sPrev->can_overload) {
-			std::wstring error = StringUtility::FormatToWide("Default functions cannot be overloaded. (%s)",
+			std::string error = StringUtility::Format("Default functions cannot be overloaded. (%s)",
 				sPrev->sub->name.c_str());
+			parser_assert(false, error);
 		}
 		else {
 			for (auto itrPair = itr.first; itrPair != itr.second; ++itrPair) {
@@ -1653,12 +1651,12 @@ parser::parser(script_engine* e, scanner* s, int funcc, function const* funcv) :
 		register_function(funcv[i]);
 
 	try {
-		scan_current_scope(0, nullptr, false);
+		int countVar = scan_current_scope(0, nullptr, false);
+		engine->main_block->codes.push_back(code(_lex->line, command_kind::pc_var_alloc, countVar));
 		parse_statements(engine->main_block, _lex);
-		if (_lex->next != token_kind::tk_end) {
-			std::wstring error = L"Unexpected end-of-file while parsing. (Did you forget a semicolon?)\r\n";
-			throw parser_error(error);
-		}
+
+		parser_assert(_lex->next == token_kind::tk_end, 
+			"Unexpected end-of-file while parsing. (Did you forget a semicolon after a string?)\r\n");
 	}
 	catch (parser_error& e) {
 		error = true;
@@ -1751,35 +1749,43 @@ parser::symbol* parser::search_result() {
 	return nullptr;
 }
 
-void parser::scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result, int initVar) {
+int parser::scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result, int initVar) {
 	//æ“Ç‚Ý‚µ‚ÄŽ¯•ÊŽq‚ð“o˜^‚·‚é
 	scanner lex2(*_lex);
+
+	int var = initVar;
+
 	try {
 		scope_t* current_frame = &frame[frame.size() - 1];
 		int cur = 0;
-		int var = initVar;
 
 		if (adding_result) {
 			symbol s;
 			s.level = level;
 			s.sub = nullptr;
 			s.variable = var;
+			s.can_overload = false;
+			s.can_modify = false;
 			++var;
 			current_frame->singular_insert("\x01", s);
 		}
 
-		if (args != nullptr) {
+		if (args) {
 			for (size_t i = 0; i < args->size(); ++i) {
 				symbol s;
 				s.level = level;
 				s.sub = nullptr;
 				s.variable = var;
+				s.can_overload = false;
+				s.can_modify = true;
 				++var;
 				current_frame->singular_insert((*args)[i], s);
 			}
 		}
 
 		while (cur >= 0 && lex2.next != token_kind::tk_end && lex2.next != token_kind::tk_invalid) {
+			bool is_const = false;
+
 			switch (lex2.next) {
 			case token_kind::tk_open_cur:
 				++cur;
@@ -1808,14 +1814,15 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 					lex2.advance();
 					if (lex2.next == token_kind::tk_open_par) {
 						lex2.advance();
+
 						//I honestly should just throw out support for subs
 						if (lex2.next != token_kind::tk_close_par && kind == block_kind::bk_sub) {
-							std::wstring error = L"A parameter list in not allowed here.\r\n";
-							throw parser_error(error);
+							parser_assert(false, "A parameter list in not allowed here.\r\n");
 						}
 						else {
 							while (lex2.next == token_kind::tk_word || lex2.next == token_kind::tk_LET ||
-								lex2.next == token_kind::tk_REAL) {
+								lex2.next == token_kind::tk_REAL) 
+							{
 								++countArgs;
 								if (lex2.next == token_kind::tk_LET || lex2.next == token_kind::tk_REAL) lex2.advance();
 								if (lex2.next == token_kind::tk_word) lex2.advance();
@@ -1829,29 +1836,29 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 					{
 						symbol* dup = search_in(current_frame, name, countArgs);
 						if (dup != nullptr) {	//Woohoo for detailed error messages.
-							std::wstring typeSub;
+							std::string typeSub;
 							switch (dup->sub->kind) {
 							case block_kind::bk_function:
-								typeSub = L"function";
+								typeSub = "function";
 								break;
 							case block_kind::bk_microthread:
-								typeSub = L"task";
+								typeSub = "task";
 								break;
 							case block_kind::bk_sub:
-								typeSub = L"sub or an \'@\' block";
+								typeSub = "sub or an \'@\' block";
 								break;
 							default:
-								typeSub = L"block";
+								typeSub = "block";
 								break;
 							}
 
-							std::wstring error = L"A ";
+							std::string error = "A ";
 							error += typeSub;
-							error += L" of the same name was already defined in the current scope.\r\n";
+							error += " of the same name was already defined in the current scope.\r\n";
 							if (dup->can_overload)
-								error += L"**You may overload functions and tasks by giving them different argument counts.\r\n";
+								error += "**You may overload functions and tasks by giving them different argument counts.\r\n";
 							else
-								error += StringUtility::FormatToWide("**\'%s\' cannot be overloaded.\r\n", name.c_str());
+								error += StringUtility::Format("**\'%s\' cannot be overloaded.\r\n", name.c_str());
 							throw parser_error(error);
 						}
 					}
@@ -1869,28 +1876,30 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 				}
 			}
 			break;
+			case token_kind::tk_const:
+				is_const = true;
 			case token_kind::tk_REAL:
 			case token_kind::tk_LET:
+			{
 				lex2.advance();
 				if (cur == 0) {
 #ifdef __SCRIPT_H__CHECK_NO_DUPLICATED
-					if (current_frame->find(lex2.word) != current_frame->end()) {
-						std::wstring error = L"A variable of the same name was already declared in the current scope.\r\n";
-						throw parser_error(error);
-					}
+					parser_assert(current_frame->find(lex2.word) == current_frame->end(),
+						"A variable of the same name was already declared in the current scope.\r\n");
 #endif
 					symbol s;
 					s.level = level;
 					s.sub = nullptr;
 					s.variable = var;
 					s.can_overload = false;
-					s.can_modify = true;
+					s.can_modify = !is_const;
 					++var;
 					current_frame->singular_insert(lex2.word, s);
 
 					lex2.advance();
 				}
 				break;
+			}
 			default:
 				lex2.advance();
 				break;
@@ -1901,41 +1910,38 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 		_lex->line = lex2.line;
 		throw;
 	}
+
+	return (var - initVar);
 }
 
 void parser::write_operation(script_engine::block* block, scanner* lex, char const* name, int clauses) {
 	symbol* s = search(name);
 	assert(s != nullptr);
-	if (s->sub->arguments != clauses) {
-		std::wstring error = L"Invalid argument count for the default function. (expected " + 
-			std::to_wstring(clauses) + L")\r\n";
-		throw parser_error(error);
+	{
+		std::string error = "Invalid argument count for the default function. (expected " +
+			std::to_string(clauses) + ")\r\n";
+		parser_assert(s->sub->arguments == clauses, error);
 	}
+
 	block->codes.push_back(script_engine::code(lex->line, command_kind::pc_call_and_push_result, s->sub, clauses));
 }
 void parser::write_operation(script_engine::block* block, scanner* lex, const symbol* s, int clauses) {
 	assert(s != nullptr);
-	if (s->sub->arguments != clauses) {
-		std::wstring error = L"Invalid argument count for the default function. (expected " +
-			std::to_wstring(clauses) + L")\r\n";
-		throw parser_error(error);
+	{
+		std::string error = "Invalid argument count for the default function. (expected " +
+			std::to_string(clauses) + ")\r\n";
+		parser_assert(s->sub->arguments == clauses, error);
 	}
 	block->codes.push_back(script_engine::code(lex->line, command_kind::pc_call_and_push_result, s->sub, clauses));
 }
 
 void parser::parse_parentheses(script_engine::block* block, scanner* lex) {
-	if (lex->next != token_kind::tk_open_par) {
-		std::wstring error = L"\"(\" is required.\r\n";
-		throw parser_error(error);
-	}
+	parser_assert(lex->next == token_kind::tk_open_par, "\"(\" is required.\r\n");
 	lex->advance();
 
 	parse_expression(block, lex);
 
-	if (lex->next != token_kind::tk_close_par) {
-		std::wstring error = L"\")\" is required.\r\n";
-		throw parser_error(error);
-	}
+	parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 	lex->advance();
 }
 
@@ -1979,30 +1985,17 @@ void parser::parse_clause(script_engine::block* block, scanner* lex) {
 		symbol* s = search(name, argc);
 
 		if (s == nullptr) {
-			std::wstring error;
-			if (search(name) != nullptr)
-				error = StringUtility::FormatToWide("No matching overload for %s with %d arguments was found.\r\n",
+			std::string error;
+			if (search(name))
+				error = StringUtility::Format("No matching overload for %s with %d arguments was found.\r\n",
 					lex->word.c_str(), argc);
 			else
-				error = StringUtility::FormatToWide("%s is not defined.\r\n",
-					lex->word.c_str());
+				error = StringUtility::Format("%s is not defined.\r\n", lex->word.c_str());
 			throw parser_error(error);
 		}
 
-		if (s->sub != nullptr) {
-			if (s->sub->kind != block_kind::bk_function) {
-				std::wstring error = L"Tasks and subs cannot return values.\r\n";
-				throw parser_error(error);
-			}
-
-			/*
-			if (argc != s->sub->arguments) {
-				std::wstring error;
-				error += StringUtility::FormatToWide("\'%s\' has an incorrect number of arguments.\r\n", s->sub->name.c_str());
-				throw parser_error(error);
-			}
-			*/
-
+		if (s->sub) {
+			parser_assert(s->sub->kind == block_kind::bk_function, "Tasks and subs cannot return values.\r\n");
 			block->codes.push_back(code(lex->line, command_kind::pc_call_and_push_result, s->sub, argc));
 		}
 		else {
@@ -2012,36 +2005,43 @@ void parser::parse_clause(script_engine::block* block, scanner* lex) {
 	}
 	else if (lex->next == token_kind::tk_open_bra) {
 		lex->advance();
-		block->codes.push_back(code(lex->line, command_kind::pc_push_value, 
-			value(engine->get_string_type(), std::wstring())));
+
+		size_t count_member = 0U;
 		while (lex->next != token_kind::tk_close_bra) {
 			parse_expression(block, lex);
-			write_operation(block, lex, "append", 2);
+			++count_member;
+
 			if (lex->next != token_kind::tk_comma) break;
 			lex->advance();
 		}
-		if (lex->next != token_kind::tk_close_bra) {
-			std::wstring error = L"\"]\" is required.\r\n";
-			throw parser_error(error);
-		}
+
+		if (count_member > 0U)
+			block->codes.push_back(code(lex->line, command_kind::pc_construct_array, count_member));
+		else
+			block->codes.push_back(code(lex->line, command_kind::pc_push_value,
+				value(engine->get_string_type(), std::wstring())));
+
+		parser_assert(lex->next == token_kind::tk_close_bra, "\"]\" is required.\r\n");
 		lex->advance();
 	}
 	else if (lex->next == token_kind::tk_open_abs) {
 		lex->advance();
 		parse_expression(block, lex);
+		
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "absolute", 1);
-		if (lex->next != token_kind::tk_close_abs) {
-			std::wstring error = L"\"|)\" is required.\r\n";
-			throw parser_error(error);
-		}
+#else
+		block->codes.push_back(code(lex->line, command_kind::pc_inline_abs));
+#endif
+
+		parser_assert(lex->next == token_kind::tk_close_abs, "\"|)\" is required.\r\n");
 		lex->advance();
 	}
 	else if (lex->next == token_kind::tk_open_par) {
 		parse_parentheses(block, lex);
 	}
 	else {
-		std::wstring error = L"Invalid expression.\r\n";
-		throw parser_error(error);
+		parser_assert(false, "Invalid expression.\r\n");
 	}
 }
 
@@ -2050,7 +2050,12 @@ void parser::parse_suffix(script_engine::block* block, scanner* lex) {
 	if (lex->next == token_kind::tk_caret) {
 		lex->advance();
 		parse_suffix(block, lex); //Ä‹A
+		
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "power", 2);
+#else
+		block->codes.push_back(code(lex->line, command_kind::pc_inline_pow));
+#endif
 	}
 	else {
 		while (lex->next == token_kind::tk_open_bra) {
@@ -2066,10 +2071,7 @@ void parser::parse_suffix(script_engine::block* block, scanner* lex) {
 				write_operation(block, lex, "index_", 2);
 			}
 
-			if (lex->next != token_kind::tk_close_bra) {
-				std::wstring error = L"\"]\" is required.\r\n";
-				throw parser_error(error);
-			}
+			parser_assert(lex->next == token_kind::tk_close_bra, "\"]\" is required.\r\n");
 			lex->advance();
 		}
 	}
@@ -2083,12 +2085,22 @@ void parser::parse_prefix(script_engine::block* block, scanner* lex) {
 	else if (lex->next == token_kind::tk_minus) {
 		lex->advance();
 		parse_prefix(block, lex);	//Ä‹A
+
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "negative", 1);
+#else
+		block->codes.push_back(code(lex->line, command_kind::pc_inline_neg));
+#endif
 	}
 	else if (lex->next == token_kind::tk_exclamation) {
 		lex->advance();
 		parse_prefix(block, lex);	//Ä‹A
+
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "not", 1);
+#else
+		block->codes.push_back(code(lex->line, command_kind::pc_inline_not));
+#endif
 	}
 	else {
 		parse_suffix(block, lex);
@@ -2098,22 +2110,38 @@ void parser::parse_prefix(script_engine::block* block, scanner* lex) {
 void parser::parse_product(script_engine::block* block, scanner* lex) {
 	parse_prefix(block, lex);
 	while (lex->next == token_kind::tk_asterisk || lex->next == token_kind::tk_slash || lex->next == token_kind::tk_percent) {
-		char const* name = (lex->next == token_kind::tk_asterisk) ? "multiply" : 
+#ifndef __SCRIPT_H__INLINE_OPERATION
+		char const* name = (lex->next == token_kind::tk_asterisk) ? "multiply" :
 			(lex->next == token_kind::tk_slash) ? "divide" : "remainder";
 		lex->advance();
 		parse_prefix(block, lex);
 		write_operation(block, lex, name, 2);
+#else
+		command_kind f = (lex->next == token_kind::tk_asterisk) ? command_kind::pc_inline_mul :
+			(lex->next == token_kind::tk_slash) ? command_kind::pc_inline_div : command_kind::pc_inline_mod;
+		lex->advance();
+		parse_prefix(block, lex);
+		block->codes.push_back(code(lex->line, f));
+#endif
 	}
 }
 
 void parser::parse_sum(script_engine::block* block, scanner* lex) {
 	parse_product(block, lex);
 	while (lex->next == token_kind::tk_tilde || lex->next == token_kind::tk_plus || lex->next == token_kind::tk_minus) {
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		char const* name = (lex->next == token_kind::tk_tilde) ? "concatenate" : 
 			(lex->next == token_kind::tk_plus) ? "add" : "subtract";
 		lex->advance();
 		parse_product(block, lex);
 		write_operation(block, lex, name, 2);
+#else
+		command_kind f = (lex->next == token_kind::tk_tilde) ? command_kind::pc_inline_cat :
+			(lex->next == token_kind::tk_plus) ? command_kind::pc_inline_add : command_kind::pc_inline_sub;
+		lex->advance();
+		parse_product(block, lex);
+		block->codes.push_back(code(lex->line, f));
+#endif
 	}
 }
 
@@ -2121,10 +2149,8 @@ void parser::parse_comparison(script_engine::block* block, scanner* lex) {
 	parse_sum(block, lex);
 	switch (lex->next) {
 	case token_kind::tk_assign:
-	{
-		std::wstring error = L"Did you intend to write \"==\"?\r\n";
-		throw parser_error(error);
-	}
+		parser_assert(false, "Did you intend to write \"==\"?\r\n");
+		break;
 
 	case token_kind::tk_e:
 	case token_kind::tk_g:
@@ -2135,6 +2161,8 @@ void parser::parse_comparison(script_engine::block* block, scanner* lex) {
 		token_kind op = lex->next;
 		lex->advance();
 		parse_sum(block, lex);
+
+#ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "compare", 2);
 		switch (op) {
 		case token_kind::tk_e:
@@ -2156,6 +2184,29 @@ void parser::parse_comparison(script_engine::block* block, scanner* lex) {
 			block->codes.push_back(code(lex->line, command_kind::pc_compare_ne));
 			break;
 		}
+#else
+		switch (op) {
+		case token_kind::tk_e:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_e));
+			break;
+		case token_kind::tk_g:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_g));
+			break;
+		case token_kind::tk_ge:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_ge));
+			break;
+		case token_kind::tk_l:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_l));
+			break;
+		case token_kind::tk_le:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_le));
+			break;
+		case token_kind::tk_ne:
+			block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_ne));
+			break;
+		}
+#endif
+
 		break;
 	}
 }
@@ -2186,22 +2237,32 @@ int parser::parse_arguments(script_engine::block* block, scanner* lex) {
 	int result = 0;
 	if (lex->next == token_kind::tk_open_par) {
 		lex->advance();
+
 		while (lex->next != token_kind::tk_close_par) {
 			++result;
 			parse_expression(block, lex);
 			if (lex->next != token_kind::tk_comma) break;
 			lex->advance();
 		}
-		if (lex->next != token_kind::tk_close_par) {
-			std::wstring error = L"\")\" is required.\r\n";
-			throw parser_error(error);
-		}
+
+		parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 		lex->advance();
 	}
 	return result;
 }
 
 void parser::parse_statements(script_engine::block* block, scanner* lex, token_kind statement_terminator, bool single_parse) {
+	auto assert_const = [](symbol* s, std::string& name) {
+		if (!s->can_modify) {
+			std::string error = StringUtility::Format("\"%s\": ", name.c_str());
+			if (s->sub)
+				throw parser_error(error + "Functions, tasks, and subs are implicitly const\r\n"
+					"and thus cannot be modified in this manner.\r\n");
+			else
+				throw parser_error(error + "const variables cannot be modified.\r\n");
+		}
+	};
+
 	for (; ; ) {
 		bool need_semicolon = true;
 
@@ -2210,35 +2271,33 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 			scope_t* resScope = nullptr;
 			symbol* s = search(name, &resScope);
-			parser_assert(s != nullptr, StringUtility::FormatToWide("%s is not defined.\r\n", name.c_str()));
+			parser_assert(s, StringUtility::Format("%s is not defined.\r\n", name.c_str()));
 
 			lex->advance();
 			switch (lex->next) {
 			case token_kind::tk_assign:
-				parser_assert(s->can_modify, StringUtility::FormatToWide("\"%s\" cannot be modified.\r\n", name.c_str()));
+				assert_const(s, name);
 
 				lex->advance();
 				parse_expression(block, lex);
 				block->codes.push_back(code(lex->line, command_kind::pc_assign, s->level, s->variable, name));
 				break;
 			case token_kind::tk_open_bra:
-				parser_assert(s->can_modify, StringUtility::FormatToWide("\"%s\" cannot be modified.\r\n", name.c_str()));
+				assert_const(s, name);
 
 				block->codes.push_back(code(lex->line, command_kind::pc_push_variable_writable, s->level, s->variable, name));
 				while (lex->next == token_kind::tk_open_bra) {
 					lex->advance();
 					parse_expression(block, lex);
-					if (lex->next != token_kind::tk_close_bra) {
-						std::wstring error = L"\"]\" is required.\r\n";
-						throw parser_error(error);
-					}
+					
+					parser_assert(lex->next == token_kind::tk_close_bra, "\"]\" is required.\r\n");
 					lex->advance();
+
 					write_operation(block, lex, "index!", 2);
 				}
-				if (lex->next != token_kind::tk_assign) {
-					std::wstring error = L"\"=\" is required.\r\n";
-					throw parser_error(error);
-				}
+
+				parser_assert(lex->next == token_kind::tk_assign, "\"=\" is required.\r\n");
+
 				lex->advance();
 				parse_expression(block, lex);
 				block->codes.push_back(code(lex->line, command_kind::pc_assign_writable, 0, 0, name));
@@ -2251,7 +2310,8 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			case token_kind::tk_remainder_assign:
 			case token_kind::tk_power_assign:
 			{
-				parser_assert(s->can_modify, StringUtility::FormatToWide("\"%s\" cannot be modified.\r\n", name.c_str()));
+				assert_const(s, name);
+
 #ifndef __SCRIPT_H__INLINE_OPERATION
 				char const* f;
 				switch (lex->next) {
@@ -2281,25 +2341,25 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				write_operation(block, lex, f, 2);
 				block->codes.push_back(code(lex->line, command_kind::pc_assign, s->level, s->variable, name));
 #else
-				command_kind f = command_kind::pc_inline_add;
+				command_kind f;
 				switch (lex->next) {
 				case token_kind::tk_add_assign:
-					f = command_kind::pc_inline_add;
+					f = command_kind::pc_inline_add_asi;
 					break;
 				case token_kind::tk_subtract_assign:
-					f = command_kind::pc_inline_sub;
+					f = command_kind::pc_inline_sub_asi;
 					break;
 				case token_kind::tk_multiply_assign:
-					f = command_kind::pc_inline_mul;
+					f = command_kind::pc_inline_mul_asi;
 					break;
 				case token_kind::tk_divide_assign:
-					f = command_kind::pc_inline_div;
+					f = command_kind::pc_inline_div_asi;
 					break;
 				case token_kind::tk_remainder_assign:
-					f = command_kind::pc_inline_mod;
+					f = command_kind::pc_inline_mod_asi;
 					break;
 				case token_kind::tk_power_assign:
-					f = command_kind::pc_inline_pow;
+					f = command_kind::pc_inline_pow_asi;
 					break;
 				}
 				lex->advance();
@@ -2311,7 +2371,8 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			case token_kind::tk_inc:
 			case token_kind::tk_dec:
 			{
-				parser_assert(s->can_modify, StringUtility::FormatToWide("\"%s\" cannot be modified.\r\n", name.c_str()));
+				assert_const(s, name);
+
 #ifndef __SCRIPT_H__INLINE_OPERATION
 				char const* f = (lex->next == token_kind::tk_inc) ? "successor" : "predecessor";
 				lex->advance();
@@ -2328,16 +2389,12 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			}
 			default:
 			{
-				if (s->sub == nullptr) {
-					std::wstring error = L"A variable cannot be called as if it was a function, a task, or a sub.\r\n";
-					throw parser_error(error);
-				}
-				parser_assert(s, L"A variable cannot be called as if it was a function, a task, or a sub.\r\n");
+				parser_assert(s, "A variable cannot be called as if it was a function, a task, or a sub.\r\n");
 
 				int argc = parse_arguments(block, lex);
 
 				s = search_in(resScope, name, argc);
-				parser_assert(s, StringUtility::FormatToWide("No matching overload for %s with %d arguments was found.\r\n",
+				parser_assert(s, StringUtility::Format("No matching overload for %s with %d arguments was found.\r\n",
 					name.c_str(), argc));
 
 				block->codes.push_back(code(lex->line, command_kind::pc_call, s->sub, argc));
@@ -2346,13 +2403,9 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			}
 			}
 		}
-		else if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
+		else if (lex->next == token_kind::tk_const || lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
 			lex->advance();
-
-			if (lex->next != token_kind::tk_word) {
-				std::wstring error = L"Variable name is required.\r\n";
-				throw parser_error(error);
-			}
+			parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 
 			std::string name = lex->word;
 
@@ -2518,34 +2571,23 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 			if (lex->next == token_kind::tk_EACH) {				//Foreach loop
 				lex->advance();
-				if (lex->next != token_kind::tk_open_par) {
-					std::wstring error = L"\"(\" is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_open_par, "\"(\" is required.\r\n");
 
 				lex->advance();
 				if (lex->next == token_kind::tk_LET) lex->advance();
 
-				if (lex->next != token_kind::tk_word) {
-					std::wstring error = L"Variable name is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 
 				std::string feIdentifier = lex->word;
 
 				lex->advance();
-				if (lex->next != token_kind::tk_IN && lex->next != token_kind::tk_colon) {
-					std::wstring error = L"\"in\" or a colon is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next != token_kind::tk_IN && lex->next != token_kind::tk_colon, 
+					"\"in\" or a colon is required.\r\n");
 				lex->advance();
 
 				parse_expression(block, lex);
 
-				if (lex->next != token_kind::tk_close_par) {
-					std::wstring error = L"\")\" is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 				lex->advance();
 
 				if (lex->next == token_kind::tk_LOOP) lex->advance();
@@ -2582,10 +2624,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
 					isNewVar = true;
 					lex->advance();
-					if (lex->next != token_kind::tk_word) {
-						std::wstring error = L"Variable name is required.\r\n";
-						throw parser_error(error);
-					}
+					parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 					newVarName = lex->word;
 				}
 
@@ -2669,8 +2708,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 #endif
 			}
 			else {
-				std::wstring error = L"\"(\" is required.\r\n";
-				throw parser_error(error);
+				parser_assert(false, "\"(\" is required.\r\n");
 			}
 
 			need_semicolon = false;
@@ -2679,29 +2717,20 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			bool isAscent = lex->next == token_kind::tk_ASCENT;
 			lex->advance();
 
-			if (lex->next != token_kind::tk_open_par) {
-				std::wstring error = L"\"(\" is required.\r\n";
-				throw parser_error(error);
-			}
+			parser_assert(lex->next == token_kind::tk_open_par, "\"(\" is required.\r\n");
 			lex->advance();
 
 			if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
 				lex->advance();
 			}
 
-			if (lex->next != token_kind::tk_word) {
-				std::wstring error = L"Variable name is required.\r\n";
-				throw parser_error(error);
-			}
+			parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 
 			std::string counterName = lex->word;
 
 			lex->advance();
 
-			if (lex->next != token_kind::tk_IN) {
-				std::wstring error = L"\"in\" is required.\r\n";
-				throw parser_error(error);
-			}
+			parser_assert(lex->next == token_kind::tk_IN, "\"in\" is required.\r\n");
 			lex->advance();
 
 			size_t ip_ascdsc_begin = block->codes.size();
@@ -2710,38 +2739,32 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			block->codes.push_back(code(lex->line, command_kind::pc_call, containerBlock, 0));
 			frame.push_back(scope_t(containerBlock->kind));
 			{
-				auto InsertSymbol = [&](size_t var, std::string name) {
+				auto InsertSymbol = [&](size_t var, std::string name, bool isInternal) {
 					symbol s;
 					s.level = containerBlock->level;
 					s.sub = nullptr;
 					s.variable = var;
 					s.can_overload = false;
-					s.can_modify = true;
+					s.can_modify = !isInternal;
 					frame.back().singular_insert(name, s);
 				};
 
-				InsertSymbol(0, "!0");			//An internal value, inaccessible to scripters (value copied to s_2 in each loop)
-				InsertSymbol(1, "!1");			//An internal value, inaccessible to scripters
-				InsertSymbol(2, counterName);	//The actual counter
+				InsertSymbol(0, "!0", true);	//An internal value, inaccessible to scripters (value copied to s_2 in each loop)
+				InsertSymbol(1, "!1", true);	//An internal value, inaccessible to scripters
+				InsertSymbol(2, counterName, false);	//The actual counter
 
 				parse_expression(containerBlock, lex);	//First value, to s_0 if ascent
 				containerBlock->codes.push_back(code(lex->line, command_kind::pc_assign,
 					containerBlock->level, (int)(!isAscent), "!0"));
 
-				if (lex->next != token_kind::tk_range) {
-					std::wstring error = L"\"..\" is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_range, "\"..\" is required.\r\n");
 				lex->advance();
 
 				parse_expression(containerBlock, lex);	//Second value, to s_0 if descent
 				containerBlock->codes.push_back(code(lex->line, command_kind::pc_assign,
 					containerBlock->level, (int)(isAscent), "!1"));
 
-				if (lex->next != token_kind::tk_close_par) {
-					std::wstring error = L"\")\" is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 				lex->advance();
 
 				if (lex->next == token_kind::tk_LOOP) {
@@ -2754,16 +2777,20 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 					containerBlock->level, 0, "!0"));
 				containerBlock->codes.push_back(code(lex->line, command_kind::pc_push_variable,
 					containerBlock->level, 1, "!1"));
-				write_operation(containerBlock, lex, "compare", 2);
-				containerBlock->codes.push_back(code(lex->line, isAscent ? command_kind::pc_loop_ascent :
-					command_kind::pc_loop_descent));
+				containerBlock->codes.push_back(code(lex->line, isAscent ? command_kind::pc_compare_and_loop_ascent :
+					command_kind::pc_compare_and_loop_descent));
 
 				if (!isAscent) {
+#ifndef __SCRIPT_H__INLINE_OPERATION
 					containerBlock->codes.push_back(code(lex->line, command_kind::pc_push_variable,
 						containerBlock->level, 0, "!0"));
 					write_operation(containerBlock, lex, "predecessor", 1);
 					containerBlock->codes.push_back(code(lex->line, command_kind::pc_assign,
 						containerBlock->level, 0, "!0"));
+#else
+					containerBlock->codes.push_back(code(lex->line, command_kind::pc_inline_dec,
+						containerBlock->level, 0, "!0"));
+#endif
 				}
 
 				//Copy s_0 to s_2
@@ -2779,11 +2806,16 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				containerBlock->codes.push_back(code(lex->line, command_kind::pc_continue_marker));
 
 				if (isAscent) {
+#ifndef __SCRIPT_H__INLINE_OPERATION
 					containerBlock->codes.push_back(code(lex->line, command_kind::pc_push_variable,
 						containerBlock->level, 0, "!0"));
 					write_operation(containerBlock, lex, "successor", 1);
 					containerBlock->codes.push_back(code(lex->line, command_kind::pc_assign,
 						containerBlock->level, 0, "!0"));
+#else
+					containerBlock->codes.push_back(code(lex->line, command_kind::pc_inline_inc,
+						containerBlock->level, 0, "!0"));
+#endif
 				}
 
 				containerBlock->codes.push_back(code(lex->line, command_kind::pc_loop_back, ip));
@@ -2831,19 +2863,22 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			block->codes.push_back(code(lex->line, command_kind::pc_case_begin));
 			while (lex->next == token_kind::tk_CASE) {
 				lex->advance();
-
-				if (lex->next != token_kind::tk_open_par) {
-					std::wstring error = L"\"(\" is required.\r\n";
-					throw parser_error(error);
-				}
+				parser_assert(lex->next == token_kind::tk_open_par, "\"(\" is required.\r\n");
+				
 				block->codes.push_back(code(lex->line, command_kind::pc_case_begin));
 				do {
 					lex->advance();
 
 					block->codes.push_back(code(lex->line, command_kind::pc_dup_n, 1));
 					parse_expression(block, lex);
+
+#ifndef __SCRIPT_H__INLINE_OPERATION
 					write_operation(block, lex, "compare", 2);
 					block->codes.push_back(code(lex->line, command_kind::pc_compare_e));
+#else
+					block->codes.push_back(code(lex->line, command_kind::pc_inline_cmp_e));
+#endif
+
 					block->codes.push_back(code(lex->line, command_kind::pc_dup_n, 1));
 					block->codes.push_back(code(lex->line, command_kind::pc_case_if));
 					block->codes.push_back(code(lex->line, command_kind::pc_pop));
@@ -2852,10 +2887,8 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				block->codes.push_back(code(lex->line, command_kind::pc_push_value, 
 					value(engine->get_boolean_type(), false)));
 				block->codes.push_back(code(lex->line, command_kind::pc_case_end));
-				if (lex->next != token_kind::tk_close_par) {
-					std::wstring error = L"\")\" is required.\r\n";
-					throw parser_error(error);
-				}
+				
+				parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 				lex->advance();
 
 				block->codes.push_back(code(lex->line, command_kind::pc_case_if_not));
@@ -2893,7 +2926,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			default:
 				parse_expression(block, lex);
 				symbol* s = search_result();
-				parser_assert(s, L"Only functions may return values.\r\n");
+				parser_assert(s, "Only functions may return values.\r\n");
 
 				block->codes.push_back(code(lex->line, command_kind::pc_assign, s->level, s->variable, 
 					"[function_result]"));
@@ -2916,22 +2949,22 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 			lex->advance();
 			if (lex->next != token_kind::tk_word) {
-				std::wstring error = L"The ";
+				std::string error = "The ";
 				switch (token) {
 				case token_kind::tk_at:
-					error += L"event(\'@\') block";
+					error += "event(\'@\') block";
 					break;
 				case token_kind::tk_SUB:
-					error += L"sub";
+					error += "sub";
 					break;
 				case token_kind::tk_FUNCTION:
-					error += L"function";
+					error += "function";
 					break;
 				case token_kind::tk_TASK:
-					error += L"task";
+					error += "task";
 					break;
 				}
-				error += L"'s name is required.\r\n";
+				error += "'s name is required.\r\n";
 				throw parser_error(error);
 			}
 
@@ -2941,7 +2974,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			symbol* s = search(funcName, &pScope);
 
 			if (token == token_kind::tk_at) {
-				parser_assert(s->sub->level <= 1, L"An event(\'@\') block cannot exist here.\r\n");
+				parser_assert(s->sub->level <= 1, "An event(\'@\') block cannot exist here.\r\n");
 
 				events[funcName] = s->sub;
 			}
@@ -2957,10 +2990,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 					{
 						if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
 							lex->advance();
-							if (lex->next != token_kind::tk_word) {
-								std::wstring error = L"Parameter name is required.\r\n";
-								throw parser_error(error);
-							}
+							parser_assert(lex->next == token_kind::tk_word, "Parameter name is required.\r\n");
 						}
 						args.push_back(lex->word);
 						lex->advance();
@@ -2968,10 +2998,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 							break;
 						lex->advance();
 					}
-					if (lex->next != token_kind::tk_close_par) {
-						std::wstring error = L"\")\" is required.\r\n";
-						throw parser_error(error);
-					}
+					parser_assert(lex->next == token_kind::tk_close_par, "\")\" is required.\r\n");
 					lex->advance();
 				}
 			}
@@ -2979,10 +3006,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				//ŒÝŠ·«‚Ì‚½‚ß‹ó‚ÌŠ‡ŒÊ‚¾‚¯‹–‚·
 				if (lex->next == token_kind::tk_open_par) {
 					lex->advance();
-					if (lex->next != token_kind::tk_close_par) {
-						std::wstring error = L"Only an empty parameter list is allowed here.\r\n";
-						throw parser_error(error);
-					}
+					parser_assert(lex->next == token_kind::tk_close_par, "Only an empty parameter list is allowed here.\r\n");
 					lex->advance();
 				}
 			}
@@ -3011,16 +3035,14 @@ inline void parser::parse_inline_block(script_engine::block* block, scanner* lex
 }
 
 void parser::parse_block(script_engine::block* block, scanner* lex, std::vector<std::string> const* args, bool adding_result) {
-	if (lex->next != token_kind::tk_open_cur) {
-		std::wstring error = L"\"{\" is required.\r\n";
-		throw parser_error(error);
-	}
+	parser_assert(lex->next == token_kind::tk_open_cur, "\"{\" is required.\r\n");
 	lex->advance();
 
 	frame.push_back(scope_t(block->kind));
 
-	scan_current_scope(block->level, args, adding_result);
-	if (args != nullptr) {
+	int countVar = scan_current_scope(block->level, args, adding_result);
+	block->codes.push_back(code(lex->line, command_kind::pc_var_alloc, countVar));
+	if (args) {
 		for (size_t i = 0; i < args->size(); ++i) {
 			symbol* s = search((*args)[i]);
 			block->codes.push_back(code(lex->line, command_kind::pc_assign, s->level, s->variable, (*args)[i]));
@@ -3030,10 +3052,7 @@ void parser::parse_block(script_engine::block* block, scanner* lex, std::vector<
 
 	frame.pop_back();
 
-	if (lex->next != token_kind::tk_close_cur) {
-		std::wstring error = L"\"}\" is required.\r\n";
-		throw parser_error(error);
-	}
+	parser_assert(lex->next == token_kind::tk_close_cur, "\"}\" is required.\r\n");
 	lex->advance();
 }
 
@@ -3188,7 +3207,6 @@ void script_machine::advance() {
 	typedef script_engine::command_kind command_kind;
 	typedef script_engine::block_kind block_kind;
 
-	//assert(current_thread_index < threads.end());
 	environment_ptr current = *current_thread_index;
 
 	if (current->waitCount > 0) {
@@ -3215,19 +3233,16 @@ void script_machine::advance() {
 			finished = true;
 		}
 		else {
-			*current_thread_index = parent;
-
-			if (current->has_result) {
-				assert(parent != nullptr && current->variables.size() > 0);
-				parent->stack.push_back(current->variables[0]);
-			}
-			else if (current->sub->kind == block_kind::bk_microthread) {
+			if (current->sub->kind == block_kind::bk_microthread) {
 				current_thread_index = threads.erase(current_thread_index);
 				yield();
 			}
+			else {
+				if (current->has_result && parent != nullptr)
+					parent->stack.push_back(current->variables[0]);
+				*current_thread_index = parent;
+			}
 		}
-
-		current = parent;
 	}
 	else {
 		script_engine::code* c = &(current->sub->codes[current->ip]);
@@ -3237,17 +3252,21 @@ void script_machine::advance() {
 		//It's so *bad*, I just can't.
 
 		switch (c->command) {
+		case command_kind::pc_var_alloc:
+			current->variables.resize(c->ip);
+			break;
 		case command_kind::pc_assign:
 		{
 			stack_t& stack = current->stack;
 			assert(stack.size() > 0);
 
-			for (environment_ptr i = current; i != nullptr; i = i->parent) {
+			for (environment* i = current.get(); i != nullptr; i = (i->parent).get()) {
 				if (i->sub->level == c->level) {
 					variables_t& vars = i->variables;
 
-					if (vars.size() <= c->variable) {
-						vars.resize(c->variable + 2, value());	//+2 for good measure
+					if (vars.size() <= c->variable) {	//Shouldn't happen with pc_var_alloc
+						vars.resize(c->variable + 4);	//+4 for good measure
+						vars.length = c->variable + 1;
 					}
 
 					value* dest = &(vars[c->variable]);
@@ -3257,8 +3276,7 @@ void script_machine::advance() {
 						&& !(dest->get_type()->get_kind() == type_data::type_kind::tk_array
 							&& src->get_type()->get_kind() == type_data::type_kind::tk_array
 							&& (dest->length_as_array() > 0 || src->length_as_array() > 0))) {
-						std::wstring error = L"A variable cannot change its value type.\r\n";
-						raise_error(error);
+						raise_error(L"A variable cannot change its value type.\r\n");
 						break;
 					}
 
@@ -3282,14 +3300,11 @@ void script_machine::advance() {
 			if (dest->has_data() && dest->get_type() != src->get_type()
 				&& !(dest->get_type()->get_kind() == type_data::type_kind::tk_array && src->get_type()->get_kind() == type_data::type_kind::tk_array
 					&& (dest->length_as_array() > 0 || src->length_as_array() > 0))) {
-				std::wstring error = L"A variable cannot change its value type.\r\n";
-				raise_error(error);
+				raise_error(L"A variable cannot change its value type.\r\n");
 			}
 			else {
 				dest->overwrite(*src);
-				stack.pop_back();
-				stack.pop_back();
-				//stack->length -= 2;
+				stack.pop_back(2U);
 			}
 
 			break;
@@ -3299,7 +3314,7 @@ void script_machine::advance() {
 		case command_kind::pc_loop_continue:
 		case command_kind::pc_break_loop:
 		case command_kind::pc_break_routine:
-			for (environment_ptr i = current; i != nullptr; i = i->parent) {
+			for (environment* i = current.get(); i != nullptr; i = (i->parent).get()) {
 				i->ip = i->sub->codes.size();
 
 				if (c->command == command_kind::pc_break_loop || c->command == command_kind::pc_loop_continue) {
@@ -3311,7 +3326,7 @@ void script_machine::advance() {
 						if (c->command == command_kind::pc_loop_continue) 
 							targetCommand = command_kind::pc_continue_marker;
 
-						environment_ptr e = i->parent;
+						environment* e = (i->parent).get();
 						assert(e != nullptr);
 						do
 							++(e->ip);
@@ -3356,7 +3371,7 @@ void script_machine::advance() {
 
 				value* argv = nullptr;
 				if (sizePrev > 0 && c->arguments > 0)
-					argv = current_stack.data() + (sizePrev - c->arguments);
+					argv = current_stack.at + (sizePrev - c->arguments);
 				value ret = c->sub->func(this, c->arguments, argv);
 
 				if (stopped) {
@@ -3366,9 +3381,7 @@ void script_machine::advance() {
 					resuming = false;
 
 					//Erase the passed arguments from the stack
-					for (size_t i = 0; i < c->arguments; ++i) {
-						current_stack.pop_back();
-					}
+					current_stack.pop_back(c->arguments);
 
 					//Return value
 					if (c->command == command_kind::pc_call_and_push_result)
@@ -3383,7 +3396,6 @@ void script_machine::advance() {
 
 				//Pass the arguments
 				for (size_t i = 0; i < c->arguments; ++i) {
-					//if (current_stack.size() == 0) break;
 					e->stack.push_back(current_stack.back());
 					current_stack.pop_back();
 				}
@@ -3396,7 +3408,6 @@ void script_machine::advance() {
 
 				//Pass the arguments
 				for (size_t i = 0; i < c->arguments; ++i) {
-					//if (current_stack.size() == 0) break;
 					e->stack.push_back(current_stack.back());
 					current_stack.pop_back();
 				}
@@ -3457,7 +3468,7 @@ next:
 		{
 			stack_t& stack = current->stack;
 			value& t = stack.back();
-			float r = t.as_real();
+			double r = t.as_real();
 			bool b = false;
 			switch (c->command) {
 			case command_kind::pc_compare_e:
@@ -3504,30 +3515,23 @@ next:
 		case command_kind::pc_loop_back:
 			current->ip = c->ip;
 			break;
-		case command_kind::pc_loop_ascent:
+		case command_kind::pc_compare_and_loop_ascent:
+		case command_kind::pc_compare_and_loop_descent:
 		{
 			stack_t& stack = current->stack;
-			value* i = &stack.back();
-			if (i->as_real() >= 0) {
+
+			value* cmp_arg = (value*)(&stack.back() - 1);
+			value cmp_res = compare(this, 2, cmp_arg);
+
+			bool is_skip = c->command == command_kind::pc_compare_and_loop_ascent ? 
+				(cmp_res.as_real() >= 0) : (cmp_res.as_real() <= 0);
+			if (is_skip) {
 				do
 					++(current->ip);
 				while (current->sub->codes[current->ip - 1].command != command_kind::pc_loop_back);
 			}
-			current->stack.pop_back();
 
-			break;
-		}
-		case command_kind::pc_loop_descent:
-		{
-			stack_t& stack = current->stack;
-			value* i = &stack.back();
-			if (i->as_real() <= 0) {
-				do
-					++(current->ip);
-				while (current->sub->codes[current->ip - 1].command != command_kind::pc_loop_back);
-			}
-			current->stack.pop_back();
-
+			current->stack.pop_back(2U);
 			break;
 		}
 		case command_kind::pc_loop_count:
@@ -3563,10 +3567,8 @@ next:
 		{
 			stack_t& stack = current->stack;
 			value* i = &stack.back();
-			if (i->get_type()->get_kind() != type_data::type_kind::tk_array) {
-				std::wstring error = L"Value must be an array or a string.";
-				raise_error(error);
-			}			
+			if (i->get_type()->get_kind() != type_data::type_kind::tk_array)
+				raise_error(L"Value must be an array or a string.");		
 
 			if (i->length_as_array() == 0U)
 			{
@@ -3584,8 +3586,31 @@ next:
 			}
 			break;
 		}
+		
+		case command_kind::pc_construct_array:
+		{
+			if (c->ip == 0U) break;
+
+			std::vector<value> res_arr;
+			res_arr.resize(c->ip);
+
+			value* val_ptr = &current->stack.back() - c->ip + 1;
+
+			type_data* type_arr = engine->get_array_type(val_ptr->get_type());
+			value res = value(type_arr, 0.0);
+
+			for (size_t iVal = 0U; iVal < c->ip; ++iVal, ++val_ptr) {
+				append_check(this, iVal, type_arr, val_ptr->get_type());
+				res_arr[iVal] = *val_ptr;
+			}
+			res.set(type_arr, res_arr);
+
+			current->stack.pop_back(c->ip);
+			current->stack.push_back(res);
+			break;
+		}
+
 		case command_kind::pc_pop:
-			assert(current->stack.size() > 0);
 			current->stack.pop_back();
 			break;
 		case command_kind::pc_push_value:
@@ -3594,7 +3619,7 @@ next:
 		case command_kind::pc_push_variable:
 		case command_kind::pc_push_variable_writable:
 		{
-			value* var = find_variable_symbol(current, c);
+			value* var = find_variable_symbol(current.get(), c);
 			if (var == nullptr) break;
 			if (c->command == command_kind::pc_push_variable_writable)
 				var->unique();
@@ -3619,12 +3644,58 @@ next:
 		case command_kind::pc_inline_inc:
 		case command_kind::pc_inline_dec:
 		{
-			value* var = find_variable_symbol(current, c);
+			value* var = find_variable_symbol(current.get(), c);
 			if (var == nullptr) break;
 
 			value res = (c->command == command_kind::pc_inline_inc) ? successor(this, 1, var) : predecessor(this, 1, var);
 			*var = res;
 
+			break;
+		}
+		case command_kind::pc_inline_add_asi:
+		case command_kind::pc_inline_sub_asi:
+		case command_kind::pc_inline_mul_asi:
+		case command_kind::pc_inline_div_asi:
+		case command_kind::pc_inline_mod_asi:
+		case command_kind::pc_inline_pow_asi:
+		{
+			value* var = find_variable_symbol(current.get(), c);
+			if (var == nullptr) break;
+
+			value tmp[2] = { *var, current->stack.back() };
+			value res;
+
+#define DEF_CASE(cmd, fn) case cmd: res = fn(this, 2, tmp); break;
+			switch (c->command) {
+				DEF_CASE(command_kind::pc_inline_add_asi, add);
+				DEF_CASE(command_kind::pc_inline_sub_asi, subtract);
+				DEF_CASE(command_kind::pc_inline_mul_asi, multiply);
+				DEF_CASE(command_kind::pc_inline_div_asi, divide);
+				DEF_CASE(command_kind::pc_inline_mod_asi, remainder_);
+				DEF_CASE(command_kind::pc_inline_pow_asi, power);
+			}
+#undef DEF_CASE
+
+			current->stack.pop_back();
+			*var = res;
+			break;
+		}
+		case command_kind::pc_inline_neg:
+		case command_kind::pc_inline_not:
+		case command_kind::pc_inline_abs:
+		{
+			value res;
+
+#define DEF_CASE(cmd, fn) case cmd: res = fn(this, 1, &current->stack.back()); break;
+			switch (c->command) {
+				DEF_CASE(command_kind::pc_inline_neg, negative);
+				DEF_CASE(command_kind::pc_inline_not, not_);
+				DEF_CASE(command_kind::pc_inline_abs, absolute);
+			}
+#undef DEF_CASE
+
+			current->stack.pop_back();
+			current->stack.push_back(res);
 			break;
 		}
 		case command_kind::pc_inline_add:
@@ -3633,35 +3704,53 @@ next:
 		case command_kind::pc_inline_div:
 		case command_kind::pc_inline_mod:
 		case command_kind::pc_inline_pow:
+		case command_kind::pc_inline_app:
+		case command_kind::pc_inline_cat:
 		{
-			value* var = find_variable_symbol(current, c);
-			if (var == nullptr) break;
-
-			value tmp[2] = { *var, current->stack.back() };
 			value res;
-			switch (c->command) {
-			case command_kind::pc_inline_add:
-				res = add(this, 2, tmp); 
-				break;
-			case command_kind::pc_inline_sub:
-				res = subtract(this, 2, tmp);
-				break;
-			case command_kind::pc_inline_mul:
-				res = multiply(this, 2, tmp);
-				break;
-			case command_kind::pc_inline_div:
-				res = divide(this, 2, tmp);
-				break;
-			case command_kind::pc_inline_mod:
-				res = remainder(this, 2, tmp);
-				break;
-			case command_kind::pc_inline_pow:
-				res = power(this, 2, tmp);
-				break;
-			}
+			value* args = (value*)(&current->stack.back() - 1);
 
-			current->stack.pop_back();
-			*var = res;
+#define DEF_CASE(cmd, fn) case cmd: res = fn(this, 2, args); break;
+			switch (c->command) {
+				DEF_CASE(command_kind::pc_inline_add, add);
+				DEF_CASE(command_kind::pc_inline_sub, subtract);
+				DEF_CASE(command_kind::pc_inline_mul, multiply);
+				DEF_CASE(command_kind::pc_inline_div, divide);
+				DEF_CASE(command_kind::pc_inline_mod, remainder_);
+				DEF_CASE(command_kind::pc_inline_pow, power);
+				DEF_CASE(command_kind::pc_inline_app, append);
+				DEF_CASE(command_kind::pc_inline_cat, concatenate);
+			}
+#undef DEF_CASE
+
+			current->stack.pop_back(2U);
+			current->stack.push_back(res);
+			break;
+		}
+		case command_kind::pc_inline_cmp_e:
+		case command_kind::pc_inline_cmp_g:
+		case command_kind::pc_inline_cmp_ge:
+		case command_kind::pc_inline_cmp_l:
+		case command_kind::pc_inline_cmp_le:
+		case command_kind::pc_inline_cmp_ne:
+		{
+			value* args = (value*)(&current->stack.back() - 1);
+			value cmp_res = compare(this, 2, args);
+			double cmp_r = cmp_res.as_real();
+
+#define DEF_CASE(cmd, expr) case cmd: cmp_res.set(engine->get_boolean_type(), expr); break;
+			switch (c->command) {
+				DEF_CASE(command_kind::pc_inline_cmp_e, cmp_r == 0);
+				DEF_CASE(command_kind::pc_inline_cmp_g, cmp_r > 0);
+				DEF_CASE(command_kind::pc_inline_cmp_ge, cmp_r >= 0);
+				DEF_CASE(command_kind::pc_inline_cmp_l, cmp_r < 0);
+				DEF_CASE(command_kind::pc_inline_cmp_le, cmp_r <= 0);
+				DEF_CASE(command_kind::pc_inline_cmp_ne, cmp_r != 0);
+			}
+#undef DEF_CASE
+
+			current->stack.pop_back(2U);
+			current->stack.push_back(cmp_res);
 			break;
 		}
 #endif
@@ -3671,28 +3760,31 @@ next:
 		}
 	}
 }
-value* script_machine::find_variable_symbol(environment_ptr current_env, script_engine::code* var_data) {
+value* script_machine::find_variable_symbol(environment* current_env, script_engine::code* var_data) {
+	/*
 	auto err_uninitialized = [&]() {
-		std::wstring error = L"Variable hasn't been initialized";
 #ifdef _DEBUG
+		std::wstring error = L"Variable hasn't been initialized";
 		error += StringUtility::FormatToWide(": %s\r\n", var_data->var_name.c_str());
-#else
-		error += L".\r\n";
-#endif	
 		raise_error(error);
+#else
+		raise_error(L"Variable hasn't been initialized.\r\n");
+#endif	
 	};
+	*/
 
-	for (environment_ptr i = current_env; i != nullptr; i = i->parent) {
+	for (environment* i = current_env; i != nullptr; i = (i->parent).get()) {
 		if (i->sub->level == var_data->level) {
 			variables_t& vars = i->variables;
 
 			if (vars.size() <= var_data->variable || !(vars[var_data->variable].has_data())) 
-				err_uninitialized();
+				raise_error(L"Variable hasn't been initialized.\r\n");
 			else return &vars[var_data->variable];
+
 			break;
 		}
 	}
 
-	err_uninitialized();
+	raise_error(L"Variable hasn't been initialized.\r\n");
 	return nullptr;
 }

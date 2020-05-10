@@ -25,15 +25,14 @@ namespace gstd {
 		void resize(size_t newSize);
 		void expand();
 
-		void push_back(const T& value) {
+		inline void push_back(const T& value) {
 			if (length == capacity) expand();
-			at[length] = value;
-			++length;
+			at[length++] = value;
 		}
-		void pop_back() {
-			if (length == 0) return;
-			--length;
-			fill_with_empty(at + length, 1U);
+		void pop_back(size_t count = 1U) {
+			if (length < count) count = length;
+			length -= count;
+			fill_with_empty(at + length, count);
 		}
 
 		void clear() {
@@ -41,7 +40,7 @@ namespace gstd {
 			length = 0;
 		}
 
-		void release() {
+		inline void release() {
 			length = 0;
 			if (at) capacity = 0;
 			ptr_delete_scalar(at);
@@ -76,8 +75,7 @@ namespace gstd {
 	template<typename T>
 	inline void script_vector<T>::fill_with_empty(T* pos, size_t count) {
 		T empty;
-		for (size_t i = 0; i < count; ++i, ++pos)
-			*pos = empty;
+		for (size_t i = 0; i < count; ++i, ++pos) *pos = empty;
 	}
 
 	template<typename T>
@@ -120,10 +118,9 @@ namespace gstd {
 	template<typename T>
 	void script_vector<T>::expand() {
 		if (capacity == 0) {
-			capacity = 0x4;
-			at = new T[0x4];
-			//ZeroMemory(at, 4 * sizeof(T));
-			fill_with_empty(at, 0x4);
+			capacity = 0x8;
+			at = new T[0x8];
+			fill_with_empty(at, 0x8);
 		}
 		else {
 			if (capacity < 0x800000) capacity = capacity << 1;
