@@ -203,7 +203,7 @@ namespace gstd {
 		std::map<std::wstring, ref_count_ptr<ArchiveFile>> mapArchiveFile_;
 		std::map<std::wstring, ref_count_ptr<ByteBuffer>> mapByteBuffer_;
 
-#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
 		ref_count_ptr<ByteBuffer> _GetByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
 		void _ReleaseByteBuffer(std::shared_ptr<ArchiveFileEntry> entry);
 #endif

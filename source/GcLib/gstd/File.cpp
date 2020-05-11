@@ -502,7 +502,7 @@ ref_count_ptr<FileReader> FileManager::GetFileReader(std::wstring path) {
 	return res;
 }
 
-#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
 ref_count_ptr<ByteBuffer> FileManager::_GetByteBuffer(ArchiveFileEntry::ptr entry) {
 	ref_count_ptr<ByteBuffer> res = nullptr;
 	try {

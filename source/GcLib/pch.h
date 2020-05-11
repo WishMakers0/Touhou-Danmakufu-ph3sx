@@ -2,7 +2,7 @@
 
 //--------------------------Game Version Customization--------------------------
 
-#define GAME_VERSION_TCL
+//#define GAME_VERSION_TCL
 //#define GAME_VERSION_SP
 
 //------------------------------------------------------------------------------
@@ -122,6 +122,8 @@
 
 //-----------------------------------DirectX------------------------------------
 
+#if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
+
 //lib
 #pragma comment(lib, "msacm32.lib") //for acm
 #pragma comment(lib, "d3d9.lib")
@@ -149,6 +151,8 @@
 #include <dmusici.h>
 #include <dxerr9.h>
 
+#endif
+
 //------------------------------------------------------------------------------
 
 
@@ -160,10 +164,10 @@
 
 //zlib
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER) || defined(DNH_PROJ_FILEARCHIVER)
-#define ZLIB_WINAPI
+//#define ZLIB_WINAPI
 #include <zlib/zlib.h>
-//#pragma comment(lib, "zlibstatic.lib")
-#pragma comment(lib, "zlibdynamic.lib")
+#pragma comment(lib, "zlibstatic.lib")
+//#pragma comment(lib, "zlibdynamic.lib")
 #endif
 
 //libogg + libvorbis
@@ -172,6 +176,7 @@
 #include <vorbis/vorbisfile.h>
 #pragma comment(lib, "ogg_static.lib")
 #pragma comment(lib, "vorbis_static.lib")
+//#pragma comment(lib, "vorbis_dynamic.lib")
 #pragma comment(lib, "vorbisfile_static.lib")
 #endif
 
