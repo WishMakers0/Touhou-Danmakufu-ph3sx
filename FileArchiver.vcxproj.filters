@@ -35,22 +35,10 @@
     <ClCompile Include="source\GcLib\gstd\File.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\FpsController.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
     <ClCompile Include="source\GcLib\gstd\GstdUtility.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
     <ClCompile Include="source\GcLib\gstd\Logger.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\RandProvider.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\Script.cpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClCompile>
-    <ClCompile Include="source\GcLib\gstd\ScriptClient.cpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClCompile>
     <ClCompile Include="source\GcLib\gstd\Task.cpp">
@@ -85,31 +73,13 @@
     <ClInclude Include="source\GcLib\gstd\File.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\FpsController.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\gstd\GstdLib.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\GstdUtility.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\LightweightVector.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
     <ClInclude Include="source\GcLib\gstd\Logger.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\PtrUtil.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\RandProvider.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\Script.hpp">
-      <Filter>source\GcLib\gstd</Filter>
-    </ClInclude>
-    <ClInclude Include="source\GcLib\gstd\ScriptClient.hpp">
       <Filter>source\GcLib\gstd</Filter>
     </ClInclude>
     <ClInclude Include="source\GcLib\gstd\SmartPointer.hpp">
