@@ -41,7 +41,7 @@ RenderManager::~RenderManager() {}
 void RenderManager::Render() {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 
-	//•s“§–¾
+	//ä¸é€æ˜
 	graph->SetZBufferEnable(true);
 	graph->SetZWriteEnable(true);
 	std::list<gstd::ref_count_ptr<RenderBlock> >::iterator itrOpaque;
@@ -49,7 +49,7 @@ void RenderManager::Render() {
 		(*itrOpaque)->Render();
 	}
 
-	//”¼“§–¾
+	//åŠé€æ˜
 	graph->SetZBufferEnable(true);
 	graph->SetZWriteEnable(false);
 	std::list<gstd::ref_count_ptr<RenderBlock> >::iterator itrTrans;
@@ -187,22 +187,22 @@ size_t RenderObject::_GetPrimitiveCount(size_t count) {
 		count = vertexIndices_.size();
 
 	switch (typePrimitive_) {
-	case D3DPT_POINTLIST://ƒ|ƒCƒ“ƒgƒŠƒXƒg
+	case D3DPT_POINTLIST://ãƒã‚¤ãƒ³ãƒˆãƒªã‚¹ãƒˆ
 		res = count;
 		break;
-	case D3DPT_LINELIST://ƒ‰ƒCƒ“ƒŠƒXƒg
+	case D3DPT_LINELIST://ãƒ©ã‚¤ãƒ³ãƒªã‚¹ãƒˆ
 		res = count / 2;
 		break;
-	case D3DPT_LINESTRIP://ƒ‰ƒCƒ“ƒXƒgƒŠƒbƒv
+	case D3DPT_LINESTRIP://ãƒ©ã‚¤ãƒ³ã‚¹ãƒˆãƒªãƒƒãƒ—
 		res = count - 1;
 		break;
-	case D3DPT_TRIANGLELIST://ƒgƒ‰ƒCƒAƒ“ƒOƒ‹ƒŠƒXƒg
+	case D3DPT_TRIANGLELIST://ãƒˆãƒ©ã‚¤ã‚¢ãƒ³ã‚°ãƒ«ãƒªã‚¹ãƒˆ
 		res = count / 3;
 		break;
-	case D3DPT_TRIANGLESTRIP://ƒgƒ‰ƒCƒAƒ“ƒOƒ‹ƒXƒgƒŠƒbƒv
+	case D3DPT_TRIANGLESTRIP://ãƒˆãƒ©ã‚¤ã‚¢ãƒ³ã‚°ãƒ«ã‚¹ãƒˆãƒªãƒƒãƒ—
 		res = count - 2;
 		break;
-	case D3DPT_TRIANGLEFAN://ƒgƒ‰ƒCƒAƒ“ƒOƒ‹ƒtƒ@ƒ“
+	case D3DPT_TRIANGLEFAN://ãƒˆãƒ©ã‚¤ã‚¢ãƒ³ã‚°ãƒ«ãƒ•ã‚¡ãƒ³
 		res = count - 2;
 		break;
 	}
@@ -592,7 +592,7 @@ void RenderObject::SetTexture(ref_count_ptr<Texture> texture, int stage) {
 
 /**********************************************************
 //RenderObjectTLX
-//À•W3D•ÏŠ·Ï‚İAƒ‰ƒCƒeƒBƒ“ƒOÏ‚İAƒeƒNƒXƒ`ƒƒ—L‚è
+//åº§æ¨™3Då¤‰æ›æ¸ˆã¿ã€ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°æ¸ˆã¿ã€ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 **********************************************************/
 RenderObjectTLX::RenderObjectTLX() {
 	_SetTextureStageCount(1);
@@ -739,7 +739,7 @@ void RenderObjectTLX::Render(D3DXMATRIX& matTransform) {
 
 /**********************************************************
 //RenderObjectLX
-//ƒ‰ƒCƒeƒBƒ“ƒOÏ‚İAƒeƒNƒXƒ`ƒƒ—L‚è
+//ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°æ¸ˆã¿ã€ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 **********************************************************/
 RenderObjectLX::RenderObjectLX() {
 	_SetTextureStageCount(1);
@@ -1114,7 +1114,7 @@ void RenderObjectBNX::InitializeVertexBuffer() {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	device->CreateVertexBuffer(countVertex * sizeof(VERTEX_BNX), 0, 0, D3DPOOL_MANAGED, &pVertexBuffer_, nullptr);
 
-	//ƒRƒs[
+	//ã‚³ãƒ”ãƒ¼
 	_CopyVertexBufferOnInitialize();
 
 	size_t countIndex = vertexIndices_.size();
@@ -1216,7 +1216,7 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			shader->SetVector(shader->GetParameterBySemantic(nullptr, "MATERIALAMBIENT"), reinterpret_cast<D3DXVECTOR4*>(&diffuse));
 			shader->SetVector(shader->GetParameterBySemantic(nullptr, "MATERIALDIFFUSE"), reinterpret_cast<D3DXVECTOR4*>(&ambient));
 
-			//ƒtƒHƒO
+			//ãƒ•ã‚©ã‚°
 			DWORD fogNear = 0;
 			DWORD fogFar = 0;
 			device->GetRenderState(D3DRS_FOGSTART, &fogNear);
@@ -1225,7 +1225,7 @@ void RenderObjectBNX::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& 
 			shader->SetFloat(shader->GetParameterByName(nullptr, "fogNear"), *(float*)&fogNear);
 			shader->SetFloat(shader->GetParameterByName(nullptr, "fogFar"), *(float*)&fogFar);
 
-			//À•W•ÏŠ·
+			//åº§æ¨™å¤‰æ›
 			int sizeMatrix = matrix_->GetSize();
 			std::vector<D3DXMATRIX> listMatrix(sizeMatrix);
 			for (int iMatrix = 0; iMatrix < sizeMatrix; ++iMatrix) {
@@ -1404,10 +1404,10 @@ void RenderObjectB4NXBlock::Render() {
 
 /**********************************************************
 //Sprite2D
-//‹éŒ`ƒXƒvƒ‰ƒCƒg
+//çŸ©å½¢ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 **********************************************************/
 Sprite2D::Sprite2D() {
-	SetVertexCount(4);//¶ãA‰EãA¶‰ºA‰E‰º
+	SetVertexCount(4);//å·¦ä¸Šã€å³ä¸Šã€å·¦ä¸‹ã€å³ä¸‹
 	SetPrimitiveType(D3DPT_TRIANGLESTRIP);
 
 	flgUseVertexBufferMode_ = false;
@@ -1439,14 +1439,14 @@ void Sprite2D::SetSourceRect(RECT_D& rcSrc) {
 	int width = texture->GetWidth();
 	int height = texture->GetHeight();
 
-	//ƒeƒNƒXƒ`ƒƒUV
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£UV
 	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
 	SetVertexUV(1, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
 	SetVertexUV(2, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
 	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
 }
 void Sprite2D::SetDestinationRect(RECT_D& rcDest) {
-	//’¸“_ˆÊ’u
+	//é ‚ç‚¹ä½ç½®
 	SetVertexPosition(0, rcDest.left, rcDest.top);
 	SetVertexPosition(1, rcDest.right, rcDest.top);
 	SetVertexPosition(2, rcDest.left, rcDest.bottom);
@@ -1478,8 +1478,8 @@ void Sprite2D::SetDestinationCenter() {
 	int width = texture->GetWidth();
 	int height = texture->GetHeight();
 
-	VERTEX_TLX* vertLT = GetVertex(0); //¶ã
-	VERTEX_TLX* vertRB = GetVertex(3); //‰E‰º
+	VERTEX_TLX* vertLT = GetVertex(0); //å·¦ä¸Š
+	VERTEX_TLX* vertRB = GetVertex(3); //å³ä¸‹
 
 	int vWidth = vertRB->texcoord.x * width - vertLT->texcoord.x * width;
 	int vHeight = vertRB->texcoord.y * height - vertLT->texcoord.y * height;
@@ -1655,7 +1655,7 @@ void SpriteList2D::Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& ang
 void SpriteList2D::_AddVertex(VERTEX_TLX& vertex) {
 	size_t count = vertex_.size() / strideVertexStreamZero_;
 	if (countRenderVertex_ >= count) {
-		//ƒŠƒTƒCƒY
+		//ãƒªã‚µã‚¤ã‚º
 		size_t newCount = std::max(10U, (size_t)(count * 1.5));
 		vertex_.resize(newCount * strideVertexStreamZero_);
 	}
@@ -1735,8 +1735,8 @@ void SpriteList2D::SetDestinationCenter() {
 	int width = texture->GetWidth();
 	int height = texture->GetHeight();
 
-	VERTEX_TLX* vertLT = GetVertex(0); //¶ã
-	VERTEX_TLX* vertRB = GetVertex(3); //‰E‰º
+	VERTEX_TLX* vertLT = GetVertex(0); //å·¦ä¸Š
+	VERTEX_TLX* vertRB = GetVertex(3); //å³ä¸‹
 
 	int vWidth = rcSrc_.right - rcSrc_.left;
 	int vHeight = rcSrc_.bottom - rcSrc_.top;
@@ -1749,7 +1749,7 @@ void SpriteList2D::SetDestinationCenter() {
 //Sprite3D
 **********************************************************/
 Sprite3D::Sprite3D() {
-	SetVertexCount(4);//¶ãA‰EãA¶‰ºA‰E‰º
+	SetVertexCount(4);//å·¦ä¸Šã€å³ä¸Šã€å·¦ä¸‹ã€å³ä¸‹
 	SetPrimitiveType(D3DPT_TRIANGLESTRIP);
 	bBillboard_ = false;
 
@@ -1848,14 +1848,14 @@ void Sprite3D::SetSourceRect(RECT_D& rcSrc) {
 	int width = texture->GetWidth();
 	int height = texture->GetHeight();
 
-	//ƒeƒNƒXƒ`ƒƒUV
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£UV
 	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
 	SetVertexUV(1, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
 	SetVertexUV(2, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
 	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
 }
 void Sprite3D::SetDestinationRect(RECT_D& rcDest) {
-	//’¸“_ˆÊ’u
+	//é ‚ç‚¹ä½ç½®
 	SetVertexPosition(0, rcDest.left, rcDest.top, 0);
 	SetVertexPosition(1, rcDest.left, rcDest.bottom, 0);
 	SetVertexPosition(2, rcDest.right, rcDest.top, 0);
@@ -1865,14 +1865,14 @@ void Sprite3D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color) {
 	SetSourceRect(rcSrc);
 	SetDestinationRect(rcDest);
 
-	//’¸“_F
+	//é ‚ç‚¹è‰²
 	SetColorRGB(color);
 	SetAlpha(ColorAccess::GetColorA(color));
 }
 void Sprite3D::SetVertex(RECT_D& rcSrc, D3DCOLOR color) {
 	SetSourceDestRect(rcSrc);
 
-	//’¸“_F
+	//é ‚ç‚¹è‰²
 	SetColorRGB(color);
 	SetAlpha(ColorAccess::GetColorA(color));
 }
@@ -2015,7 +2015,7 @@ void DxMesh::Release() {
 		if (data_ != nullptr) {
 			if (manager->IsDataExists(data_->GetName())) {
 				int countRef = data_.GetReferenceCount();
-				//©g‚ÆDxMeshManager“à‚Ì”‚¾‚¯‚É‚È‚Á‚½‚çíœ
+				//è‡ªèº«ã¨DxMeshManagerå†…ã®æ•°ã ã‘ã«ãªã£ãŸã‚‰å‰Šé™¤
 				if (countRef == 2) {
 					manager->_ReleaseMeshData(data_->GetName());
 				}

@@ -75,8 +75,8 @@ protected:
 	int typeMove_;
 	StgMoveObject* target_;
 
-	int frameWork_;//ƒAƒNƒeƒBƒu‚É‚È‚éƒtƒŒ[ƒ€B
-	int idShotData_;//’e‰æ‘œID(’eƒIƒuƒWƒFƒNƒgê—p)
+	int frameWork_;//ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã«ãªã‚‹ãƒ•ãƒ¬ãƒ¼ãƒ ã€‚
+	int idShotData_;//å¼¾ç”»åƒID(å¼¾ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå°‚ç”¨)
 
 	double c_;
 	double s_;

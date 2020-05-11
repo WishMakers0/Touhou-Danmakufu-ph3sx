@@ -63,9 +63,9 @@ void StgShotManager::Render(int targetPriority) {
 	graphics->SetTextureFilter(DirectGraphics::MODE_TEXTURE_FILTER_LINEAR, 0);
 
 	//graphics->SetTextureFilter(DirectGraphics::MODE_TEXTURE_FILTER_POINT);
-	//			MODE_TEXTURE_FILTER_POINT,//•âŠÔ‚È‚µ
-	//			MODE_TEXTURE_FILTER_LINEAR,//üŒ`•âŠÔ
-	//ƒtƒHƒO‚ğ‰ğœ‚·‚é
+	//			MODE_TEXTURE_FILTER_POINT,//è£œé–“ãªã—
+	//			MODE_TEXTURE_FILTER_LINEAR,//ç·šå½¢è£œé–“
+	//ãƒ•ã‚©ã‚°ã‚’è§£é™¤ã™ã‚‹
 	DWORD bEnableFog = FALSE;
 	device->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
 	if (bEnableFog)
@@ -99,7 +99,7 @@ void StgShotManager::Render(int targetPriority) {
 		effectLayer_->SetMatrix(handleEffectWorld_, &matProj);
 	}
 
-	//•`‰æ
+	//æç”»
 	size_t countBlendType = StgShotDataList::RENDER_TYPE_COUNT;
 	int blendMode[] =
 	{
@@ -128,7 +128,7 @@ void StgShotManager::Render(int targetPriority) {
 		effectLayer_->Begin(&cPass, 0);
 
 		if (cPass >= 1U) {
-			//Always render enemy shots above player shots, completely obliterates TAƒ°'s wet dream.
+			//Always render enemy shots above player shots, completely obliterates TAÎ£'s wet dream.
 			for (size_t iBlend = 0; iBlend < countBlendType; ++iBlend) {
 				bool hasPolygon = false;
 				std::vector<StgShotRenderer*>* listPlayer =
@@ -382,7 +382,7 @@ bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
 
 		while (scanner.HasNext()) {
 			Token& tok = scanner.Next();
-			if (tok.GetType() == Token::TK_EOF)//Eof‚Ì¯•Êq‚ª—ˆ‚½‚çƒtƒ@ƒCƒ‹‚Ì’²¸I—¹
+			if (tok.GetType() == Token::TK_EOF)//Eofã®è­˜åˆ¥å­ãŒæ¥ãŸã‚‰ãƒ•ã‚¡ã‚¤ãƒ«ã®èª¿æŸ»çµ‚äº†
 			{
 				break;
 			}
@@ -425,7 +425,7 @@ bool StgShotDataList::AddShotDataList(std::wstring path, bool bReload) {
 			}
 		}
 
-		//ƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ
+		//ãƒ†ã‚¯ã‚¹ãƒãƒ£èª­ã¿è¾¼ã¿
 		if (pathImage.size() == 0) throw gstd::wexception("Shot texture must be set.");
 		std::wstring dir = PathProperty::GetFileDirectory(path);
 		pathImage = StringUtility::Replace(pathImage, L"./", dir);
@@ -897,7 +897,7 @@ void StgShotObject::_Move() {
 	SetX(posX_);
 	SetY(posY_);
 
-	//’e‰æ‘œ’u‚«Š·‚¦ˆ—
+	//å¼¾ç”»åƒç½®ãæ›ãˆå‡¦ç†
 	if (pattern_ != nullptr) {
 		int idShot = pattern_->GetShotDataID();
 		if (idShot != StgMovePattern::NO_CHANGE) {
@@ -1206,7 +1206,7 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 	if (frameFadeDelete_ >= 0)return;
 	ClearIntersected();
 	if (IsDeleted())return;
-	if (bUserIntersectionMode_)return;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	if (bUserIntersectionMode_)return;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	if (!bIntersectionEnable_)return;
 
 	StgShotData* shotData = _GetShotData();
@@ -1259,11 +1259,11 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget() {
 	}
 
 	if (typeOwner_ == OWNER_PLAYER) {
-		//©’e‚Ìê‡‚Í“o˜^
+		//è‡ªå¼¾ã®å ´åˆã¯ç™»éŒ²
 		bInvalid = false;
 	}
 	else {
-		//©‹@‚ÌˆÚ“®”ÍˆÍ‚ª•‰‚Ì’l‚ª‰Â”\‚Å‚ ‚ê‚Î“G’e‚Å‚à“o˜^
+		//è‡ªæ©Ÿã®ç§»å‹•ç¯„å›²ãŒè² ã®å€¤ãŒå¯èƒ½ã§ã‚ã‚Œã°æ•µå¼¾ã§ã‚‚ç™»éŒ²
 		StgPlayerObject* player = stageController_->GetPlayerObjectPtr();
 		if (player) {
 			RECT* rcClip = player->GetClip();
@@ -1281,7 +1281,7 @@ std::vector<StgIntersectionTarget::ptr> StgNormalShotObject::GetIntersectionTarg
 	if (delay_ > 0)return res;
 	if (frameFadeDelete_ >= 0)return res;
 	if (IsDeleted())return res;
-	if (bUserIntersectionMode_)return res;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	if (bUserIntersectionMode_)return res;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	if (!bIntersectionEnable_)return res;
 
 	StgShotData* shotData = _GetShotData();
@@ -1327,7 +1327,7 @@ void StgNormalShotObject::RenderOnShotManager() {
 
 	int shotBlendType = DirectGraphics::MODE_BLEND_ALPHA;
 	if (delay_ > 0) {
-		//’x‰„ŠÔ
+		//é…å»¶æ™‚é–“
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
 			shotBlendType = shotData->GetDelayRenderType();
@@ -1393,7 +1393,7 @@ void StgNormalShotObject::RenderOnShotManager() {
 		}
 	}
 
-	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//ÚGƒeƒXƒg
+	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//æ¥è§¦ãƒ†ã‚¹ãƒˆ
 
 	VERTEX_TLX verts[4];
 	LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrc);
@@ -1426,7 +1426,7 @@ void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	switch (otherType) {
 	case StgIntersectionTarget::TYPE_PLAYER:
 	{
-		//©‹@
+		//è‡ªæ©Ÿ
 		frameGrazeInvalid_ = INT_MAX;
 		break;
 	}
@@ -1444,7 +1444,7 @@ void StgNormalShotObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInt
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SPELL:
 	{
-		//©‹@ƒXƒyƒ‹
+		//è‡ªæ©Ÿã‚¹ãƒšãƒ«
 		if (ptrObj) {
 			StgPlayerSpellObject* spell = (StgPlayerSpellObject*)ptrObj.get();
 			if (spell != nullptr) {
@@ -1494,7 +1494,7 @@ void StgNormalShotObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 			auto objectManager = stageController_->GetMainObjectManager();
 			int id = objectManager->AddObject(obj);
 			if (id != DxScript::ID_INVALID) {
-				//’e‚ÌÀ•W‚ÉƒAƒCƒeƒ€‚ğì¬‚·‚é
+				//å¼¾ã®åº§æ¨™ã«ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä½œæˆã™ã‚‹
 				itemManager->AddItem(obj);
 				obj->SetPositionX(posX);
 				obj->SetPositionY(posY);
@@ -1506,7 +1506,7 @@ void StgNormalShotObject::SetShotDataID(int id) {
 	StgShotData* oldData = _GetShotData();
 	StgShotObject::SetShotDataID(id);
 
-	//Šp‘¬“xXV
+	//è§’é€Ÿåº¦æ›´æ–°
 	StgShotData* shotData = _GetShotData();
 	if (shotData != nullptr && oldData != shotData) {
 		if (angularVelocity_ != 0) {
@@ -1525,7 +1525,7 @@ void StgNormalShotObject::SetShotDataID(int id) {
 }
 
 /**********************************************************
-//StgLaserObject(ƒŒ[ƒU[Šî–{•”)
+//StgLaserObject(ãƒ¬ãƒ¼ã‚¶ãƒ¼åŸºæœ¬éƒ¨)
 **********************************************************/
 StgLaserObject::StgLaserObject(StgStageController* stageController) : StgShotObject(stageController) {
 	life_ = LIFE_SPELL_REGIST;
@@ -1559,7 +1559,7 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 	switch (otherType) {
 	case StgIntersectionTarget::TYPE_PLAYER:
 	{
-		//©‹@
+		//è‡ªæ©Ÿ
 		if (frameGrazeInvalid_ <= 0) {
 			frameGrazeInvalid_ = frameGrazeInvalidStart_ > 0 ? frameGrazeInvalidStart_ : INT_MAX;
 		}
@@ -1567,7 +1567,7 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SHOT:
 	{
-		//©‹@’e’e
+		//è‡ªæ©Ÿå¼¾å¼¾
 		if (ptrObj) {
 			StgShotObject* shot = (StgShotObject*)ptrObj.get();
 			if (shot != nullptr) {
@@ -1583,7 +1583,7 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 	}
 	case StgIntersectionTarget::TYPE_PLAYER_SPELL:
 	{
-		//©‹@ƒXƒyƒ‹
+		//è‡ªæ©Ÿã‚¹ãƒšãƒ«
 		StgPlayerSpellObject* spell = (StgPlayerSpellObject*)ptrObj.get();
 		if (spell != nullptr) {
 			bool bEraseShot = spell->IsEraseShot();
@@ -1603,13 +1603,13 @@ void StgLaserObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersec
 
 
 /**********************************************************
-//StgLooseLaserObject(ËoŒ^ƒŒ[ƒU[)
+//StgLooseLaserObject(å°„å‡ºå‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 StgLooseLaserObject::StgLooseLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
 	typeObject_ = TypeObject::OBJ_LOOSE_LASER;
 }
 void StgLooseLaserObject::Work() {
-	//1ƒtƒŒ[ƒ€–Ú‚ÍˆÚ“®‚µ‚È‚¢
+	//1ãƒ•ãƒ¬ãƒ¼ãƒ ç›®ã¯ç§»å‹•ã—ãªã„
 	if (frameWork_ == 0) {
 		posXE_ = posX_;
 		posYE_ = posY_;
@@ -1676,7 +1676,7 @@ std::vector<StgIntersectionTarget::ptr> StgLooseLaserObject::GetIntersectionTarg
 	if (delay_ > 0)return res;
 	if (frameFadeDelete_ >= 0)return res;
 	if (IsDeleted())return res;
-	if (bUserIntersectionMode_)return res;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	if (bUserIntersectionMode_)return res;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	if (!bIntersectionEnable_)return res;
 
 	StgShotData* shotData = _GetShotData();
@@ -1719,7 +1719,7 @@ void StgLooseLaserObject::RenderOnShotManager() {
 	int shotBlendType = DirectGraphics::MODE_BLEND_ADD_ARGB;
 	StgShotRenderer* renderer = nullptr;
 	if (delay_ > 0) {
-		//’x‰„ŠÔ
+		//é…å»¶æ™‚é–“
 		int objDelayBlendType = GetSourceBlendType();
 		if (objDelayBlendType == DirectGraphics::MODE_BLEND_NONE) {
 			renderer = shotData->GetRenderer(DirectGraphics::MODE_BLEND_ADD_ARGB);
@@ -1861,7 +1861,7 @@ void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
 				int id = stageController_->GetMainObjectManager()->AddObject(obj);
 				if (id != DxScript::ID_INVALID) {
-					//’e‚ÌÀ•W‚ÉƒAƒCƒeƒ€‚ğì¬‚·‚é
+					//å¼¾ã®åº§æ¨™ã«ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä½œæˆã™ã‚‹
 					itemManager->AddItem(obj);
 					obj->SetPositionX(posX);
 					obj->SetPositionY(posY);
@@ -1872,7 +1872,7 @@ void StgLooseLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision) {
 }
 
 /**********************************************************
-//StgStraightLaserObject(İ’uŒ^ƒŒ[ƒU[)
+//StgStraightLaserObject(è¨­ç½®å‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 StgStraightLaserObject::StgStraightLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
 	typeObject_ = TypeObject::OBJ_STRAIGHT_LASER;
@@ -1945,7 +1945,7 @@ std::vector<StgIntersectionTarget::ptr> StgStraightLaserObject::GetIntersectionT
 	if (delay_ > 0)return res;
 	if (frameFadeDelete_ >= 0)return res;
 	if (IsDeleted())return res;
-	if (bUserIntersectionMode_)return res;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	if (bUserIntersectionMode_)return res;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	if (!bIntersectionEnable_)return res;
 
 	StgShotData* shotData = _GetShotData();
@@ -2154,7 +2154,7 @@ void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision)
 				shared_ptr<StgItemObject> obj = shared_ptr<StgItemObject>(new StgItemObject_Bonus(stageController_));
 				int id = stageController_->GetMainObjectManager()->AddObject(obj);
 				if (id != DxScript::ID_INVALID) {
-					//’e‚ÌÀ•W‚ÉƒAƒCƒeƒ€‚ğì¬‚·‚é
+					//å¼¾ã®åº§æ¨™ã«ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä½œæˆã™ã‚‹
 					itemManager->AddItem(obj);
 					obj->SetPositionX(posX);
 					obj->SetPositionY(posY);
@@ -2165,7 +2165,7 @@ void StgStraightLaserObject::_ConvertToItemAndSendEvent(bool flgPlayerCollision)
 }
 
 /**********************************************************
-//StgCurveLaserObject(‹È‚ª‚éŒ^ƒŒ[ƒU[)
+//StgCurveLaserObject(æ›²ãŒã‚‹å‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 StgCurveLaserObject::StgCurveLaserObject(StgStageController* stageController) : StgLaserObject(stageController) {
 	typeObject_ = TypeObject::OBJ_CURVE_LASER;
@@ -2257,7 +2257,7 @@ std::vector<StgIntersectionTarget::ptr> StgCurveLaserObject::GetIntersectionTarg
 	if (delay_ > 0)return res;
 	if (frameFadeDelete_ >= 0)return res;
 	if (IsDeleted())return res;
-	if (bUserIntersectionMode_)return res;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	if (bUserIntersectionMode_)return res;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	if (!bIntersectionEnable_)return res;
 
 	StgShotData* shotData = _GetShotData();

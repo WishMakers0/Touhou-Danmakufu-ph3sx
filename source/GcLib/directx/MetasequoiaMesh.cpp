@@ -204,10 +204,10 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner) {
 		}
 	}
 
-	//•s‰Â‹‚È‚çƒIƒuƒWƒFƒNƒg‚ğì¬‚µ‚È‚¢
+	//ä¸å¯è¦–ãªã‚‰ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä½œæˆã—ãªã„
 	if (!obj.bVisible_)return;
 
-	//ƒ}ƒeƒŠƒAƒ‹‚²‚Æ‚Éd•ª‚¯‚ÄƒIƒuƒWƒFƒNƒg‚ğì¬
+	//ãƒãƒ†ãƒªã‚¢ãƒ«ã”ã¨ã«ä»•åˆ†ã‘ã¦ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä½œæˆ
 	size_t iMapFace = 0U;
 	std::map<size_t, std::list<MetasequoiaMeshData::Object::Face*> >::iterator itrMap;
 	for (itrMap = mapFace.begin(); itrMap != mapFace.end(); itrMap++, iMapFace++) {
@@ -353,13 +353,13 @@ bool MetasequoiaMesh::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader>
 
 		data_ = _GetFromManager(name);
 		if (data_ == NULL) {
-			if (!reader->Open())throw gstd::wexception(L"ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚Ü‚¹‚ñ");
+			if (!reader->Open())throw gstd::wexception(L"ãƒ•ã‚¡ã‚¤ãƒ«ãŒé–‹ã‘ã¾ã›ã‚“");
 			data_ = new MetasequoiaMeshData();
 			data_->SetName(name);
 			MetasequoiaMeshData* data = (MetasequoiaMeshData*)data_.GetPointer();
 			res = data->CreateFromFileReader(reader);
 			if (res) {
-				Logger::WriteTop(StringUtility::Format(L"ƒƒbƒVƒ…‚ğ“Ç‚İ‚İ‚Ü‚µ‚½[%s]", name.c_str()));
+				Logger::WriteTop(StringUtility::Format(L"ãƒ¡ãƒƒã‚·ãƒ¥ã‚’èª­ã¿è¾¼ã¿ã¾ã—ãŸ[%s]", name.c_str()));
 				_AddManager(name, data_);
 			}
 			else {

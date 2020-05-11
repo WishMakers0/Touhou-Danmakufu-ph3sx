@@ -47,7 +47,7 @@ bool DirectInput::Initialize(HWND hWnd) {
 	HRESULT hrInput = DirectInput8Create(hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pInput_, nullptr);
 	if (FAILED(hrInput)) {
 		Logger::WriteTop("DirectInput::DirectInput8Create failure.");
-		return false;  // DirectInput8‚Ìì¬‚ÉŽ¸”s
+		return false;  // DirectInput8ã®ä½œæˆã«å¤±æ•—
 	}
 
 	_InitializeKeyBoard();
@@ -85,7 +85,7 @@ bool DirectInput::_InitializeKeyBoard() {
 		return false;
 	}
 
-	// “ü—Í§ŒäŠJŽn
+	// å…¥åŠ›åˆ¶å¾¡é–‹å§‹
 	pKeyboard_->Acquire();
 
 	Logger::WriteTop("DirectInput: Keyboard initialized.");
@@ -113,7 +113,7 @@ bool DirectInput::_InitializeMouse() {
 		return false;
 	}
 
-	// “ü—Í§ŒäŠJŽn
+	// å…¥åŠ›åˆ¶å¾¡é–‹å§‹
 	pMouse_->Acquire();
 
 	Logger::WriteTop("DirectInput: Mouse initialized.");
@@ -125,7 +125,7 @@ bool DirectInput::_InitializeJoypad() {
 	int count = pJoypad_.size();
 	if (count == 0) {
 		Logger::WriteTop("DirectInput: Cannot connect to a joypad.");
-		return false;	// ƒWƒ‡ƒCƒpƒbƒh‚ªŒ©•t‚©‚ç‚È‚¢
+		return false;	// ã‚¸ãƒ§ã‚¤ãƒ‘ãƒƒãƒ‰ãŒè¦‹ä»˜ã‹ã‚‰ãªã„
 	}
 
 	statePad_.resize(count);
@@ -150,7 +150,7 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// î•ñ•\Ž¦
+	// æƒ…å ±è¡¨ç¤º
 	{
 		DIDEVICEINSTANCE State;
 		ZeroMemory(&State, sizeof(State));
@@ -175,7 +175,7 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// x‚Ì”ÍˆÍ‚ðÝ’è
+	// xã®ç¯„å›²ã‚’è¨­å®š
 	DIPROPRANGE diprg;
 	diprg.diph.dwSize = sizeof(diprg);
 	diprg.diph.dwHeaderSize = sizeof(diprg.diph);
@@ -190,7 +190,7 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// y‚Ì”ÍˆÍ‚ðÝ’è
+	// yã®ç¯„å›²ã‚’è¨­å®š
 	diprg.diph.dwObj = DIJOFS_Y;
 	HRESULT hrRangeY = pJoypad->SetProperty(DIPROP_RANGE, &diprg.diph);
 	if (FAILED(hrRangeY)) {
@@ -199,14 +199,14 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// z‚Ì”ÍˆÍ‚ðÝ’è
+	// zã®ç¯„å›²ã‚’è¨­å®š
 	diprg.diph.dwObj = DIJOFS_Z;
 	HRESULT hrRangeZ = pJoypad->SetProperty(DIPROP_RANGE, &diprg.diph);
 	if (FAILED(hrRangeZ)) {
 		Logger::WriteTop("DirectInput: Failed to set joypad Z range.");
 	}
 
-	// x‚Ì–³Œøƒ][ƒ“‚ðÝ’è
+	// xã®ç„¡åŠ¹ã‚¾ãƒ¼ãƒ³ã‚’è¨­å®š
 	DIPROPDWORD dipdw;
 	dipdw.diph.dwSize = sizeof(dipdw);
 	dipdw.diph.dwHeaderSize = sizeof(dipdw.diph);
@@ -220,7 +220,7 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// y‚Ì–³Œøƒ][ƒ“‚ðÝ’è
+	// yã®ç„¡åŠ¹ã‚¾ãƒ¼ãƒ³ã‚’è¨­å®š
 	dipdw.diph.dwObj = DIJOFS_Y;
 	HRESULT hrDeadY = pJoypad->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
 	if (FAILED(hrDeadY)) {
@@ -229,14 +229,14 @@ BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi) {
 		return DIENUM_CONTINUE;
 	}
 
-	// ‚y‚Ì–³Œøƒ][ƒ“‚ðÝ’è
+	// ï¼ºã®ç„¡åŠ¹ã‚¾ãƒ¼ãƒ³ã‚’è¨­å®š
 	dipdw.diph.dwObj = DIJOFS_Z;
 	HRESULT hrDeadZ = pJoypad->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
 	if (FAILED(hrDeadZ)) {
 		Logger::WriteTop("DirectInput: Failed to set joypad Z deadzone.");
 	}
 
-	// “ü—Í§ŒäŠJŽn
+	// å…¥åŠ›åˆ¶å¾¡é–‹å§‹
 	pJoypad->Acquire();
 
 	pJoypad_.push_back(pJoypad);

@@ -26,11 +26,11 @@ bool EApplication::_Initialize() {
 	fpsController->SetFastModeRate((size_t)config->GetSkipModeSpeedRate() * 60U);
 
 #if defined(GAME_VERSION_TCL)
-	std::wstring appName = L"“Œ•û•ó“V‹ž@` Treasure Castle Labyrinth ";
+	std::wstring appName = L"æ±æ–¹å®å¤©äº¬ã€€ï½ž Treasure Castle Labyrinth ";
 #elif defined(GAME_VERSION_SP)
-	std::wstring appName = L"“Œ•û’ª¹‘@` Sapphire Panlogism ";
+	std::wstring appName = L"æ±æ–¹æ½®è–æ›¸ã€€ï½ž Sapphire Panlogism ";
 #else
-	std::wstring appName = L"“Œ•û’e–‹•— ph3sx ";
+	std::wstring appName = L"æ±æ–¹å¼¾å¹•é¢¨ ph3sx ";
 #endif
 	appName += DNH_VERSION;
 
@@ -38,11 +38,11 @@ bool EApplication::_Initialize() {
 	if (configWindowTitle.size() > 0)
 		appName = configWindowTitle;
 
-	//ƒ}ƒEƒX•\Ž¦
+	//ãƒžã‚¦ã‚¹è¡¨ç¤º
 	if (!config->IsMouseVisible())
 		WindowUtility::SetMouseVisible(false);
 
-	//DirectX‰Šú‰»
+	//DirectXåˆæœŸåŒ–
 	EDirectGraphics* graphics = EDirectGraphics::CreateInstance();
 	graphics->Initialize();
 	HWND hWndMain = graphics->GetWindowHandle();
@@ -117,7 +117,7 @@ bool EApplication::_Loop() {
 	HWND hWndGraphics = graphics->GetWindowHandle();
 	HWND hWndLogger = ELogger::GetInstance()->GetWindowHandle();
 	if (hWndFocused != hWndGraphics && hWndFocused != hWndLogger) {
-		//”ñƒAƒNƒeƒBƒuŽž‚Í“®ì‚µ‚È‚¢
+		//éžã‚¢ã‚¯ãƒ†ã‚£ãƒ–æ™‚ã¯å‹•ä½œã—ãªã„
 		::Sleep(10);
 		return true;
 	}
@@ -127,7 +127,7 @@ bool EApplication::_Loop() {
 	if (input->GetKeyState(DIK_LCONTROL) == KEY_HOLD &&
 		input->GetKeyState(DIK_LSHIFT) == KEY_HOLD &&
 		input->GetKeyState(DIK_R) == KEY_PUSH) {
-		//ƒŠƒZƒbƒg
+		//ãƒªã‚»ãƒƒãƒˆ
 		SystemController* systemController = SystemController::CreateInstance();
 		systemController->Reset();
 	}
@@ -166,7 +166,7 @@ bool EApplication::_Loop() {
 		fpsController->Wait();
 	}
 
-	//ƒƒOŠÖ˜A
+	//ãƒ­ã‚°é–¢é€£
 	if (logger->IsWindowVisible()) {
 		std::wstring fps = StringUtility::Format(L"Work: %.2ffps, Draw: %.2ffps",
 			fpsController->GetCurrentWorkFps(),
@@ -186,7 +186,7 @@ bool EApplication::_Loop() {
 			StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
 	}
 
-	//‚‘¬“®ì
+	//é«˜é€Ÿå‹•ä½œ
 	int fastModeKey = fpsController->GetFastModeKey();
 	if (input->GetKeyState(fastModeKey) == KEY_HOLD)
 		fpsController->SetFastMode(true);
@@ -266,7 +266,7 @@ bool EDirectGraphics::Initialize() {
 	int monitorHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
 	bool bFullScreenEnable = screenWidth <= monitorWidth && screenHeight <= monitorHeight;
 
-	//ƒRƒ“ƒtƒBƒO”½‰f
+	//ã‚³ãƒ³ãƒ•ã‚£ã‚°åæ˜ 
 	if (screenMode == DirectGraphics::SCREENMODE_FULLSCREEN && bFullScreenEnable) {
 		ChangeScreenMode();
 	}

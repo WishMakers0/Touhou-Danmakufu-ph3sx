@@ -207,7 +207,7 @@ public:
 	void Render();
 };
 class PlayerSelectMenuItem : public TextLightUpMenuItem {
-	ref_count_ptr<ScriptInformation> info_;//©‹@î•ñ
+	ref_count_ptr<ScriptInformation> info_;//ï¿½ï¿½ï¿½@ï¿½ï¿½ï¿½
 
 	PlayerSelectScene* _GetTitleScene() { return (PlayerSelectScene*)menu_; }
 public:

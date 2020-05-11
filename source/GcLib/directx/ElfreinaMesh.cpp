@@ -24,7 +24,7 @@ bool ElfreinaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader
 	reader->Read(&textUtf8[0], size);
 	textUtf8[size] = '\0';
 
-	//•¶šƒR[ƒh•ÏŠ·
+	//æ–‡å­—ã‚³ãƒ¼ãƒ‰å¤‰æ›
 	std::wstring text = StringUtility::ConvertUtf8ToWide(textUtf8);
 
 	gstd::Scanner scanner(text);
@@ -45,7 +45,7 @@ bool ElfreinaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader
 			}
 		}
 
-		//’¸“_ƒoƒbƒtƒ@ì¬
+		//é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ä½œæˆ
 		for (int iMesh = 0; iMesh < mesh_.size(); iMesh++) {
 			mesh_[iMesh]->InitializeVertexBuffer();
 		}
@@ -53,12 +53,12 @@ bool ElfreinaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader
 		res = true;
 	}
 	catch (gstd::wexception& e) {
-		Logger::WriteTop(StringUtility::Format(L"ElfreinaMeshData“Ç‚İ‚İ¸”s %s %d", e.what(), scanner.GetCurrentLine()));
+		Logger::WriteTop(StringUtility::Format(L"ElfreinaMeshDataèª­ã¿è¾¼ã¿å¤±æ•— %s %d", e.what(), scanner.GetCurrentLine()));
 		res = false;
 	}
 
 	if (false) {
-		Logger::WriteTop(StringUtility::Format(L"ElfreinaMeshData“Ç‚İ‚İ¬Œ÷[%s]", reader->GetOriginalPath().c_str()));
+		Logger::WriteTop(StringUtility::Format(L"ElfreinaMeshDataèª­ã¿è¾¼ã¿æˆåŠŸ[%s]", reader->GetOriginalPath().c_str()));
 		for (int iMesh = 0; iMesh < mesh_.size(); iMesh++) {
 			std::wstring name = mesh_[iMesh]->name_;
 			std::wstring log = L" Mesh ";
@@ -163,7 +163,7 @@ void ElfreinaMeshData::_ReadMeshContainer(gstd::Scanner& scanner) {
 
 				if (tok.GetType() == Token::TK_NEWLINE) {
 					if (iCount != 0 && iBone != -1 && iCount != 16)
-						throw gstd::wexception(L"ElfreinaMeshData:OffsetMatrices‚Ì”‚ª•s³‚Å‚·");
+						throw gstd::wexception(L"ElfreinaMeshData:OffsetMatricesã®æ•°ãŒä¸æ­£ã§ã™");
 					iCount = 0;
 					iBone++;
 				}
@@ -358,7 +358,7 @@ void ElfreinaMeshData::_ReadMesh(gstd::Scanner& scanner, Mesh& mesh) {
 			int countFace = mesh.vertexIndices_.size() / 3;
 			for (int iFace = 0; iFace < countFace; iFace++) {
 				int face = scanner.Next().GetInteger();
-				if (face != 3)throw gstd::wexception(L"3’¸“_‚ÅŒ`¬‚³‚ê‚Ä‚¢‚È‚¢–Ê‚ª‚ ‚è‚Ü‚·");
+				if (face != 3)throw gstd::wexception(L"3é ‚ç‚¹ã§å½¢æˆã•ã‚Œã¦ã„ãªã„é¢ãŒã‚ã‚Šã¾ã™");
 				scanner.CheckType(scanner.Next(), Token::TK_COMMA);
 				mesh.vertexIndices_[iFace * 3] = scanner.Next().GetInteger();
 				scanner.CheckType(scanner.Next(), Token::TK_COLON);
@@ -377,7 +377,7 @@ void ElfreinaMeshData::_ReadMesh(gstd::Scanner& scanner, Mesh& mesh) {
 			for (int iFace = 0; iFace < countFace; iFace++) {
 				int index = scanner.Next().GetInteger();
 				if (attr == -1)attr = index;
-				if (attr != index)throw gstd::wexception(L"1ƒIƒuƒWƒFƒNƒg‚É•¡”ƒ}ƒeƒŠƒAƒ‹‚Í”ñ‘Î‰");
+				if (attr != index)throw gstd::wexception(L"1ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«è¤‡æ•°ãƒãƒ†ãƒªã‚¢ãƒ«ã¯éå¯¾å¿œ");
 				scanner.CheckType(scanner.Next(), Token::TK_NEWLINE);
 			}
 			mesh.material_ = material_[attr];
@@ -385,7 +385,7 @@ void ElfreinaMeshData::_ReadMesh(gstd::Scanner& scanner, Mesh& mesh) {
 		}
 	}
 
-	//ƒ{[ƒ“ƒEƒFƒCƒgƒf[ƒ^®—
+	//ãƒœãƒ¼ãƒ³ã‚¦ã‚§ã‚¤ãƒˆãƒ‡ãƒ¼ã‚¿æ•´ç†
 	int boneCount = bone_.size();
 	std::vector<double> totalWeight;
 	totalWeight.resize(boneCount);
@@ -419,7 +419,7 @@ void ElfreinaMeshData::_ReadMesh(gstd::Scanner& scanner, Mesh& mesh) {
 				}
 			}
 
-			//’¸“_ƒf[ƒ^‚Éİ’è
+			//é ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ã«è¨­å®š
 			if (data1 != NULL && data2 != NULL) {
 				float sub = 1.0f - data1->weight - data2->weight;
 				data1->weight += sub / 2.0f;
@@ -442,7 +442,7 @@ void ElfreinaMeshData::_ReadMesh(gstd::Scanner& scanner, Mesh& mesh) {
 		}
 	}
 
-	//dS
+	//é‡å¿ƒ
 	double maxWeight = 0;
 	mesh.CalculateWeightCenter();
 	for (int iBone = 0; iBone < totalWeight.size(); iBone++) {
@@ -693,7 +693,7 @@ gstd::ref_count_ptr<Matrices> ElfreinaMeshData::AnimationData::CreateBoneAnimati
 	gstd::ref_count_ptr<Matrices> matrix = new Matrices();
 	matrix->SetSize(bones.size());
 
-	//ÅãˆÊ‚Ìe‚ğ’T‚·
+	//æœ€ä¸Šä½ã®è¦ªã‚’æ¢ã™
 	for (int iBone = 0; iBone < bones.size(); iBone++) {
 		if (bones[iBone]->GetParentIndex() != ElfreinaMeshData::Bone::NO_PARENT)continue;
 
@@ -701,10 +701,10 @@ gstd::ref_count_ptr<Matrices> ElfreinaMeshData::AnimationData::CreateBoneAnimati
 		D3DXMATRIX& matOffset = bones[iBone]->GetOffsetMatrix();
 		D3DXMATRIX mat = _CalculateMatrix(time, iBone) * matInit;
 
-		//©g‚Ìs—ñ‚ğİ’è
+		//è‡ªèº«ã®è¡Œåˆ—ã‚’è¨­å®š
 		matrix->SetMatrix(iBone, matOffset * mat);
 
-		//q‚Ìs—ñ‚ğŒvZ
+		//å­ã®è¡Œåˆ—ã‚’è¨ˆç®—
 		std::vector<int>& indexChild = bones[iBone]->GetChildIndex();
 		for (int iChild = 0; iChild < indexChild.size(); iChild++) {
 			int index = indexChild[iChild];
@@ -721,10 +721,10 @@ void ElfreinaMeshData::AnimationData::_CreateBoneAnimationMatrix(int time, Elfre
 	D3DXMATRIX& matOffset = bones[indexOwn]->GetOffsetMatrix();
 	D3DXMATRIX mat = _CalculateMatrix(time, indexOwn) * matInit * matrixParentAnime;
 
-	//©g‚Ìs—ñ‚ğİ’è
+	//è‡ªèº«ã®è¡Œåˆ—ã‚’è¨­å®š
 	matrix->SetMatrix(indexOwn, matOffset * mat);
 
-	//q‚Ìs—ñ‚ğŒvZ
+	//å­ã®è¡Œåˆ—ã‚’è¨ˆç®—
 	std::vector<int>& indexChild = bones[indexOwn]->GetChildIndex();
 	for (int iChild = 0; iChild < indexChild.size(); iChild++) {
 		int index = indexChild[iChild];
@@ -741,7 +741,7 @@ D3DXMATRIX ElfreinaMeshData::AnimationData::_CalculateMatrix(double time, int in
 
 	std::vector<float>& keyTime = part->GetTimeKey();
 
-	//ƒAƒjƒ[ƒVƒ‡ƒ“ƒCƒ“ƒfƒbƒNƒX‚ğŒŸõ
+	//ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’æ¤œç´¢
 	int keyNext = -1;
 	int keyPrevious = -1;
 	for (int iTime = 0; iTime < keyTime.size(); iTime++) {
@@ -762,7 +762,7 @@ D3DXMATRIX ElfreinaMeshData::AnimationData::_CalculateMatrix(double time, int in
 	float timeDiffAnime = (float)(time - timeTotal_ * keyTime[keyPrevious]);
 	float rateToNext = timeDiffKey != 0.0f ? timeDiffAnime / timeDiffKey : 0;
 
-	//Šes—ñ‚ğì¬
+	//å„è¡Œåˆ—ã‚’ä½œæˆ
 	std::vector<D3DXVECTOR3>& keyTrans = part->GetTransKey();
 	D3DXMATRIX matTrans;
 	D3DXMatrixIdentity(&matTrans);
@@ -830,13 +830,13 @@ bool ElfreinaMesh::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> re
 
 		data_ = _GetFromManager(name);
 		if (data_ == NULL) {
-			if (!reader->Open())throw gstd::wexception(L"ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚Ü‚¹‚ñ");
+			if (!reader->Open())throw gstd::wexception(L"ãƒ•ã‚¡ã‚¤ãƒ«ãŒé–‹ã‘ã¾ã›ã‚“");
 			data_ = new ElfreinaMeshData();
 			data_->SetName(name);
 			ElfreinaMeshData* data = (ElfreinaMeshData*)data_.GetPointer();
 			res = data->CreateFromFileReader(reader);
 			if (res) {
-				Logger::WriteTop(StringUtility::Format(L"ƒƒbƒVƒ…‚ğ“Ç‚İ‚İ‚Ü‚µ‚½[%s]", name.c_str()));
+				Logger::WriteTop(StringUtility::Format(L"ãƒ¡ãƒƒã‚·ãƒ¥ã‚’èª­ã¿è¾¼ã¿ã¾ã—ãŸ[%s]", name.c_str()));
 				_AddManager(name, data_);
 
 			}
@@ -944,7 +944,7 @@ gstd::ref_count_ptr<Matrices> ElfreinaMesh::CreateAnimationMatrix(std::wstring n
 	if (itr == data->anime_.end()) return NULL;
 	gstd::ref_count_ptr<ElfreinaMeshData::AnimationData> anime = itr->second;
 
-	//ƒ‹[ƒv—L–³‚ÅŠÔ‚ğŒvZ‚·‚é
+	//ãƒ«ãƒ¼ãƒ—æœ‰ç„¡ã§æ™‚é–“ã‚’è¨ˆç®—ã™ã‚‹
 	time = _CalcFrameToTime(time, anime);
 
 	gstd::ref_count_ptr<Matrices> matrix = anime->CreateBoneAnimationMatrix(time, data);
@@ -960,7 +960,7 @@ D3DXMATRIX ElfreinaMesh::GetAnimationMatrix(std::wstring nameAnime, double time,
 		if (bExist) {
 			gstd::ref_count_ptr<ElfreinaMeshData::AnimationData> anime = data->anime_[nameAnime];
 
-			//ƒ‹[ƒv—L–³‚ÅŠÔ‚ğŒvZ‚·‚é
+			//ãƒ«ãƒ¼ãƒ—æœ‰ç„¡ã§æ™‚é–“ã‚’è¨ˆç®—ã™ã‚‹
 			time = _CalcFrameToTime(time, anime);
 			gstd::ref_count_ptr<Matrices> matrix = anime->CreateBoneAnimationMatrix(time, data);
 			D3DXMATRIX matBone = matrix->GetMatrix(indexBone);

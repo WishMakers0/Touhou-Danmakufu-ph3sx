@@ -48,7 +48,7 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 
 		while (scanner.HasNext()) {
 			Token& tok = scanner.Next();
-			if (tok.GetType() == Token::TK_EOF)//Eof‚Ì¯•Êq‚ª—ˆ‚½‚çƒtƒ@ƒCƒ‹‚Ì’²¸I—¹
+			if (tok.GetType() == Token::TK_EOF)//Eofã®è­˜åˆ¥å­ãŒæ¥ãŸã‚‰ãƒ•ã‚¡ã‚¤ãƒ«ã®èª¿æŸ»çµ‚äº†
 			{
 				break;
 			}
@@ -59,10 +59,10 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 				if (encoding == Encoding::SHIFT_JIS) {
 					int start = tok.GetStartPointer();
 					int end = tok.GetEndPointer();
-					bShiftJisDanmakufu = scanner.CompareMemory(start, end, "“Œ•û’e–‹•—");
+					bShiftJisDanmakufu = scanner.CompareMemory(start, end, "æ±æ–¹å¼¾å¹•é¢¨");
 				}
 
-				if (element == L"“Œ•û’e–‹•—" || element == L"TouhouDanmakufu" || bShiftJisDanmakufu) {
+				if (element == L"æ±æ–¹å¼¾å¹•é¢¨" || element == L"TouhouDanmakufu" || bShiftJisDanmakufu) {
 					bScript = true;
 					if (scanner.Next().GetType() != Token::TK_OPENB)continue;
 					tok = scanner.Next();
@@ -107,7 +107,7 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 		}
 
 		if (bScript) {
-			//ID‚ª‚È‚©‚Á‚½ê‡‚Í‚µ‚å‚¤‚ª‚È‚¢‚Ì‚Åƒtƒ@ƒCƒ‹–¼‚É‚·‚éB
+			//IDãŒãªã‹ã£ãŸå ´åˆã¯ã—ã‚‡ã†ãŒãªã„ã®ã§ãƒ•ã‚¡ã‚¤ãƒ«åã«ã™ã‚‹ã€‚
 			if (idScript.size() == 0)
 				idScript = PathProperty::GetFileNameWithoutExtension(pathScript);
 
@@ -223,7 +223,7 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInf
 
 		std::multimap<std::wstring, ArchiveFileEntry::ptr> mapEntry = archive.GetEntryMap();
 		for (auto itr = mapEntry.begin(); itr != mapEntry.end(); itr++) {
-			//–¾‚ç‚©‚ÉŠÖŒW‚È‚³‚»‚¤‚ÈŠg’£q‚ÍœŠO
+			//æ˜ã‚‰ã‹ã«é–¢ä¿‚ãªã•ãã†ãªæ‹¡å¼µå­ã¯é™¤å¤–
 			ArchiveFileEntry::ptr entry = itr->second;
 			std::wstring dir = PathProperty::GetFileDirectory(path);
 			std::wstring tPath = dir + entry->directory + entry->name;
@@ -244,7 +244,7 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInf
 	}
 	else {
 
-		//–¾‚ç‚©‚ÉŠÖŒW‚È‚³‚»‚¤‚ÈŠg’£q‚ÍœŠO
+		//æ˜ã‚‰ã‹ã«é–¢ä¿‚ãªã•ãã†ãªæ‹¡å¼µå­ã¯é™¤å¤–
 		std::wstring ext = PathProperty::GetFileExtension(path);
 		if (ScriptInformation::IsExcludeExtention(ext))return res;
 
@@ -271,7 +271,7 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 		std::wstring name = data.cFileName;
 		if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
 			(name != L".." && name != L".")) {
-			//ƒfƒBƒŒƒNƒgƒŠ
+			//ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª
 			std::wstring tDir = dir + name;
 			tDir += L"\\";
 
@@ -284,10 +284,10 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 		if (wcscmp(data.cFileName, L"..") == 0 || wcscmp(data.cFileName, L".") == 0)
 			continue;
 
-		//ƒtƒ@ƒCƒ‹
+		//ãƒ•ã‚¡ã‚¤ãƒ«
 		std::wstring path = dir + name;
 
-		//ƒXƒNƒŠƒvƒg‰ğÍ
+		//ã‚¹ã‚¯ãƒªãƒ—ãƒˆè§£æ
 		std::vector<ref_count_ptr<ScriptInformation>> listInfo = CreateScriptInformationList(path, true);
 		for (int iInfo = 0; iInfo < listInfo.size(); iInfo++) {
 			ref_count_ptr<ScriptInformation> info = listInfo[iInfo];
@@ -416,12 +416,12 @@ DnhConfiguration::DnhConfiguration() {
 
 	pathExeLaunch_ = DNH_EXE_DEFAULT;
 
-	//ƒL[“o˜^
+	//ã‚­ãƒ¼ç™»éŒ²
 	padIndex_ = 0;
-	mapKey_[EDirectInput::KEY_LEFT] = new VirtualKey(DIK_LEFT, 0, 0);//ƒL[ƒ{[ƒhu©v‚ÆƒWƒ‡ƒCƒpƒbƒhu©v‚ğ“o˜^
-	mapKey_[EDirectInput::KEY_RIGHT] = new VirtualKey(DIK_RIGHT, 0, 1);//ƒL[ƒ{[ƒhu¨v‚ÆƒWƒ‡ƒCƒpƒbƒhu¨v‚ğ“o˜^
-	mapKey_[EDirectInput::KEY_UP] = new VirtualKey(DIK_UP, 0, 2);//ƒL[ƒ{[ƒhuªv‚ÆƒWƒ‡ƒCƒpƒbƒhuªv‚ğ“o˜^
-	mapKey_[EDirectInput::KEY_DOWN] = new VirtualKey(DIK_DOWN, 0, 3);	//ƒL[ƒ{[ƒhu«v‚ÆƒWƒ‡ƒCƒpƒbƒhu«v‚ğ“o˜^
+	mapKey_[EDirectInput::KEY_LEFT] = new VirtualKey(DIK_LEFT, 0, 0);//ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã€Œâ†ã€ã¨ã‚¸ãƒ§ã‚¤ãƒ‘ãƒƒãƒ‰ã€Œâ†ã€ã‚’ç™»éŒ²
+	mapKey_[EDirectInput::KEY_RIGHT] = new VirtualKey(DIK_RIGHT, 0, 1);//ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã€Œâ†’ã€ã¨ã‚¸ãƒ§ã‚¤ãƒ‘ãƒƒãƒ‰ã€Œâ†’ã€ã‚’ç™»éŒ²
+	mapKey_[EDirectInput::KEY_UP] = new VirtualKey(DIK_UP, 0, 2);//ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã€Œâ†‘ã€ã¨ã‚¸ãƒ§ã‚¤ãƒ‘ãƒƒãƒ‰ã€Œâ†‘ã€ã‚’ç™»éŒ²
+	mapKey_[EDirectInput::KEY_DOWN] = new VirtualKey(DIK_DOWN, 0, 3);	//ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã€Œâ†“ã€ã¨ã‚¸ãƒ§ã‚¤ãƒ‘ãƒƒãƒ‰ã€Œâ†“ã€ã‚’ç™»éŒ²
 
 	mapKey_[EDirectInput::KEY_OK] = new VirtualKey(DIK_Z, 0, 5);
 	mapKey_[EDirectInput::KEY_CANCEL] = new VirtualKey(DIK_X, 0, 6);

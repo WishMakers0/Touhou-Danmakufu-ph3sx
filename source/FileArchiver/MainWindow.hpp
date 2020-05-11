@@ -25,7 +25,7 @@ private:
 	WStatusBar wndStatus_;
 
 	std::wstring pathArchive_;
-	std::set<std::wstring> listFile_;//d•¡“o˜^‚ğ–h‚®
+	std::set<std::wstring> listFile_;//ï¿½dï¿½ï¿½ï¿½oï¿½^ï¿½ï¿½hï¿½ï¿½
 
 	BOOL _DropFiles(WPARAM wParam, LPARAM lParam);
 	void _AddFileFromDialog();

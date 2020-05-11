@@ -25,14 +25,14 @@ StgStageController::~StgStageController() {
 	ptr_delete(intersectionManager_);
 }
 void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) {
-	//FPU‰Šú‰»
+	//FPUåˆæœŸåŒ–
 	Math::InitializeFPU();
 
-	//ƒL[‰Šú‰»
+	//ã‚­ãƒ¼åˆæœŸåŒ–
 	EDirectInput* input = EDirectInput::GetInstance();
 	input->ClearKeyState();
 
-	//3DƒJƒƒ‰
+	//3Dã‚«ãƒ¡ãƒ©
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
 	camera3D->Reset();
@@ -41,7 +41,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	camera3D->SetPerspectiveClip(10, 2000);
 	camera3D->thisProjectionChanged_ = true;
 
-	//2DƒJƒƒ‰
+	//2Dã‚«ãƒ¡ãƒ©
 	ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 	camera2D->Reset();
 
@@ -53,7 +53,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	infoStage_ = infoStage;
 	infoStage_->SetReplay(replayStageData != nullptr);
 
-	//ƒŠƒvƒŒƒCƒL[İ’è
+	//ãƒªãƒ—ãƒ¬ã‚¤ã‚­ãƒ¼è¨­å®š
 	int replayState = infoStage_->IsReplay() ? KeyReplayManager::STATE_REPLAY : KeyReplayManager::STATE_RECORD;
 	keyReplayManager_ = new KeyReplayManager(EDirectInput::GetInstance());
 	keyReplayManager_->SetManageState(replayState);
@@ -79,12 +79,12 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		replayStageData = new ReplayInformation::StageData();
 	infoStage_->SetReplayData(replayStageData);
 
-	//ƒXƒe[ƒW—v‘f
+	//ã‚¹ãƒ†ãƒ¼ã‚¸è¦ç´ 
 	infoSlow_ = new PseudoSlowInformation();
 	ref_count_weak_ptr<PseudoSlowInformation> wPtr = infoSlow_;
 	EFpsController::GetInstance()->AddFpsControlObject(wPtr);
 
-	//‘OƒXƒe[ƒWî•ñ”½‰f
+	//å‰ã‚¹ãƒ†ãƒ¼ã‚¸æƒ…å ±åæ˜ 
 	if (prevStageData != nullptr) {
 		infoStage_->SetScore(prevStageData->GetScore());
 		infoStage_->SetGraze(prevStageData->GetGraze());
@@ -92,9 +92,9 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	}
 
 
-	//ƒŠƒvƒŒƒCŠÖ˜A(ƒXƒNƒŠƒvƒg‰Šú‰»‘O)
+	//ãƒªãƒ—ãƒ¬ã‚¤é–¢é€£(ã‚¹ã‚¯ãƒªãƒ—ãƒˆåˆæœŸåŒ–å‰)
 	if (!infoStage_->IsReplay()) {
-		//—”
+		//ä¹±æ•°
 		uint32_t randSeed = infoStage_->GetRandProvider()->GetSeed();
 		replayStageData->SetRandSeed(randSeed);
 
@@ -102,7 +102,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		if (logger->IsWindowVisible())
 			logger->SetInfo(11, L"Rand seed", StringUtility::Format(L"%08x", randSeed));
 
-		//ƒXƒe[ƒWî•ñ
+		//ã‚¹ãƒ†ãƒ¼ã‚¸æƒ…å ±
 		ref_count_ptr<ScriptInformation> infoParent = systemController_->GetSystemInformation()->GetMainScriptInformation();
 		ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
 		std::wstring pathParentScript = infoParent->GetScriptPath();
@@ -118,7 +118,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		replayStageData->SetPoint(infoStage_->GetPoint());
 	}
 	else {
-		//—”
+		//ä¹±æ•°
 		uint32_t randSeed = replayStageData->GetRandSeed();
 		infoStage_->GetRandProvider()->Initialize(randSeed);
 
@@ -126,15 +126,15 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		if (logger->IsWindowVisible())
 			logger->SetInfo(11, L"Rand seed", StringUtility::Format(L"%08x", randSeed));
 
-		//ƒŠƒvƒŒƒCƒL[
+		//ãƒªãƒ—ãƒ¬ã‚¤ã‚­ãƒ¼
 		keyReplayManager_->ReadRecord(*replayStageData->GetReplayKeyRecord());
 
-		//ƒXƒe[ƒWî•ñ
+		//ã‚¹ãƒ†ãƒ¼ã‚¸æƒ…å ±
 		infoStage_->SetScore(replayStageData->GetStartScore());
 		infoStage_->SetGraze(replayStageData->GetGraze());
 		infoStage_->SetPoint(replayStageData->GetPoint());
 
-		//©‹@İ’è
+		//è‡ªæ©Ÿè¨­å®š
 		prevPlayerInfo = new StgPlayerInformation();
 		prevPlayerInfo->SetLife(replayStageData->GetPlayerLife());
 		prevPlayerInfo->SetSpell(replayStageData->GetPlayerBombCount());
@@ -151,7 +151,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 	intersectionManager_ = new StgIntersectionManager();
 	pauseManager_ = new StgPauseScene(systemController_);
 
-	//ƒpƒbƒP[ƒWƒXƒNƒŠƒvƒg‚Ìê‡‚ÍAƒXƒe[ƒWƒXƒNƒŠƒvƒg‚ÆŠÖ˜A•t‚¯‚é
+	//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®å ´åˆã¯ã€ã‚¹ãƒ†ãƒ¼ã‚¸ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¨é–¢é€£ä»˜ã‘ã‚‹
 	StgPackageController* packageController = systemController_->GetPackageController();
 	if (packageController != nullptr) {
 		shared_ptr<ScriptManager> packageScriptManager = std::dynamic_pointer_cast<ScriptManager>(packageController->GetScriptManagerRef());
@@ -161,13 +161,13 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 
 	auto objectManager = scriptManager_->GetObjectManager();
 
-	//ƒƒCƒ“ƒXƒNƒŠƒvƒgî•ñ
+	//ãƒ¡ã‚¤ãƒ³ã‚¹ã‚¯ãƒªãƒ—ãƒˆæƒ…å ±
 	ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
 	std::wstring dirInfo = PathProperty::GetFileDirectory(infoMain->GetScriptPath());
 
 	ELogger::WriteTop(StringUtility::Format(L"Main script: [%s]", infoMain->GetScriptPath().c_str()));
 
-	//ƒVƒXƒeƒ€ƒXƒNƒŠƒvƒg
+	//ã‚·ã‚¹ãƒ†ãƒ ã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 	std::wstring pathSystemScript = infoMain->GetSystemPath();
 	if (pathSystemScript == ScriptInformation::DEFAULT)
 		pathSystemScript = EPathProperty::GetStgDefaultScriptDirectory() + L"Default_System.txt";
@@ -179,7 +179,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		scriptManager_->StartScript(script);
 	}
 
-	//©‹@ƒXƒNƒŠƒvƒg
+	//è‡ªæ©Ÿã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 	shared_ptr<StgPlayerObject> objPlayer = nullptr;
 	ref_count_ptr<ScriptInformation> infoPlayer = infoStage_->GetPlayerScriptInformation();
 	std::wstring pathPlayerScript = infoPlayer->GetScriptPath();
@@ -202,14 +202,14 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		scriptManager_->SetPlayerScript(script);
 		scriptManager_->StartScript(script);
 
-		//‘OƒXƒe[ƒWî•ñ”½‰f
+		//å‰ã‚¹ãƒ†ãƒ¼ã‚¸æƒ…å ±åæ˜ 
 		if (prevPlayerInfo != nullptr)
 			objPlayer->SetPlayerInforamtion(prevPlayerInfo);
 	}
 	if (objPlayer != nullptr)
 		infoStage_->SetPlayerObjectInformation(objPlayer->GetPlayerInformation());
 
-	//ƒƒCƒ“ƒXƒNƒŠƒvƒg
+	//ãƒ¡ã‚¤ãƒ³ã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 	if (infoMain->GetType() == ScriptInformation::TYPE_SINGLE) {
 		std::wstring pathMainScript = EPathProperty::GetSystemResourceDirectory() + L"script/System_SingleStage.txt";
 		auto script = scriptManager_->LoadScript(pathMainScript, StgStageScript::TYPE_STAGE);
@@ -229,7 +229,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		}
 	}
 
-	//”wŒiƒXƒNƒŠƒvƒg
+	//èƒŒæ™¯ã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 	std::wstring pathBack = infoMain->GetBackgroundPath();
 	if (pathBack == ScriptInformation::DEFAULT)
 		pathBack = L"";
@@ -240,7 +240,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		scriptManager_->StartScript(script);
 	}
 
-	//‰¹ºÄ¶
+	//éŸ³å£°å†ç”Ÿ
 	std::wstring pathBGM = infoMain->GetBgmPath();
 	if (pathBGM == ScriptInformation::DEFAULT)
 		pathBGM = L"";
@@ -256,9 +256,9 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData) 
 		}
 	}
 
-	//ƒŠƒvƒŒƒCŠÖ˜A(ƒXƒNƒŠƒvƒg‰Šú‰»Œã)
+	//ãƒªãƒ—ãƒ¬ã‚¤é–¢é€£(ã‚¹ã‚¯ãƒªãƒ—ãƒˆåˆæœŸåŒ–å¾Œ)
 	if (!infoStage_->IsReplay()) {
-		//©‹@î•ñ
+		//è‡ªæ©Ÿæƒ…å ±
 		shared_ptr<StgPlayerObject> objPlayer = GetPlayerObject();
 		if (objPlayer != nullptr) {
 			replayStageData->SetPlayerLife(objPlayer->GetLife());
@@ -281,16 +281,16 @@ void StgStageController::CloseScene() {
 	ref_count_weak_ptr<PseudoSlowInformation> wPtr = infoSlow_;
 	EFpsController::GetInstance()->RemoveFpsControlObject(wPtr);
 
-	//ƒŠƒvƒŒƒC
+	//ãƒªãƒ—ãƒ¬ã‚¤
 	if (!infoStage_->IsReplay()) {
-		//ƒL[
+		//ã‚­ãƒ¼
 		ref_count_ptr<RecordBuffer> recKey = new RecordBuffer();
 		keyReplayManager_->WriteRecord(*recKey.GetPointer());
 
 		ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
 		replayStageData->SetReplayKeyRecord(recKey);
 
-		//ÅIƒtƒŒ[ƒ€
+		//æœ€çµ‚ãƒ•ãƒ¬ãƒ¼ãƒ 
 		int stageFrame = infoStage_->GetCurrentFrame();
 		replayStageData->SetEndFrame(stageFrame);
 
@@ -342,7 +342,7 @@ void StgStageController::Work() {
 
 	bool bPermitRetryKey = !input->IsTargetKeyCode(DIK_BACK);
 	if (!bPackageMode && bPermitRetryKey && input->GetKeyState(DIK_BACK) == KEY_PUSH) {
-		//ƒŠƒgƒ‰ƒC
+		//ãƒªãƒˆãƒ©ã‚¤
 		if (!infoStage_->IsReplay()) {
 			ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 			infoSystem->SetRetry();
@@ -352,13 +352,13 @@ void StgStageController::Work() {
 
 	bool bCurrentPause = infoStage_->IsPause();
 	if (bPackageMode && bCurrentPause) {
-		//ƒpƒbƒP[ƒWƒ‚[ƒh‚Å’â~’†‚Ìê‡‚ÍAƒpƒbƒP[ƒWƒXƒNƒŠƒvƒg‚Åˆ—‚·‚é
+		//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ãƒ¢ãƒ¼ãƒ‰ã§åœæ­¢ä¸­ã®å ´åˆã¯ã€ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ã‚¹ã‚¯ãƒªãƒ—ãƒˆã§å‡¦ç†ã™ã‚‹
 		return;
 	}
 
 	bool bPauseKey = (input->GetVirtualKeyState(EDirectInput::KEY_PAUSE) == KEY_PUSH);
 	if (bPauseKey && !bPackageMode) {
-		//’â~ƒL[‰Ÿ‰º
+		//åœæ­¢ã‚­ãƒ¼æŠ¼ä¸‹
 		if (!bCurrentPause)
 			pauseManager_->Start();
 		else
@@ -366,20 +366,20 @@ void StgStageController::Work() {
 	}
 	else {
 		if (!bCurrentPause) {
-			//ƒŠƒvƒŒƒCƒL[XV
+			//ãƒªãƒ—ãƒ¬ã‚¤ã‚­ãƒ¼æ›´æ–°
 			keyReplayManager_->Update();
 
-			//ƒXƒNƒŠƒvƒgˆ—‚ÅA©‹@A“GA’e‚Ì“®ì‚ªs‚í‚ê‚éB
+			//ã‚¹ã‚¯ãƒªãƒ—ãƒˆå‡¦ç†ã§ã€è‡ªæ©Ÿã€æ•µã€å¼¾ã®å‹•ä½œãŒè¡Œã‚ã‚Œã‚‹ã€‚
 			scriptManager_->Work(StgStageScript::TYPE_SYSTEM);
 			scriptManager_->Work(StgStageScript::TYPE_STAGE);
 			scriptManager_->Work(StgStageScript::TYPE_SHOT);
 			scriptManager_->Work(StgStageScript::TYPE_ITEM);
 
 			shared_ptr<StgPlayerObject> objPlayer = GetPlayerObject();
-			if (objPlayer) objPlayer->Move(); //©‹@‚¾‚¯æ‚ÉˆÚ“®
+			if (objPlayer) objPlayer->Move(); //è‡ªæ©Ÿã ã‘å…ˆã«ç§»å‹•
 			scriptManager_->Work(StgStageScript::TYPE_PLAYER);
 
-			//ƒIƒuƒWƒFƒNƒg“®ìˆ—
+			//ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå‹•ä½œå‡¦ç†
 			if (infoStage_->IsEnd())return;
 			objectManagerMain_->WorkObject();
 
@@ -387,13 +387,13 @@ void StgStageController::Work() {
 			shotManager_->Work();
 			itemManager_->Work();
 
-			//“–‚½‚è”»’èˆ—
+			//å½“ãŸã‚Šåˆ¤å®šå‡¦ç†
 			enemyManager_->RegistIntersectionTarget();
 			shotManager_->RegistIntersectionTarget();
 			intersectionManager_->Work();
 
 			if (!infoStage_->IsReplay()) {
-				//ƒŠƒvƒŒƒC—pî•ñXV
+				//ãƒªãƒ—ãƒ¬ã‚¤ç”¨æƒ…å ±æ›´æ–°
 				int stageFrame = infoStage_->GetCurrentFrame();
 				if (stageFrame % 60 == 0) {
 					ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
@@ -406,14 +406,14 @@ void StgStageController::Work() {
 
 		}
 		else {
-			//’â~’†
+			//åœæ­¢ä¸­
 			pauseManager_->Work();
 		}
 	}
 
 	ELogger* logger = ELogger::GetInstance();
 	if (logger->IsWindowVisible()) {
-		//ƒƒOŠÖ˜A
+		//ãƒ­ã‚°é–¢é€£
 		logger->SetInfo(6, L"Shot count", StringUtility::Format(L"%d", shotManager_->GetShotCountAll()));
 		logger->SetInfo(7, L"Enemy count", StringUtility::Format(L"%d", enemyManager_->GetEnemyCount()));
 		logger->SetInfo(8, L"Item count", StringUtility::Format(L"%d", itemManager_->GetItemCount()));
@@ -425,11 +425,11 @@ void StgStageController::Render() {
 		objectManagerMain_->RenderObject();
 
 		if (infoStage_->IsReplay()) {
-			//ƒŠƒvƒŒƒC’†
+			//ãƒªãƒ—ãƒ¬ã‚¤ä¸­
 		}
 	}
 	else {
-		//’â~
+		//åœæ­¢
 		pauseManager_->Render();
 	}
 }

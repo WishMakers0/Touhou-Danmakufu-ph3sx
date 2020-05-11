@@ -63,7 +63,7 @@ bool Application::Run() {
 			}
 			//			catch(...)
 			//			{
-			//				Logger::WriteTop(L"実行中に例外が発生しました。終了します。");
+			//				Logger::WriteTop(L"螳溯｡御ｸｭ縺ｫ萓句､悶′逋ｺ逕溘＠縺ｾ縺励◆縲らｵゆｺ�縺励∪縺吶�");
 			//				break;
 			//			}
 		}

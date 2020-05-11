@@ -48,12 +48,12 @@ bool ScriptEngineCache::IsExists(std::wstring name) {
 **********************************************************/
 function const commonFunction[] =
 {
-	//‹¤’ÊŠÖ”FƒXƒNƒŠƒvƒgˆø”Œ‹‰Ê
+	//å…±é€šé–¢æ•°ï¼šã‚¹ã‚¯ãƒªãƒ—ãƒˆå¼•æ•°çµæœ
 	{ "GetScriptArgument", ScriptClientBase::Func_GetScriptArgument, 1 },
 	{ "GetScriptArgumentCount", ScriptClientBase::Func_GetScriptArgumentCount, 0 },
 	{ "SetScriptResult", ScriptClientBase::Func_SetScriptResult, 1 },
 
-	//‹¤’ÊŠÖ”F”ŠwŒn
+	//å…±é€šé–¢æ•°ï¼šæ•°å­¦ç³»
 	{ "min", ScriptClientBase::Func_Min, 2 },
 	{ "max", ScriptClientBase::Func_Max, 2 },
 	{ "log", ScriptClientBase::Func_Log, 1 },
@@ -97,7 +97,7 @@ function const commonFunction[] =
 	{ "typeof", ScriptClientBase::Func_TypeOf, 1 },
 	{ "ftypeof", ScriptClientBase::Func_FTypeOf, 1 },
 
-	//‹¤’ÊŠÖ”F•¶š—ñ‘€ì
+	//å…±é€šé–¢æ•°ï¼šæ–‡å­—åˆ—æ“ä½œ
 	{ "ToString", ScriptClientBase::Func_ToString, 1 },
 	{ "IntToString", ScriptClientBase::Func_IntToString, 1 },
 	{ "itoa", ScriptClientBase::Func_ItoA, 1 },
@@ -109,7 +109,7 @@ function const commonFunction[] =
 	{ "TrimString", ScriptClientBase::Func_TrimString, 1 },
 	{ "SplitString", ScriptClientBase::Func_SplitString, 2 },
 
-	//‹¤’ÊŠÖ”FƒpƒXŠÖ˜A
+	//å…±é€šé–¢æ•°ï¼šãƒ‘ã‚¹é–¢é€£
 	{ "GetModuleDirectory", ScriptClientBase::Func_GetModuleDirectory, 0 },
 	{ "GetParentScriptDirectory", ScriptClientBase::Func_GetParentScriptDirectory, 0 },
 	{ "GetCurrentScriptDirectory", ScriptClientBase::Func_GetCurrentScriptDirectory, 0 },
@@ -117,14 +117,14 @@ function const commonFunction[] =
 	{ "GetFilePathList", ScriptClientBase::Func_GetFilePathList, 1 },
 	{ "GetDirectoryList", ScriptClientBase::Func_GetDirectoryList, 1 },
 
-	//‹¤’ÊŠÖ”FŠÖ˜A
+	//å…±é€šé–¢æ•°ï¼šæ™‚åˆ»é–¢é€£
 	{ "GetCurrentDateTimeS", ScriptClientBase::Func_GetCurrentDateTimeS, 0 },
 
-	//‹¤’ÊŠÖ”FƒfƒoƒbƒOŠÖ˜A
+	//å…±é€šé–¢æ•°ï¼šãƒ‡ãƒãƒƒã‚°é–¢é€£
 	{ "WriteLog", ScriptClientBase::Func_WriteLog, 1 },
 	{ "RaiseError", ScriptClientBase::Func_RaiseError, 1 },
 
-	//‹¤’ÊŠÖ”F‹¤’Êƒf[ƒ^
+	//å…±é€šé–¢æ•°ï¼šå…±é€šãƒ‡ãƒ¼ã‚¿
 	{ "SetCommonData", ScriptClientBase::Func_SetCommonData, 2 },
 	{ "GetCommonData", ScriptClientBase::Func_GetCommonData, 2 },
 	{ "ClearCommonData", ScriptClientBase::Func_ClearCommonData, 0 },
@@ -140,7 +140,7 @@ function const commonFunction[] =
 	{ "GetCommonDataAreaKeyList", ScriptClientBase::Func_GetCommonDataAreaKeyList, 0 },
 	{ "GetCommonDataValueKeyList", ScriptClientBase::Func_GetCommonDataValueKeyList, 1 },
 
-	//’è”
+	//å®šæ•°
 	{ "NULL", constant<0>::func, 0 },
 
 	{ "VAR_REAL", constant<(int)type_data::type_kind::tk_real>::func, 0 },
@@ -224,7 +224,7 @@ void ScriptClientBase::_RaiseError(int line, std::wstring message) {
 
 	std::wstring fileName = PathProperty::GetFileName(entry.path_);
 
-	std::wstring str = StringUtility::Format(L"%s\r\n%s \r\n%s line(s)=%d\r\n\r\n«\r\n%s\r\n```",
+	std::wstring str = StringUtility::Format(L"%s\r\n%s \r\n%s line(è¡Œ)=%d\r\n\r\nâ†“\r\n%s\r\nï½ï½ï½",
 		message.c_str(),
 		entry.path_.c_str(),
 		fileName.c_str(),
@@ -295,7 +295,7 @@ std::wstring ScriptClientBase::_GetErrorLineSource(int line) {
 	return res;
 }
 std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
-	//TODO ‚Æ‚è‚ ‚¦‚¸À‘•
+	//TODO ã¨ã‚Šã‚ãˆãšå®Ÿè£…
 	std::wstring pathSource = engine_->GetPath();
 	std::vector<char> res = source;
 	FileManager* fileManager = FileManager::GetBase();
@@ -326,7 +326,7 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 		while (scanner.HasNext()) {
 			Token& tok = scanner.Next();
 			//mapTokens.push_back(tok);
-			if (tok.GetType() == Token::TK_EOF)//Eof‚Ì¯•Êq‚ª—ˆ‚½‚çƒtƒ@ƒCƒ‹‚Ì’²¸I—¹
+			if (tok.GetType() == Token::TK_EOF)//Eofã®è­˜åˆ¥å­ãŒæ¥ãŸã‚‰ãƒ•ã‚¡ã‚¤ãƒ«ã®èª¿æŸ»çµ‚äº†
 			{
 				break;
 			}
@@ -366,12 +366,12 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 				std::vector<char>::iterator posAfterInclude = res.begin() + scanner.GetCurrentPointer();
 				scanner.SetCurrentPointer(posCurrent);
 
-				// "../"‚©‚çn‚Ü‚Á‚Ä‚¢‚½‚çA‘O‚É"./"‚ğ‚Â‚¯‚éB
+				// "../"ã‹ã‚‰å§‹ã¾ã£ã¦ã„ãŸã‚‰ã€å‰ã«"./"ã‚’ã¤ã‘ã‚‹ã€‚
 				if (wPath.find(L"../") == 0 || wPath.find(L"..\\") == 0) {
 					wPath = L"./" + wPath;
 				}
 
-				if (wPath.find(L".\\") != std::wstring::npos || wPath.find(L"./") != std::wstring::npos) {	//".\"“WŠJ
+				if (wPath.find(L".\\") != std::wstring::npos || wPath.find(L"./") != std::wstring::npos) {	//".\"å±•é–‹
 					int line = scanner.GetCurrentLine();
 					std::wstring linePath = mapLine->GetPath(line);
 					std::wstring tDir = PathProperty::GetFileDirectory(linePath);
@@ -382,7 +382,7 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 				wPath = PathProperty::GetUnique(wPath);
 
 				bool bAlreadyIncluded = setReadPath.find(wPath) != setReadPath.end();
-				if (bAlreadyIncluded) {//‚·‚Å‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚½
+				if (bAlreadyIncluded) {//ã™ã§ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãŸ
 					Logger::WriteTop(StringUtility::Format(L"Scanner: File already included, skipping. (%s)", wPath.c_str()));
 					res.erase(posBeforeInclude, posAfterInclude);
 					break;
@@ -401,7 +401,7 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 					_RaiseError(line, error);
 				}
 
-				//ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚İÅŒã‚É‰üs‚ğ•t‰Á
+				//ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã¿æœ€å¾Œã«æ”¹è¡Œã‚’ä»˜åŠ 
 				int targetBomSize = 0;
 				int targetEncoding = Encoding::SHIFT_JIS;
 				if (reader->GetFileSize() >= 2) {
@@ -411,18 +411,18 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 						targetEncoding = Encoding::UTF16LE;
 						targetBomSize = Encoding::GetBomSize(&data[0], 2);
 					}
-					//ƒtƒ@ƒCƒ‹ƒ|ƒCƒ“ƒ^‚ğÅ‰‚É–ß‚·
+					//ãƒ•ã‚¡ã‚¤ãƒ«ãƒã‚¤ãƒ³ã‚¿ã‚’æœ€åˆã«æˆ»ã™
 					reader->SetFilePointerBegin();
 				}
 
 				if (targetEncoding == Encoding::UTF16LE) {
 					reader->Seek(targetBomSize);
-					placement.resize(reader->GetFileSize() - targetBomSize + sizeof(wchar_t)); //-BOM“Ç‚İ‚İ•ª+ÅŒã‚Ì‰üs
+					placement.resize(reader->GetFileSize() - targetBomSize + sizeof(wchar_t)); //-BOMèª­ã¿è¾¼ã¿åˆ†+æœ€å¾Œã®æ”¹è¡Œ
 					int readSize = reader->GetFileSize() - targetBomSize;
 					reader->Read(&placement[0], readSize);
 					memcpy(&placement[readSize], L" ", sizeof(wchar_t));
 
-					//Œ‹‡æ‚ªShiftJIS‚Ìê‡AŒ‹‡æ‚ğUTF16LE‚É•ÏŠ·‚·‚éB
+					//çµåˆå…ˆãŒShiftJISã®å ´åˆã€çµåˆå…ˆã‚’UTF16LEã«å¤‰æ›ã™ã‚‹ã€‚
 					if (encoding == Encoding::SHIFT_JIS) {
 						encoding = Encoding::UTF16LE;
 						int resSize = res.size();
@@ -448,12 +448,12 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 					}
 				}
 				else {
-					//“Ç‚İ‚İ‘ÎÛ‚ªShiftJis
+					//èª­ã¿è¾¼ã¿å¯¾è±¡ãŒShiftJis
 					placement.resize(reader->GetFileSize() + 1);
 					reader->Read(&placement[0], reader->GetFileSize());
 					memcpy(&placement[reader->GetFileSize()], " ", 1);
 
-					//Œ‹‡æ‚ªUTF16LE‚Ìê‡A“Ç‚İ‚ñ‚¾ƒf[ƒ^‚ğUTF16LE‚É•ÏŠ·‚·‚éB
+					//çµåˆå…ˆãŒUTF16LEã®å ´åˆã€èª­ã¿è¾¼ã‚“ã ãƒ‡ãƒ¼ã‚¿ã‚’UTF16LEã«å¤‰æ›ã™ã‚‹ã€‚
 					if (encoding == Encoding::UTF16LE) {
 						size_t maxSize = placement.size();
 
@@ -475,7 +475,7 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source) {
 					scanner.GetCurrentLine(),
 					StringUtility::CountCharacter(placement, '\n') + 1);
 
-				{//’uŠ·
+				{//ç½®æ›
 					std::vector<char> newSource;
 					newSource.insert(newSource.begin(), res.begin(), posBeforeInclude);
 					newSource.insert(newSource.end(), placement.begin(), placement.end());
@@ -880,7 +880,7 @@ std::wstring ScriptClientBase::_ExtendPath(std::wstring path) {
 	return path;
 }
 
-//‹¤’ÊŠÖ”FƒXƒNƒŠƒvƒgˆø”Œ‹‰Ê
+//å…±é€šé–¢æ•°ï¼šã‚¹ã‚¯ãƒªãƒ—ãƒˆå¼•æ•°çµæœ
 value ScriptClientBase::Func_GetScriptArgument(script_machine* machine, int argc, const value* argv) {
 	ScriptClientBase* script = (ScriptClientBase*)machine->data;
 	int index = (int)argv[0].as_real();
@@ -902,7 +902,7 @@ value ScriptClientBase::Func_SetScriptResult(script_machine* machine, int argc, 
 	return value();
 }
 
-//‘g‚İ‚İŠÖ”F”ŠwŒn
+//çµ„ã¿è¾¼ã¿é–¢æ•°ï¼šæ•°å­¦ç³»
 value ScriptClientBase::Func_Min(script_machine* machine, int argc, const value* argv) {
 	double v1 = argv[0].as_real();
 	double v2 = argv[1].as_real();
@@ -1143,7 +1143,7 @@ value ScriptClientBase::Func_FTypeOf(script_machine* machine, int argc, const va
 	return value(machine->get_engine()->get_real_type(), (double)(type->get_kind()));
 }
 
-//‘g‚İ‚İŠÖ”F•¶š—ñ‘€ì
+//çµ„ã¿è¾¼ã¿é–¢æ•°ï¼šæ–‡å­—åˆ—æ“ä½œ
 value ScriptClientBase::Func_ToString(script_machine* machine, int argc, const value* argv) {
 	return value(machine->get_engine()->get_string_type(), argv[0].as_string());
 }
@@ -1286,7 +1286,7 @@ value ScriptClientBase::Func_RNormalizeAngle(script_machine* machine, int argc, 
 	return value(machine->get_engine()->get_real_type(), Math::NormalizeAngleRad(ang));
 }
 
-//‹¤’ÊŠÖ”FƒpƒXŠÖ˜A
+//å…±é€šé–¢æ•°ï¼šãƒ‘ã‚¹é–¢é€£
 value ScriptClientBase::Func_GetModuleDirectory(script_machine* machine, int argc, const value* argv) {
 	std::wstring res = PathProperty::GetModuleDirectory();
 	return value(machine->get_engine()->get_string_type(), res);
@@ -1329,7 +1329,7 @@ value ScriptClientBase::Func_GetDirectoryList(script_machine* machine, int argc,
 	return res;
 }
 
-//‹¤’ÊŠÖ”FŠÖ˜A
+//å…±é€šé–¢æ•°ï¼šæ™‚åˆ»é–¢é€£
 value ScriptClientBase::Func_GetCurrentDateTimeS(script_machine* machine, int argc, const value* argv) {
 	SYSTEMTIME date;
 	GetLocalTime(&date);
@@ -1343,7 +1343,7 @@ value ScriptClientBase::Func_GetCurrentDateTimeS(script_machine* machine, int ar
 	return value(machine->get_engine()->get_string_type(), res);
 }
 
-//‹¤’ÊŠÖ”FƒfƒoƒbƒOŠÖ˜A
+//å…±é€šé–¢æ•°ï¼šãƒ‡ãƒãƒƒã‚°é–¢é€£
 value ScriptClientBase::Func_WriteLog(script_machine* machine, int argc, const value* argv) {
 	std::wstring msg = argv[0].as_string();
 	Logger::WriteTop(msg);
@@ -1357,7 +1357,7 @@ value ScriptClientBase::Func_RaiseError(script_machine* machine, int argc, const
 	return value();
 }
 
-//‹¤’ÊŠÖ”F‹¤’Êƒf[ƒ^
+//å…±é€šé–¢æ•°ï¼šå…±é€šãƒ‡ãƒ¼ã‚¿
 value ScriptClientBase::Func_SetCommonData(script_machine* machine, int argc, const value* argv) {
 	ScriptClientBase* script = reinterpret_cast<ScriptClientBase*>(machine->data);
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
@@ -1696,7 +1696,7 @@ void ScriptCommonData::ReadRecord(gstd::RecordBuffer& record) {
 	for (int iKey = 0; iKey < listKey.size(); iKey++) {
 		std::string key = listKey[iKey];
 		std::string keyValSize = StringUtility::Format("%s_size", key.c_str());
-		if (!record.IsExists(keyValSize))continue;//ƒTƒCƒY©g‚ªƒL[“o˜^‚³‚ê‚Ä‚¢‚é
+		if (!record.IsExists(keyValSize))continue;//ã‚µã‚¤ã‚ºè‡ªèº«ãŒã‚­ãƒ¼ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹
 		int valSize = record.GetRecordAsInteger(keyValSize);
 
 		gstd::ByteBuffer buffer;
@@ -1883,7 +1883,7 @@ void ScriptCommonDataInfoPanel::_UpdateListViewKey(WListView* listView, std::vec
 		listAdd.erase(area);
 	}
 
-	//íœ
+	//å‰Šé™¤
 	for (iRow = 0; iRow < listView->GetRowCount();) {
 		std::wstring wKey = listView->GetText(iRow, COL_KEY);
 		std::string key = StringUtility::ConvertWideToMulti(wKey);
@@ -1891,7 +1891,7 @@ void ScriptCommonDataInfoPanel::_UpdateListViewKey(WListView* listView, std::vec
 		else listView->DeleteRow(iRow);
 	}
 
-	//’Ç‰Á
+	//è¿½åŠ 
 	iRow = 0;
 	countView = listView->GetRowCount();
 	std::set<std::string>::iterator itr = listAdd.begin();

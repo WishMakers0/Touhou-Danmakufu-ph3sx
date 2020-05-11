@@ -35,14 +35,14 @@ TaskManager::~TaskManager() {
 	panelInfo_ = nullptr;
 }
 void TaskManager::_ArrangeTask() {
-	//ƒ^ƒXƒNíœ—Ìˆæ®—
+	//ã‚¿ã‚¹ã‚¯å‰Šé™¤é ˜åŸŸæ•´ç†
 	std::list<shared_ptr<TaskBase>>::iterator itrTask;
 	for (itrTask = listTask_.begin(); itrTask != listTask_.end();) {
 		if (*itrTask == nullptr) itrTask = listTask_.erase(itrTask);
 		else ++itrTask;
 	}
 
-	//ŠÖ”íœ—Ìˆæ®—
+	//é–¢æ•°å‰Šé™¤é ˜åŸŸæ•´ç†
 	std::map<int, std::vector<std::list<shared_ptr<TaskFunction>>>>::iterator itrType;
 	for (itrType = mapFunc_.begin(); itrType != mapFunc_.end(); ++itrType) {
 		std::vector<std::list<shared_ptr<TaskFunction>>>* vectPri = &itrType->second;
@@ -64,12 +64,12 @@ void TaskManager::_ArrangeTask() {
 		}
 	}
 
-	//ƒ^ƒXƒNî•ñƒpƒlƒ‹XV
+	//ã‚¿ã‚¹ã‚¯æƒ…å ±ãƒ‘ãƒãƒ«æ›´æ–°
 	if (panelInfo_ != nullptr)panelInfo_->Update(this);
 }
 void TaskManager::_CheckInvalidFunctionDivision(int divFunc) {
 	if (mapFunc_.find(divFunc) == mapFunc_.end())
-		throw gstd::wexception(L"‘¶İ‚µ‚È‚¢‹@”\‹æ•ª");
+		throw gstd::wexception(L"å­˜åœ¨ã—ãªã„æ©Ÿèƒ½åŒºåˆ†");
 }
 void TaskManager::Clear() {
 	listTask_.clear();
@@ -92,7 +92,7 @@ void TaskManager::AddTask(shared_ptr<TaskBase> task) {
 	}
 //	task->mTask_ = this;
 
-	//TODO ID‚ÌŠ„‚èU‚è
+	//TODO IDã®å‰²ã‚ŠæŒ¯ã‚Š
 	task->indexTask_ = indexTaskManager_;
 	indexTaskManager_++;
 	listTask_.push_back(task);
@@ -405,7 +405,7 @@ void TaskInfoPanel::Update(TaskManager* taskManager) {
 	_UpdateListView((TaskManager*)addressManager);
 }
 void TaskInfoPanel::_UpdateTreeView(TaskManager* taskManager, ref_count_ptr<WTreeView::Item> item) {
-	//“o˜^
+	//ç™»éŒ²
 	std::set<int> setAddress;
 	{
 		std::list<shared_ptr<TaskBase>> listTask = taskManager->GetTaskList();
@@ -438,7 +438,7 @@ void TaskInfoPanel::_UpdateTreeView(TaskManager* taskManager, ref_count_ptr<WTre
 		}
 	}
 
-	//íœ
+	//å‰Šé™¤
 	{
 		std::list<ref_count_ptr<WTreeView::Item>> listChild = item->GetChildList();
 		std::list<ref_count_ptr<WTreeView::Item>>::iterator itrChild;

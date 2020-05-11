@@ -198,8 +198,8 @@ protected:
 	//D3DCOLOR color_;
 
 	int64_t score_;
-	bool bMoveToPlayer_; //©‹@ˆÚ“®ƒtƒ‰ƒO
-	bool bPermitMoveToPlayer_; //©‹@©“®‰ñû‹–‰Â
+	bool bMoveToPlayer_; //è‡ªæ©Ÿç§»å‹•ãƒ•ãƒ©ã‚°
+	bool bPermitMoveToPlayer_; //è‡ªæ©Ÿè‡ªå‹•å›åè¨±å¯
 	bool bChangeItemScore_;
 
 	int frameWork_;
@@ -211,7 +211,7 @@ protected:
 public:
 	StgItemObject(StgStageController* stageController);
 	virtual void Work();
-	virtual void Render() {}//ˆêŠ‡‚Å•`‰æ‚·‚é‚½‚ßƒIƒuƒWƒFƒNƒgŠÇ—‚Å‚Ì•`‰æ‚Í‚µ‚È‚¢
+	virtual void Render() {}//ä¸€æ‹¬ã§æç”»ã™ã‚‹ãŸã‚ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç®¡ç†ã§ã®æç”»ã¯ã—ãªã„
 	virtual void RenderOnItemManager();
 	virtual void SetRenderState() {}
 	virtual void Activate() {}
@@ -305,10 +305,10 @@ class StgMovePattern_Item : public StgMovePattern {
 public:
 	enum {
 		MOVE_NONE,
-		MOVE_TOPOSITION_A,//w’èƒ|ƒCƒ“ƒg‚Ö‚ÌˆÚ“®(60ƒtƒŒ[ƒ€)
-		MOVE_DOWN,//‰º~
-		MOVE_TOPLAYER,//©‹@‚ÖˆÚ“®
-		MOVE_SCORE,//“¾“_(ã¸)
+		MOVE_TOPOSITION_A,//æŒ‡å®šãƒã‚¤ãƒ³ãƒˆã¸ã®ç§»å‹•(60ãƒ•ãƒ¬ãƒ¼ãƒ )
+		MOVE_DOWN,//ä¸‹é™
+		MOVE_TOPLAYER,//è‡ªæ©Ÿã¸ç§»å‹•
+		MOVE_SCORE,//å¾—ç‚¹(ä¸Šæ˜‡)
 	};
 
 protected:

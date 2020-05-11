@@ -47,10 +47,10 @@ ref_count_ptr<ManagedScript> StgPackageScriptManager::Create(int type) {
 **********************************************************/
 const function stgPackageFunction[] =
 {
-	//ƒpƒbƒP[ƒW‹¤’ÊŠÖ”FƒpƒbƒP[ƒW‘€ì
+	//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸å…±é€šé–¢æ•°ï¼šãƒ‘ãƒƒã‚±ãƒ¼ã‚¸æ“ä½œ
 	{ "ClosePackage", StgPackageScript::Func_ClosePackage, 0 },
 
-	//ƒpƒbƒP[ƒW‹¤’ÊŠÖ”FƒXƒe[ƒW‘€ì
+	//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸å…±é€šé–¢æ•°ï¼šã‚¹ãƒ†ãƒ¼ã‚¸æ“ä½œ
 	{ "InitializeStageScene", StgPackageScript::Func_InitializeStageScene, 0 },
 	{ "FinalizeStageScene", StgPackageScript::Func_FinalizeStageScene, 0 },
 	{ "StartStageScene", StgPackageScript::Func_StartStageScene, 0 },
@@ -63,7 +63,7 @@ const function stgPackageFunction[] =
 	{ "PauseStageScene", StgPackageScript::Func_PauseStageScene, 1 },
 	{ "TerminateStageScene", StgPackageScript::Func_TerminateStageScene, 0 },
 
-	//’è”F
+	//å®šæ•°ï¼š
 	{ "STAGE_STATE_FINISHED", constant<StgPackageScript::STAGE_STATE_FINISHED>::func, 0 },
 
 	{ "STAGE_RESULT_BREAK_OFF", constant<StgStageInformation::RESULT_BREAK_OFF>::func, 0 },
@@ -82,7 +82,7 @@ void StgPackageScript::_CheckNextStageExists() {
 	if (nextStageData == nullptr)RaiseError("Stage data not initialized.");
 }
 
-//ƒpƒbƒP[ƒW‹¤’ÊŠÖ”FƒpƒbƒP[ƒW‘€ì
+//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸å…±é€šé–¢æ•°ï¼šãƒ‘ãƒƒã‚±ãƒ¼ã‚¸æ“ä½œ
 gstd::value StgPackageScript::Func_ClosePackage(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgPackageScript* script = (StgPackageScript*)machine->data;
 	StgPackageController* packageController = script->packageController_;
@@ -93,7 +93,7 @@ gstd::value StgPackageScript::Func_ClosePackage(gstd::script_machine* machine, i
 	return value();
 }
 
-//ƒpƒbƒP[ƒW‹¤’ÊŠÖ”FƒXƒe[ƒW‘€ì
+//ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸å…±é€šé–¢æ•°ï¼šã‚¹ãƒ†ãƒ¼ã‚¸æ“ä½œ
 gstd::value StgPackageScript::Func_InitializeStageScene(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	StgPackageScript* script = (StgPackageScript*)machine->data;
 	StgPackageController* packageController = script->packageController_;
@@ -151,7 +151,7 @@ gstd::value StgPackageScript::Func_StartStageScene(gstd::script_machine* machine
 			script->RaiseError("Invalid stage replay index.");
 		nextStageData->SetStageReplayData(replayStageData);
 
-		//©‹@ƒXƒNƒŠƒvƒg
+		//è‡ªæ©Ÿã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 		replayPlayerID = replayStageData->GetPlayerScriptID();
 		replayPlayerScriptFileName = replayStageData->GetPlayerScriptFileName();
 	}
@@ -163,7 +163,7 @@ gstd::value StgPackageScript::Func_StartStageScene(gstd::script_machine* machine
 		}
 	}
 
-	//©‹@‚ğŒŸõ
+	//è‡ªæ©Ÿã‚’æ¤œç´¢
 	infoStage->SetPlayerScriptInformation(nullptr);
 	ref_count_ptr<ScriptInformation> infoMain = infoSystem->GetMainScriptInformation();
 	std::vector<ref_count_ptr<ScriptInformation> > listPlayer;

@@ -57,9 +57,9 @@ void ShaderManager::_ReleaseShaderData(std::wstring name) {
 		Lock lock(lock_);
 		auto itr = mapShaderData_.find(name);
 		if (itr != mapShaderData_.end()) {
-			itr->second->bLoad_ = true;		//“Ç‚Ýž‚ÝŠ®—¹ˆµ‚¢
+			itr->second->bLoad_ = true;		//èª­ã¿è¾¼ã¿å®Œäº†æ‰±ã„
 			mapShaderData_.erase(itr);
-			Logger::WriteTop(StringUtility::Format(L"ShaderManagerFShader released. [%s]", name.c_str()));
+			Logger::WriteTop(StringUtility::Format(L"ShaderManagerï¼šShader released. [%s]", name.c_str()));
 		}
 	}
 }
@@ -388,7 +388,7 @@ void Shader::Release() {
 			ShaderManager* manager = data_->manager_;
 			if (manager != nullptr && manager->IsDataExists(data_->name_)) {
 				int countRef = data_.GetReferenceCount();
-				//Ž©g‚ÆTextureManager“à‚Ì”‚¾‚¯‚É‚È‚Á‚½‚çíœ
+				//è‡ªèº«ã¨TextureManagerå†…ã®æ•°ã ã‘ã«ãªã£ãŸã‚‰å‰Šé™¤
 				if (countRef == 2) {
 					manager->_ReleaseShaderData(data_->name_);
 				}

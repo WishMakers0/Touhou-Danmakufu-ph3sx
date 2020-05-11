@@ -34,7 +34,7 @@ void StgMoveObject::_Move() {
 	++framePattern_;
 }
 void StgMoveObject::_AttachReservedPattern(std::shared_ptr<StgMovePattern> pattern) {
-	//‘¬“xŒp‘±‚È‚Ç
+	//é€Ÿåº¦ç¶™ç¶šãªã©
 	if (pattern_ == nullptr)
 		pattern_ = std::shared_ptr<StgMovePattern_Angle>(new StgMovePattern_Angle(this));
 
@@ -60,7 +60,7 @@ void StgMoveObject::_AttachReservedPattern(std::shared_ptr<StgMovePattern> patte
 			xyPattern->SetSpeedY(speedY);
 	}
 
-	//’u‚«Š·‚¦
+	//ç½®ãæ›ãˆ
 	pattern_ = pattern;
 }
 double StgMoveObject::GetSpeed() {

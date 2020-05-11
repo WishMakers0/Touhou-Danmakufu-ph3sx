@@ -42,7 +42,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 	}
 	//	catch(...)
 	//	{
-	//		Logger::WriteTop("•s–¾‚ÈƒGƒ‰[");
+	//		Logger::WriteTop("ä¸æ˜ãªã‚¨ãƒ©ãƒ¼");
 	//	}
 
 	EApplication::DeleteInstance();

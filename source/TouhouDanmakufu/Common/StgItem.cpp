@@ -89,19 +89,19 @@ void StgItemManager::Work() {
 
 				if (!deleted) {
 					if (bCancelToPlayer_) {
-						//©“®‰ñûƒLƒƒƒ“ƒZƒ‹
+						//è‡ªå‹•å›åã‚­ãƒ£ãƒ³ã‚»ãƒ«
 						obj->SetMoveToPlayer(false);
 					}
 					else if (obj->IsPermitMoveToPlayer() && !bMoveToPlayer) {
 						if (pAutoItemCollectY >= 0) {
-							//ã•”©“®‰ñû
+							//ä¸Šéƒ¨è‡ªå‹•å›å
 							int typeMove = obj->GetMoveType();
 							if (!obj->IsMoveToPlayer() && py <= pAutoItemCollectY)
 								bMoveToPlayer = true;
 						}
 
 						if (listItemTypeToPlayer_.size() > 0) {
-							//©‹@‚ÉƒAƒCƒeƒ€‚ğW‚ß‚é
+							//è‡ªæ©Ÿã«ã‚¢ã‚¤ãƒ†ãƒ ã‚’é›†ã‚ã‚‹
 							int typeItem = obj->GetItemType();
 							bool bFind = listItemTypeToPlayer_.find(typeItem) != listItemTypeToPlayer_.end();
 							if (bFind)
@@ -162,7 +162,7 @@ void StgItemManager::Render(int targetPriority) {
 	graphics->SetLightingEnable(false);
 	graphics->SetTextureFilter(DirectGraphics::MODE_TEXTURE_FILTER_LINEAR, 0);
 
-	//ƒtƒHƒO‚ğ‰ğœ‚·‚é
+	//ãƒ•ã‚©ã‚°ã‚’è§£é™¤ã™ã‚‹
 	DWORD bEnableFog = FALSE;
 	device->GetRenderState(D3DRS_FOGENABLE, &bEnableFog);
 	if (bEnableFog)
@@ -339,7 +339,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 		RECT rcDelay = { -1, -1, -1, -1 };
 		while (scanner.HasNext()) {
 			Token& tok = scanner.Next();
-			if (tok.GetType() == Token::TK_EOF)//Eof‚Ì¯•Êq‚ª—ˆ‚½‚çƒtƒ@ƒCƒ‹‚Ì’²¸I—¹
+			if (tok.GetType() == Token::TK_EOF)//Eofã®è­˜åˆ¥å­ãŒæ¥ãŸã‚‰ãƒ•ã‚¡ã‚¤ãƒ«ã®èª¿æŸ»çµ‚äº†
 			{
 				break;
 			}
@@ -359,7 +359,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload) {
 			}
 		}
 
-		//ƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ
+		//ãƒ†ã‚¯ã‚¹ãƒãƒ£èª­ã¿è¾¼ã¿
 		if (pathImage.size() == 0)throw gstd::wexception("Item texture must be set.");
 		std::wstring dir = PathProperty::GetFileDirectory(path);
 		pathImage = StringUtility::Replace(pathImage, L"./", dir);
@@ -748,7 +748,7 @@ void StgItemObject::RenderOnItemManager() {
 			break;
 		}
 
-		//ã‚É‚Í‚İo‚µ‚Ä‚¢‚é
+		//ä¸Šã«ã¯ã¿å‡ºã—ã¦ã„ã‚‹
 		double posY = posY_;
 		D3DCOLOR color = D3DCOLOR_ARGB(255, 255, 255, 255);
 		if (posY_ <= 0) {
@@ -839,7 +839,7 @@ void StgItemObject::_CreateScoreItem() {
 	}
 }
 void StgItemObject::_NotifyEventToPlayerScript(std::vector<float>& listValue) {
-	//©‹@ƒXƒNƒŠƒvƒg‚Ö’Ê’m
+	//è‡ªæ©Ÿã‚¹ã‚¯ãƒªãƒ—ãƒˆã¸é€šçŸ¥
 	shared_ptr<StgPlayerObject> player = stageController_->GetPlayerObject();
 	StgStagePlayerScript* scriptPlayer = player->GetPlayerScript();
 	std::vector<gstd::value> listScriptValue;
@@ -850,7 +850,7 @@ void StgItemObject::_NotifyEventToPlayerScript(std::vector<float>& listValue) {
 	scriptPlayer->RequestEvent(StgStageItemScript::EV_GET_ITEM, listScriptValue);
 }
 void StgItemObject::_NotifyEventToItemScript(std::vector<float>& listValue) {
-	//ƒAƒCƒeƒ€ƒXƒNƒŠƒvƒg‚Ö’Ê’m
+	//ã‚¢ã‚¤ãƒ†ãƒ ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¸é€šçŸ¥
 	auto stageScriptManager = stageController_->GetScriptManager();
 	int64_t idItemScript = stageScriptManager->GetItemScriptID();
 	if (idItemScript != StgControlScriptManager::ID_INVALID) {
@@ -1129,7 +1129,7 @@ void StgItemObject_User::RenderOnItemManager() {
 		}
 	}
 
-	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//ÚGƒeƒXƒg
+	//if(bIntersected_)color = D3DCOLOR_ARGB(255, 255, 0, 0);//æ¥è§¦ãƒ†ã‚¹ãƒˆ
 
 	VERTEX_TLX verts[4];
 	/*

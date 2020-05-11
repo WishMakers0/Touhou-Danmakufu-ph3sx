@@ -25,9 +25,9 @@ namespace directx {
 		gstd::ref_count_ptr<RenderStateFunction> func_;
 		gstd::ref_count_ptr<RenderObject> obj_;
 
-		D3DXVECTOR3 position_;//ˆÚ“®æÀ•W
-		D3DXVECTOR3 angle_;//‰ñ“]Šp“x
-		D3DXVECTOR3 scale_;//Šg‘å—¦
+		D3DXVECTOR3 position_;//ç§»å‹•å…ˆåº§æ¨™
+		D3DXVECTOR3 angle_;//å›è»¢è§’åº¦
+		D3DXVECTOR3 scale_;//æ‹¡å¤§ç‡
 
 	public:
 		RenderBlock();
@@ -38,7 +38,7 @@ namespace directx {
 		virtual void CalculateZValue() = 0;
 		float GetZValue() { return posSortKey_; }
 		void SetZValue(float pos) { posSortKey_ = pos; }
-		virtual bool IsTranslucent() = 0;//Zƒ\[ƒg‘ÎÛ‚Ég—p
+		virtual bool IsTranslucent() = 0;//Zã‚½ãƒ¼ãƒˆå¯¾è±¡ã«ä½¿ç”¨
 
 		void SetRenderObject(gstd::ref_count_ptr<RenderObject> obj) { obj_ = obj; }
 		gstd::ref_count_ptr<RenderObject> GetRenderObject() { return obj_; }
@@ -60,11 +60,11 @@ namespace directx {
 
 	/**********************************************************
 	//RenderManager
-	//ƒŒƒ“ƒ_ƒŠƒ“ƒOŠÇ—
-	//3D•s“§–¾ƒIƒuƒWƒFƒNƒg
-	//3D”¼“§–¾ƒIƒuƒWƒFƒNƒgZƒ\[ƒg‡
-	//2DƒIƒuƒWƒFƒNƒg
-	//‡‚É•`‰æ‚·‚é
+	//ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ç®¡ç†
+	//3Dä¸é€æ˜ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	//3DåŠé€æ˜ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆZã‚½ãƒ¼ãƒˆé †
+	//2Dã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	//é †ã«æç”»ã™ã‚‹
 	**********************************************************/
 	class RenderManager {
 		class ComparatorRenderBlockTranslucent;
@@ -106,11 +106,11 @@ namespace directx {
 		virtual ~RenderStateFunction();
 		void CallRenderStateFunction();
 
-		//ƒŒƒ“ƒ_ƒŠƒ“ƒOƒXƒe[ƒgİ’è(RenderManager—p)
-		void SetLightingEnable(bool bEnable);//ƒ‰ƒCƒeƒBƒ“ƒO
-		void SetCullingMode(DWORD mode);//ƒJƒŠƒ“ƒO
-		void SetZBufferEnable(bool bEnable);//Zƒoƒbƒtƒ@QÆ
-		void SetZWriteEnable(bool bEnable);//Zƒoƒbƒtƒ@‘‚«‚İ
+		//ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚¹ãƒ†ãƒ¼ãƒˆè¨­å®š(RenderManagerç”¨)
+		void SetLightingEnable(bool bEnable);//ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°
+		void SetCullingMode(DWORD mode);//ã‚«ãƒªãƒ³ã‚°
+		void SetZBufferEnable(bool bEnable);//Zãƒãƒƒãƒ•ã‚¡å‚ç…§
+		void SetZWriteEnable(bool bEnable);//Zãƒãƒƒãƒ•ã‚¡æ›¸ãè¾¼ã¿
 		void SetBlendMode(DWORD mode, int stage = 0);
 		void SetTextureFilter(DWORD mode, int stage = 0);
 	};
@@ -132,31 +132,31 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObject
-	//ƒŒƒ“ƒ_ƒŠƒ“ƒOƒIƒuƒWƒFƒNƒg
-	//•`‰æ‚ÌÅ¬’PˆÊ
-	//RenderManager‚É“o˜^‚µ‚Ä•`‰æ‚µ‚Ä‚à‚ç‚¤
-	//(’¼Ú•`‰æ‚à‰Â”\)
+	//ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	//æç”»ã®æœ€å°å˜ä½
+	//RenderManagerã«ç™»éŒ²ã—ã¦æç”»ã—ã¦ã‚‚ã‚‰ã†
+	//(ç›´æ¥æç”»ã‚‚å¯èƒ½)
 	**********************************************************/
 	class RenderObject {
 	protected:
 		D3DPRIMITIVETYPE typePrimitive_;//
-		size_t strideVertexStreamZero_;//1’¸“_‚ÌƒTƒCƒY
+		size_t strideVertexStreamZero_;//1é ‚ç‚¹ã®ã‚µã‚¤ã‚º
 
-		std::vector<byte> vertex_;//’¸“_
+		std::vector<byte> vertex_;//é ‚ç‚¹
 		std::vector<uint16_t> vertexIndices_;
-		std::vector<gstd::ref_count_ptr<Texture>> texture_;//ƒeƒNƒXƒ`ƒƒ
-		D3DXVECTOR3 posWeightCenter_;//dS
+		std::vector<gstd::ref_count_ptr<Texture>> texture_;//ãƒ†ã‚¯ã‚¹ãƒãƒ£
+		D3DXVECTOR3 posWeightCenter_;//é‡å¿ƒ
 
 		D3DTEXTUREFILTERTYPE filterMin_;
 		D3DTEXTUREFILTERTYPE filterMag_;
 		D3DTEXTUREFILTERTYPE filterMip_;
 		D3DCULL modeCulling_;
 
-		D3DXVECTOR3 position_;//ˆÚ“®æÀ•W
-		D3DXVECTOR3 angle_;//‰ñ“]Šp“x
-		D3DXVECTOR3 scale_;//Šg‘å—¦
-		D3DXMATRIX matRelative_;//ŠÖŒWs—ñ
-		bool bCoordinate2D_;//2DÀ•Ww’è
+		D3DXVECTOR3 position_;//ç§»å‹•å…ˆåº§æ¨™
+		D3DXVECTOR3 angle_;//å›è»¢è§’åº¦
+		D3DXVECTOR3 scale_;//æ‹¡å¤§ç‡
+		D3DXMATRIX matRelative_;//é–¢ä¿‚è¡Œåˆ—
+		bool bCoordinate2D_;//2Dåº§æ¨™æŒ‡å®š
 		gstd::ref_count_ptr<Shader> shader_;
 
 		bool disableMatrixTransform_;
@@ -196,7 +196,7 @@ namespace directx {
 			D3DXVECTOR2& objectPosition, D3DXVECTOR2& biasPosition, D3DXMATRIX* matCamera);
 		static void SetCoordinate2dDeviceMatrix();
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		void SetPrimitiveType(D3DPRIMITIVETYPE type) { typePrimitive_ = type; }
 		D3DPRIMITIVETYPE GetPrimitiveType() { return typePrimitive_; }
 		virtual void SetVertexCount(size_t count) {
@@ -207,7 +207,7 @@ namespace directx {
 		virtual size_t GetVertexCount() { return vertex_.size() / strideVertexStreamZero_; }
 		void SetVertexIndicies(std::vector<uint16_t>& indices) { vertexIndices_ = indices; }
 
-		//•`‰æ—pİ’è
+		//æç”»ç”¨è¨­å®š
 		void SetPosition(D3DXVECTOR3& pos) { position_ = pos; }
 		void SetPosition(float x, float y, float z) { position_.x = x; position_.y = y; position_.z = z; }
 		void SetX(float x) { position_.x = x; }
@@ -217,8 +217,8 @@ namespace directx {
 		void SetAngleXYZ(float angx = 0.0f, float angy = 0.0f, float angz = 0.0f) { angle_.x = angx; angle_.y = angy; angle_.z = angz; }
 		void SetScale(D3DXVECTOR3& scale) { scale_ = scale; }
 		void SetScaleXYZ(float sx = 1.0f, float sy = 1.0f, float sz = 1.0f) { scale_.x = sx; scale_.y = sy; scale_.z = sz; }
-		void SetTexture(Texture* texture, int stage = 0);//ƒeƒNƒXƒ`ƒƒİ’è
-		void SetTexture(gstd::ref_count_ptr<Texture> texture, int stage = 0);//ƒeƒNƒXƒ`ƒƒİ’è
+		void SetTexture(Texture* texture, int stage = 0);//ãƒ†ã‚¯ã‚¹ãƒãƒ£è¨­å®š
+		void SetTexture(gstd::ref_count_ptr<Texture> texture, int stage = 0);//ãƒ†ã‚¯ã‚¹ãƒãƒ£è¨­å®š
 
 		bool IsCoordinate2D() { return bCoordinate2D_; }
 		void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
@@ -239,8 +239,8 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectTLX
-	//À•W3D•ÏŠ·Ï‚İAƒ‰ƒCƒeƒBƒ“ƒOÏ‚İAƒeƒNƒXƒ`ƒƒ—L‚è
-	//2D©—R•ÏŒ`ƒXƒvƒ‰ƒCƒg—p
+	//åº§æ¨™3Då¤‰æ›æ¸ˆã¿ã€ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°æ¸ˆã¿ã€ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
+	//2Dè‡ªç”±å¤‰å½¢ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆç”¨
 	**********************************************************/
 	class RenderObjectTLX : public RenderObject {
 	protected:
@@ -254,7 +254,7 @@ namespace directx {
 		virtual void Render(D3DXMATRIX& matTransform);
 		virtual void SetVertexCount(size_t count);
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		VERTEX_TLX* GetVertex(size_t index);
 		void SetVertex(size_t index, VERTEX_TLX& vertex);
 		void SetVertexPosition(size_t index, float x, float y, float z = 1.0f, float w = 1.0f);
@@ -266,7 +266,7 @@ namespace directx {
 		void SetColorRGB(D3DCOLOR color);
 		void SetAlpha(int alpha);
 
-		//ƒJƒƒ‰
+		//ã‚«ãƒ¡ãƒ©
 		bool IsPermitCamera() { return bPermitCamera_; }
 		void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
 	};
@@ -343,8 +343,8 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectLX
-	//ƒ‰ƒCƒeƒBƒ“ƒOÏ‚İAƒeƒNƒXƒ`ƒƒ—L‚è
-	//3DƒGƒtƒFƒNƒg—p
+	//ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°æ¸ˆã¿ã€ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
+	//3Dã‚¨ãƒ•ã‚§ã‚¯ãƒˆç”¨
 	**********************************************************/
 	class RenderObjectLX : public RenderObject {
 	public:
@@ -354,7 +354,7 @@ namespace directx {
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 		virtual void SetVertexCount(size_t count);
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		VERTEX_LX* GetVertex(size_t index);
 		void SetVertex(size_t index, VERTEX_LX& vertex);
 		void SetVertexPosition(size_t index, float x, float y, float z);
@@ -438,7 +438,7 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectNX
-	//–@ü—L‚èAƒeƒNƒXƒ`ƒƒ—L‚è
+	//æ³•ç·šæœ‰ã‚Šã€ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 	**********************************************************/
 	class RenderObjectNX : public RenderObject {
 	protected:
@@ -452,7 +452,7 @@ namespace directx {
 		virtual void Render();
 		virtual void Render(D3DXMATRIX* matTransform);
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		VERTEX_NX* GetVertex(size_t index);
 		void SetVertex(size_t index, VERTEX_NX& vertex);
 		void SetVertexPosition(size_t index, float x, float y, float z);
@@ -497,9 +497,9 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectBNX
-	//’¸“_ƒuƒŒƒ“ƒh
-	//–@ü—L‚è
-	//ƒeƒNƒXƒ`ƒƒ—L‚è
+	//é ‚ç‚¹ãƒ–ãƒ¬ãƒ³ãƒ‰
+	//æ³•ç·šæœ‰ã‚Š
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 	**********************************************************/
 	class RenderObjectBNX : public RenderObject {
 	protected:
@@ -520,7 +520,7 @@ namespace directx {
 		virtual void Render();
 		virtual void Render(D3DXVECTOR2& angX, D3DXVECTOR2& angY, D3DXVECTOR2& angZ);
 
-		//•`‰æ—pİ’è
+		//æç”»ç”¨è¨­å®š
 		void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; }
 		void SetColor(D3DCOLOR color) { color_ = color; }
 	};
@@ -538,9 +538,9 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectB2NX
-	//’¸“_ƒuƒŒƒ“ƒh2
-	//–@ü—L‚è
-	//ƒeƒNƒXƒ`ƒƒ—L‚è
+	//é ‚ç‚¹ãƒ–ãƒ¬ãƒ³ãƒ‰2
+	//æ³•ç·šæœ‰ã‚Š
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 	**********************************************************/
 	class RenderObjectB2NX : public RenderObjectBNX {
 	protected:
@@ -551,7 +551,7 @@ namespace directx {
 
 		virtual void CalculateWeightCenter();
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		VERTEX_B2NX* GetVertex(size_t index);
 		void SetVertex(size_t index, VERTEX_B2NX& vertex);
 		void SetVertexPosition(size_t index, float x, float y, float z);
@@ -609,9 +609,9 @@ namespace directx {
 
 	/**********************************************************
 	//RenderObjectB4NX
-	//’¸“_ƒuƒŒƒ“ƒh4
-	//–@ü—L‚è
-	//ƒeƒNƒXƒ`ƒƒ—L‚è
+	//é ‚ç‚¹ãƒ–ãƒ¬ãƒ³ãƒ‰4
+	//æ³•ç·šæœ‰ã‚Š
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£æœ‰ã‚Š
 	**********************************************************/
 	class RenderObjectB4NX : public RenderObjectBNX {
 	protected:
@@ -622,7 +622,7 @@ namespace directx {
 
 		virtual void CalculateWeightCenter();
 
-		//’¸“_İ’è
+		//é ‚ç‚¹è¨­å®š
 		VERTEX_B4NX* GetVertex(size_t index);
 		void SetVertex(size_t index, VERTEX_B4NX& vertex);
 		void SetVertexPosition(size_t index, float x, float y, float z);
@@ -680,7 +680,7 @@ namespace directx {
 
 	/**********************************************************
 	//Sprite2D
-	//‹éŒ`ƒXƒvƒ‰ƒCƒg
+	//çŸ©å½¢ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	**********************************************************/
 	class Sprite2D : public RenderObjectTLX {
 	public:
@@ -697,7 +697,7 @@ namespace directx {
 
 	/**********************************************************
 	//SpriteList2D
-	//‹éŒ`ƒXƒvƒ‰ƒCƒgƒŠƒXƒg
+	//çŸ©å½¢ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒªã‚¹ãƒˆ
 	**********************************************************/
 	class SpriteList2D : public RenderObjectTLX {
 		int countRenderVertex_;
@@ -740,7 +740,7 @@ namespace directx {
 
 	/**********************************************************
 	//Sprite3D
-	//‹éŒ`ƒXƒvƒ‰ƒCƒg
+	//çŸ©å½¢ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	**********************************************************/
 	class Sprite3D : public RenderObjectLX {
 	protected:
@@ -762,7 +762,7 @@ namespace directx {
 
 	/**********************************************************
 	//TrajectoryObject3D
-	//3D‹OÕ
+	//3Dè»Œè·¡
 	**********************************************************/
 	class TrajectoryObject3D : public RenderObjectLX {
 		struct Data {
@@ -821,11 +821,11 @@ namespace directx {
 	public:
 		friend DxMeshManager;
 	protected:
-		D3DXVECTOR3 position_;//ˆÚ“®æÀ•W
-		D3DXVECTOR3 angle_;//‰ñ“]Šp“x
-		D3DXVECTOR3 scale_;//Šg‘å—¦
+		D3DXVECTOR3 position_;//ç§»å‹•å…ˆåº§æ¨™
+		D3DXVECTOR3 angle_;//å›è»¢è§’åº¦
+		D3DXVECTOR3 scale_;//æ‹¡å¤§ç‡
 		D3DCOLOR color_;
-		bool bCoordinate2D_;//2DÀ•Ww’è
+		bool bCoordinate2D_;//2Dåº§æ¨™æŒ‡å®š
 		gstd::ref_count_ptr<Shader> shader_;
 
 		D3DTEXTUREFILTERTYPE filterMin_;
@@ -910,8 +910,8 @@ namespace directx {
 		gstd::CriticalSection& GetLock() { return lock_; }
 
 		virtual void Clear();
-		virtual void Add(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh);//QÆ‚ğ•Û‚µ‚Ü‚·
-		virtual void Release(std::wstring name);//•Û‚µ‚Ä‚¢‚éQÆ‚ğ‰ğ•ú‚µ‚Ü‚·
+		virtual void Add(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh);//å‚ç…§ã‚’ä¿æŒã—ã¾ã™
+		virtual void Release(std::wstring name);//ä¿æŒã—ã¦ã„ã‚‹å‚ç…§ã‚’è§£æ”¾ã—ã¾ã™
 		virtual bool IsDataExists(std::wstring name);
 
 		gstd::ref_count_ptr<DxMesh> CreateFromFileInLoadThread(std::wstring path, int type);

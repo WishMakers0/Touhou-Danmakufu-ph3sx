@@ -158,7 +158,7 @@ bool EDirectInput::Initialize(HWND hWnd) {
 void EDirectInput::ResetVirtualKeyMap() {
 	ClearKeyMap();
 
-	//ƒL[“o˜^
+	//ï¿½Lï¿½[ï¿½oï¿½^
 	DnhConfiguration* config = DnhConfiguration::GetInstance();
 
 	AddKeyMap(KEY_LEFT, config->GetVirtualKey(KEY_LEFT));

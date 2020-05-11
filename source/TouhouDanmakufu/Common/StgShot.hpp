@@ -279,21 +279,21 @@ protected:
 	float hitboxScaleY_;
 
 	//D3DCOLOR color_;
-	int delay_;//’x‰„ŠÔ
-	int typeSourceBrend_; //’x‰„ŠÔƒuƒŒƒ“ƒhí•Ê
-	int frameGrazeInvalid_;//‚©‚·‚è–³ŒøƒtƒŒ[ƒ€
+	int delay_;//é…å»¶æ™‚é–“
+	int typeSourceBrend_; //é…å»¶æ™‚é–“ãƒ–ãƒ¬ãƒ³ãƒ‰ç¨®åˆ¥
+	int frameGrazeInvalid_;//ã‹ã™ã‚Šç„¡åŠ¹ãƒ•ãƒ¬ãƒ¼ãƒ 
 	int frameFadeDelete_;
 	double damage_;
-	double life_;//ŠÑ’Ê—Í
+	double life_;//è²«é€šåŠ›
 	bool bAutoDelete_;
-	bool bEraseShot_;//’eíœ‹@”\
-	bool bSpellFactor_;//ƒXƒyƒ‹•t‰Á
-	int frameAutoDelete_;//©“®íœƒtƒŒ[ƒ€
+	bool bEraseShot_;//å¼¾å‰Šé™¤æ©Ÿèƒ½
+	bool bSpellFactor_;//ã‚¹ãƒšãƒ«ä»˜åŠ 
+	int frameAutoDelete_;//è‡ªå‹•å‰Šé™¤ãƒ•ãƒ¬ãƒ¼ãƒ 
 	ref_count_ptr<ReserveShotList>::unsync listReserveShot_;
 
 	//std::vector<StgPatternShotTransform> listTranformationShotAct_;
 
-	bool bUserIntersectionMode_;//ƒ†[ƒU’è‹`‚ ‚½‚è”»’èƒ‚[ƒh
+	bool bUserIntersectionMode_;//ãƒ¦ãƒ¼ã‚¶å®šç¾©ã‚ãŸã‚Šåˆ¤å®šãƒ¢ãƒ¼ãƒ‰
 	bool bIntersectionEnable_;
 	bool bChangeItemEnable_;
 
@@ -317,7 +317,7 @@ public:
 	virtual ~StgShotObject();
 
 	virtual void Work();
-	virtual void Render() {}//ˆêŠ‡‚Å•`‰æ‚·‚é‚½‚ßƒIƒuƒWƒFƒNƒgŠÇ—‚Å‚Ì•`‰æ‚Í‚µ‚È‚¢
+	virtual void Render() {}//ä¸€æ‹¬ã§æç”»ã™ã‚‹ãŸã‚ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç®¡ç†ã§ã®æç”»ã¯ã—ãªã„
 	virtual void Activate() {}
 	virtual void RenderOnShotManager() {}
 	virtual void Intersect(StgIntersectionTarget::ptr ownTarget, StgIntersectionTarget::ptr otherTarget);
@@ -376,9 +376,9 @@ public:
 
 class StgShotObject::ReserveShotListData {
 	friend ReserveShotList;
-	int idShot_;//‘ÎÛID
-	double radius_;//oŒ»ˆÊ’u‹——£
-	double angle_;//oŒ»ˆÊ’uŠp“x
+	int idShot_;//å¯¾è±¡ID
+	double radius_;//å‡ºç¾ä½ç½®è·é›¢
+	double angle_;//å‡ºç¾ä½ç½®è§’åº¦
 public:
 	ReserveShotListData() { idShot_ = DxScript::ID_INVALID; radius_ = 0; angle_ = 0; }
 	virtual ~ReserveShotListData() {}
@@ -436,7 +436,7 @@ public:
 };
 
 /**********************************************************
-//StgLaserObject(ƒŒ[ƒU[Šî–{•”)
+//StgLaserObject(ãƒ¬ãƒ¼ã‚¶ãƒ¼åŸºæœ¬éƒ¨)
 **********************************************************/
 class StgLaserObject : public StgShotObject {
 protected:
@@ -471,12 +471,12 @@ public:
 };
 
 /**********************************************************
-//StgLooseLaserObject(ËoŒ^ƒŒ[ƒU[)
+//StgLooseLaserObject(å°„å‡ºå‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 class StgLooseLaserObject : public StgLaserObject {
 protected:
-	double posXE_;//Œã•ûx
-	double posYE_;//Œã•ûy
+	double posXE_;//å¾Œæ–¹x
+	double posYE_;//å¾Œæ–¹y
 
 	virtual void _DeleteInAutoClip();
 	virtual void _Move();
@@ -495,7 +495,7 @@ public:
 };
 
 /**********************************************************
-//StgStraightLaserObject(İ’uŒ^ƒŒ[ƒU[)
+//StgStraightLaserObject(è¨­ç½®å‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 class StgStraightLaserObject : public StgLaserObject {
 protected:
@@ -528,7 +528,7 @@ public:
 };
 
 /**********************************************************
-//StgCurveLaserObject(‹È‚ª‚éŒ^ƒŒ[ƒU[)
+//StgCurveLaserObject(æ›²ãŒã‚‹å‹ãƒ¬ãƒ¼ã‚¶ãƒ¼)
 **********************************************************/
 class StgCurveLaserObject : public StgLaserObject {
 protected:

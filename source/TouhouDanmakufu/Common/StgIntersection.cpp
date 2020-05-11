@@ -46,7 +46,7 @@ void StgIntersectionManager::Work() {
 
 //#pragma omp parallel for
 		for (int iCheck = 0; iCheck < countCheck; iCheck++) {
-			//Get‚Í1‰ñ‚µ‚©g—p‚Å‚«‚Ü‚¹‚ñ
+			//Getã¯1å›ã—ã‹ä½¿ç”¨ã§ãã¾ã›ã‚“
 			StgIntersectionTarget::ptr targetA = listCheck->GetTargetA(iCheck);
 			StgIntersectionTarget::ptr targetB = listCheck->GetTargetB(iCheck);
 
@@ -55,7 +55,7 @@ void StgIntersectionManager::Work() {
 			bool bIntersected = IsIntersected(targetA, targetB);
 			if (!bIntersected) continue;
 
-			//Graze‚ÌŠÖŒW‚ÅAæ‚É©‹@‚Ì“–‚½‚è”»’è‚ğ‚·‚é•K—v‚ª‚ ‚éB
+			//Grazeã®é–¢ä¿‚ã§ã€å…ˆã«è‡ªæ©Ÿã®å½“ãŸã‚Šåˆ¤å®šã‚’ã™ã‚‹å¿…è¦ãŒã‚ã‚‹ã€‚
 			weak_ptr<StgIntersectionObject> objA = targetA->GetObject();
 			weak_ptr<StgIntersectionObject> objB = targetB->GetObject();
 			auto ptrA = objA.lock();
@@ -98,9 +98,9 @@ void StgIntersectionManager::Work() {
 	}
 }
 void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
-	//SPACE_PLAYER_ENEMY = 0,//©‹@-“GA“G’e
-	//SPACE_PLAYERSOHT_ENEMY,//©’e,ƒXƒyƒ‹-“G
-	//SPACE_PLAYERSHOT_ENEMYSHOT,//©’e,ƒXƒyƒ‹-“G’e
+	//SPACE_PLAYER_ENEMY = 0,//è‡ªæ©Ÿ-æ•µã€æ•µå¼¾
+	//SPACE_PLAYERSOHT_ENEMY,//è‡ªå¼¾,ã‚¹ãƒšãƒ«-æ•µ
+	//SPACE_PLAYERSHOT_ENEMYSHOT,//è‡ªå¼¾,ã‚¹ãƒšãƒ«-æ•µå¼¾
 
 	//target->SetMortonNumber(-1);
 	//target->ClearObjectIntersectedIdList();
@@ -124,7 +124,7 @@ void StgIntersectionManager::AddTarget(StgIntersectionTarget::ptr target) {
 		bool bEraseShot = false;
 
 		if (obj) {
-		//’eÁ‚µ”\—Í•t‰Á‚È‚ç
+		//å¼¾æ¶ˆã—èƒ½åŠ›ä»˜åŠ ãªã‚‰
 			if (type == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
 				StgShotObject* shot = (StgShotObject*)obj.get();
 				if (shot)
@@ -394,7 +394,7 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 		for (iType2 = iType1 + 1; iType2 < typeCount; ++iType2) {
 			std::vector<StgIntersectionTarget*>& list2 = listCell[iType2];
 
-			// ‡@ ‹óŠÔ“à‚ÌƒIƒuƒWƒFƒNƒg“¯m‚ÌÕ“ËƒŠƒXƒgì¬
+			// â‘  ç©ºé–“å†…ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆåŒå£«ã®è¡çªãƒªã‚¹ãƒˆä½œæˆ
 			std::vector<StgIntersectionTarget*>::iterator itr1 = list1.begin();
 			for (; itr1 != list1.end(); ++itr1) {
 				std::vector<StgIntersectionTarget*>::iterator itr2 = list2.begin();
@@ -412,7 +412,7 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 			if (iType1 == iType2)continue;
 			std::vector<StgIntersectionTarget*>& list2 = listCell[iType2];
 
-			// ‡A Õ“ËƒXƒ^ƒbƒN‚Æ‚ÌÕ“ËƒŠƒXƒgì¬
+			// â‘¡ è¡çªã‚¹ã‚¿ãƒƒã‚¯ã¨ã®è¡çªãƒªã‚¹ãƒˆä½œæˆ
 			std::vector<StgIntersectionTarget*>::iterator itrStack = stack.begin();
 			for (; itrStack != stack.end(); ++itrStack) {
 				std::vector<StgIntersectionTarget*>::iterator itr2 = list2.begin();
@@ -428,7 +428,7 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 		}
 	}
 
-	//‹óŠÔ“à‚ÌƒIƒuƒWƒFƒNƒg‚ğƒXƒ^ƒbƒN‚É’Ç‰Á
+	//ç©ºé–“å†…ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ã‚¹ã‚¿ãƒƒã‚¯ã«è¿½åŠ 
 	int iType = 0;
 	for (iType = 0; iType < typeCount; ++iType) {
 		std::vector<StgIntersectionTarget*>& list = listCell[iType];
@@ -440,7 +440,7 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 		}
 	}
 
-	//ƒXƒ^ƒbƒN‚©‚ç‰ğœ
+	//ã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰è§£é™¤
 	for (iType = 0; iType < typeCount; ++iType) {
 		std::vector<StgIntersectionTarget*>& list = listCell[iType];
 		std::vector<StgIntersectionTarget*>& stack = listStack[iType];
@@ -454,13 +454,13 @@ size_t StgIntersectionSpace::_WriteIntersectionCheckList(StgIntersectionManager*
 
 /*
 unsigned int StgIntersectionSpace::_GetMortonNumber(float left, float top, float right, float bottom) {
-	// À•W‚©‚ç‹óŠÔ”Ô†‚ğZo
-	// Å¬ƒŒƒxƒ‹‚É‚¨‚¯‚éŠe²ˆÊ’u‚ğZo
+	// åº§æ¨™ã‹ã‚‰ç©ºé–“ç•ªå·ã‚’ç®—å‡º
+	// æœ€å°ãƒ¬ãƒ™ãƒ«ã«ãŠã‘ã‚‹å„è»¸ä½ç½®ã‚’ç®—å‡º
 	unsigned int  LT = _GetPointElem(left, top);
 	unsigned int  RB = _GetPointElem(right, bottom);
 
-	// ‹óŠÔ”Ô†‚Ì”r‘¼“I˜_—˜a‚©‚ç
-	// Š‘®ƒŒƒxƒ‹‚ğZo
+	// ç©ºé–“ç•ªå·ã®æ’ä»–çš„è«–ç†å’Œã‹ã‚‰
+	// æ‰€å±ãƒ¬ãƒ™ãƒ«ã‚’ç®—å‡º
 	unsigned int def = RB ^ LT;
 	unsigned int hiLevel = 0;
 	for (int iLevel = 0; iLevel < unitLevel_; ++iLevel) {
@@ -478,18 +478,18 @@ unsigned int StgIntersectionSpace::_GetMortonNumber(float left, float top, float
 	return spaceIndex;
 }
 unsigned int StgIntersectionSpace::_BitSeparate32(unsigned int n) {
-	// ƒrƒbƒg•ªŠ„ŠÖ”
+	// ãƒ“ãƒƒãƒˆåˆ†å‰²é–¢æ•°
 	n = (n | (n << 8)) & 0x00ff00ff;
 	n = (n | (n << 4)) & 0x0f0f0f0f;
 	n = (n | (n << 2)) & 0x33333333;
 	return (n | (n << 1)) & 0x55555555;
 }
 unsigned short StgIntersectionSpace::_Get2DMortonNumber(unsigned short x, unsigned short y) {
-	// 2Dƒ‚[ƒgƒ“‹óŠÔ”Ô†ZoŠÖ”
+	// 2Dãƒ¢ãƒ¼ãƒˆãƒ³ç©ºé–“ç•ªå·ç®—å‡ºé–¢æ•°
 	return (unsigned short)(_BitSeparate32(x) | (_BitSeparate32(y) << 1));
 }
 unsigned int  StgIntersectionSpace::_GetPointElem(float pos_x, float pos_y) {
-	// À•W¨üŒ`4•ª–Ø—v‘f”Ô†•ÏŠ·ŠÖ”
+	// åº§æ¨™â†’ç·šå½¢4åˆ†æœ¨è¦ç´ ç•ªå·å¤‰æ›é–¢æ•°
 	float val1 = std::max(pos_x - spaceLeft_, 0.0);
 	float val2 = std::max(pos_y - spaceTop_, 0.0);
 	return _Get2DMortonNumber(

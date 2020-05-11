@@ -16,7 +16,7 @@ namespace gstd {
 
 		type_data(type_data const & source) : kind(source.kind), element(source.element) {}
 
-		//デストラクタはデフォルトに任せる
+		//繝�繧ｹ繝医Λ繧ｯ繧ｿ縺ｯ繝�繝輔か繝ｫ繝医↓莉ｻ縺帙ｋ
 
 		type_kind get_kind() {
 			return kind;

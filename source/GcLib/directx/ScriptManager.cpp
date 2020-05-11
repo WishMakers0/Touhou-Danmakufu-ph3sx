@@ -53,7 +53,7 @@ void ScriptManager::Work(int targetType) {
 
 }
 void ScriptManager::Render() {
-	//‚±‚±‚Å‚ÍƒIƒuƒWƒFƒNƒg‚Ì•`‰æ‚ğs‚í‚È‚¢B
+	//ã“ã“ã§ã¯ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®æç”»ã‚’è¡Œã‚ãªã„ã€‚
 }
 ref_count_ptr<ManagedScript> ScriptManager::GetScript(int64_t id) {
 	ref_count_ptr<ManagedScript> res = nullptr;
@@ -91,7 +91,7 @@ void ScriptManager::StartScript(int64_t id) {
 		int count = 0;
 		while (!script->IsLoad()) {
 			if (count % 1000 == 999)
-				Logger::WriteTop(StringUtility::Format(L"“Ç‚İ‚İŠ®—¹‘Ò‹@(ScriptManager)F%s", script->GetPath().c_str()));
+				Logger::WriteTop(StringUtility::Format(L"èª­ã¿è¾¼ã¿å®Œäº†å¾…æ©Ÿ(ScriptManager)ï¼š%s", script->GetPath().c_str()));
 			Sleep(1);
 			count++;
 		}
@@ -113,7 +113,7 @@ void ScriptManager::StartScript(ref_count_ptr<ManagedScript> id) {
 		int count = 0;
 		while (!id->IsLoad()) {
 			if (count % 1000 == 999)
-				Logger::WriteTop(StringUtility::Format(L"“Ç‚İ‚İŠ®—¹‘Ò‹@(ScriptManager)F%s", id->GetPath().c_str()));
+				Logger::WriteTop(StringUtility::Format(L"èª­ã¿è¾¼ã¿å®Œäº†å¾…æ©Ÿ(ScriptManager)ï¼š%s", id->GetPath().c_str()));
 			Sleep(1);
 			count++;
 		}
@@ -330,9 +330,9 @@ void ScriptManager::AddRelativeScriptManagerMutual(std::weak_ptr<ScriptManager> 
 **********************************************************/
 const function commonFunction[] =
 {
-	//ŠÖ”F
+	//é–¢æ•°ï¼š
 
-	//§Œä‹¤’ÊŠÖ”FƒXƒNƒŠƒvƒg‘€ì
+	//åˆ¶å¾¡å…±é€šé–¢æ•°ï¼šã‚¹ã‚¯ãƒªãƒ—ãƒˆæ“ä½œ
 	{ "LoadScript", ManagedScript::Func_LoadScript, 1 },
 	{ "LoadScriptInThread", ManagedScript::Func_LoadScriptInThread, 1 },
 	{ "StartScript", ManagedScript::Func_StartScript, 1 },
@@ -368,12 +368,12 @@ gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& list
 	gstd::value res;
 
 	if (!IsEventExists("Event")) {
-		//		std::string log = StringUtility::Format("@Event‚ª‚ ‚è‚Ü‚¹‚ñB(%s)", GetPath().c_str());
+		//		std::string log = StringUtility::Format("@EventãŒã‚ã‚Šã¾ã›ã‚“ã€‚(%s)", GetPath().c_str());
 		//		throw std::exception(log.c_str());
 		return res;
 	}
 
-	//’l‚ğ‘Ş”ğ(Run’†‚É‘‚«Š·‚í‚é‰Â”\«‚ª‚ ‚é‚½‚ß)
+	//å€¤ã‚’é€€é¿(Runä¸­ã«æ›¸ãæ›ã‚ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ãŸã‚)
 	int tEventType = typeEvent_;
 	gstd::value tValue = valueRes_;
 
@@ -384,7 +384,7 @@ gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& list
 	Run("Event");
 	res = GetResultValue();
 
-	//’l‚ğ–ß‚·
+	//å€¤ã‚’æˆ»ã™
 	typeEvent_ = tEventType;
 	valueRes_ = tValue;
 
@@ -393,7 +393,7 @@ gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& list
 
 
 
-//STG§Œä‹¤’ÊŠÖ”FƒXƒNƒŠƒvƒg‘€ì
+//STGåˆ¶å¾¡å…±é€šé–¢æ•°ï¼šã‚¹ã‚¯ãƒªãƒ—ãƒˆæ“ä½œ
 gstd::value ManagedScript::Func_LoadScript(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	ManagedScript* script = (ManagedScript*)machine->data;
 	auto scriptManager = script->scriptManager_;

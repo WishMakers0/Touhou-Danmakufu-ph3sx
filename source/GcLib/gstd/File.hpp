@@ -128,8 +128,8 @@ namespace gstd {
 
 	/**********************************************************
 	//File
-	//ƒtƒ@ƒCƒ‹‚ÍAx:\fffff.xxx
-	//ƒfƒBƒŒƒNƒgƒŠ‚Íx:\ddddd\
+	//ãƒ•ã‚¡ã‚¤ãƒ«ã¯ã€x:\fffff.xxx
+	//ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã¯x:\ddddd\
 	**********************************************************/
 	class File : public Writer, public Reader {
 	public:
@@ -375,7 +375,7 @@ namespace gstd {
 	public:
 		RecordBuffer();
 		virtual ~RecordBuffer();
-		void Clear();//•Ûƒf[ƒ^ƒNƒŠƒA
+		void Clear();//ä¿æŒãƒ‡ãƒ¼ã‚¿ã‚¯ãƒªã‚¢
 		int GetEntryCount() { return mapEntry_.size(); }
 		bool IsExists(std::string key);
 		std::vector<std::string> GetKeyList();
@@ -386,11 +386,11 @@ namespace gstd {
 		bool WriteToFile(std::wstring path, std::string header = HEADER_RECORDFILE);
 		bool ReadFromFile(std::wstring path, std::string header = HEADER_RECORDFILE);
 
-		//ƒGƒ“ƒgƒŠ
+		//ã‚¨ãƒ³ãƒˆãƒª
 		int GetEntryType(std::string key);
 		int GetEntrySize(std::string key);
 
-		//ƒGƒ“ƒgƒŠæ“¾(•¶š—ñƒL[)
+		//ã‚¨ãƒ³ãƒˆãƒªå–å¾—(æ–‡å­—åˆ—ã‚­ãƒ¼)
 		bool GetRecord(std::string key, LPVOID buf, DWORD size);
 		template <typename T> bool GetRecord(std::string key, T& data) {
 			return GetRecord(key, &data, sizeof(T));
@@ -403,7 +403,7 @@ namespace gstd {
 		std::wstring GetRecordAsStringW(std::string key);
 		bool GetRecordAsRecordBuffer(std::string key, RecordBuffer& record);
 
-		//ƒGƒ“ƒgƒŠæ“¾(”’lƒL[)
+		//ã‚¨ãƒ³ãƒˆãƒªå–å¾—(æ•°å€¤ã‚­ãƒ¼)
 		bool GetRecord(int key, LPVOID buf, DWORD size) { return GetRecord(StringUtility::Format("%d", key), buf, size); }
 		template <typename T> bool GetRecord(int key, T& data) { return GetRecord(StringUtility::Format("%d", key), data); }
 		bool GetRecordAsBoolean(int key) { return GetRecordAsBoolean(StringUtility::Format("%d", key)); };
@@ -415,7 +415,7 @@ namespace gstd {
 		bool GetRecordAsRecordBuffer(int key, RecordBuffer& record) { return GetRecordAsRecordBuffer(StringUtility::Format("%d", key), record); }
 
 
-		//ƒGƒ“ƒgƒŠİ’è(•¶š—ñƒL[)
+		//ã‚¨ãƒ³ãƒˆãƒªè¨­å®š(æ–‡å­—åˆ—ã‚­ãƒ¼)
 		void SetRecord(std::string key, LPVOID buf, DWORD size) { SetRecord(RecordEntry::TYPE_UNKNOWN, key, buf, size); }
 		template <typename T> void SetRecord(std::string key, T& data) {
 			SetRecord(RecordEntry::TYPE_UNKNOWN, key, &data, sizeof(T));
@@ -432,7 +432,7 @@ namespace gstd {
 		void SetRecordAsStringW(std::string key, std::wstring data) { SetRecord(RecordEntry::TYPE_STRING_W, key, &data[0], data.size() * sizeof(wchar_t)); }
 		void SetRecordAsRecordBuffer(std::string key, RecordBuffer& record);
 
-		//ƒGƒ“ƒgƒŠİ’è(”’lƒL[)
+		//ã‚¨ãƒ³ãƒˆãƒªè¨­å®š(æ•°å€¤ã‚­ãƒ¼)
 		void SetRecord(int key, LPVOID buf, DWORD size) { SetRecord(StringUtility::Format("%d", key), buf, size); }
 		template <typename T> void SetRecord(int key, T& data) { SetRecord(StringUtility::Format("%d", key), data); }
 		void SetRecordAsBoolean(int key, bool data) { SetRecordAsInteger(StringUtility::Format("%d", key), data); }

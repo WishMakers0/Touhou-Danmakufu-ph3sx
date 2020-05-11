@@ -15,7 +15,7 @@ StgUserExtendScene::StgUserExtendScene(StgSystemController* controller) {
 StgUserExtendScene::~StgUserExtendScene() {
 }
 void StgUserExtendScene::_InitializeTransitionTexture() {
-	//‰æ–ÊƒLƒƒƒvƒ`ƒƒ
+	//ç”»é¢ã‚­ãƒ£ãƒ—ãƒãƒ£
 	StgStageController* stageController = systemController_->GetStageController();
 	if (stageController != NULL) {
 		stageController->RenderToTransitionTexture();
@@ -183,12 +183,12 @@ void StgPauseScene::Work() {
 }
 
 void StgPauseScene::Start() {
-	//’â~ƒCƒxƒ“ƒgŒÄ‚Ño‚µ
+	//åœæ­¢ã‚¤ãƒ™ãƒ³ãƒˆå‘¼ã³å‡ºã—
 	StgStageController* stageController = systemController_->GetStageController();
 	auto stageScriptManager = stageController->GetScriptManager();
 	stageScriptManager->RequestEventAll(StgStageScript::EV_PAUSE_ENTER);
 
-	//’â~ˆ—‰Šú‰»
+	//åœæ­¢å‡¦ç†åˆæœŸåŒ–
 	scriptManager_ = NULL;
 	scriptManager_ = std::shared_ptr<StgUserExtendSceneScriptManager>(new StgUserExtendSceneScriptManager(systemController_));
 	_AddRelativeManager();
@@ -196,7 +196,7 @@ void StgPauseScene::Start() {
 
 	_InitializeTransitionTexture();
 
-	//ƒXƒNƒŠƒvƒg‰Šú‰»
+	//ã‚¹ã‚¯ãƒªãƒ—ãƒˆåˆæœŸåŒ–
 	std::wstring path = sysInfo->GetPauseScriptPath();
 	_InitializeScript(path, StgUserExtendSceneScript::TYPE_PAUSE_SCENE);
 
@@ -212,7 +212,7 @@ void StgPauseScene::Finish() {
 	_CallScriptFinalize();
 	scriptManager_ = NULL;
 
-	//‰ğœƒCƒxƒ“ƒgŒÄ‚Ño‚µ
+	//è§£é™¤ã‚¤ãƒ™ãƒ³ãƒˆå‘¼ã³å‡ºã—
 	auto stageScriptManager = stageController->GetScriptManager();
 	stageScriptManager->RequestEventAll(StgStageScript::EV_PAUSE_LEAVE);
 }
@@ -222,9 +222,9 @@ void StgPauseScene::Finish() {
 **********************************************************/
 const function stgPauseFunction[] =
 {
-	//ŠÖ”F
+	//é–¢æ•°ï¼š
 
-	//’è”F
+	//å®šæ•°ï¼š
 	{"__stgPauseFunction__", constant<0>::func, 0},
 
 };
@@ -234,7 +234,7 @@ StgPauseSceneScript::StgPauseSceneScript(StgSystemController* controller) : StgU
 }
 StgPauseSceneScript::~StgPauseSceneScript() {}
 
-//ˆê’â~ê—pŠÖ”Fˆê’â~‘€ì
+//ä¸€æ™‚åœæ­¢å°‚ç”¨é–¢æ•°ï¼šä¸€æ™‚åœæ­¢æ“ä½œ
 
 
 /**********************************************************
@@ -277,7 +277,7 @@ void StgEndScene::Start() {
 
 	_InitializeTransitionTexture();
 
-	//ƒXƒNƒŠƒvƒg‰Šú‰»
+	//ã‚¹ã‚¯ãƒªãƒ—ãƒˆåˆæœŸåŒ–
 	std::wstring path = info->GetEndSceneScriptPath();
 	_InitializeScript(path, StgUserExtendSceneScript::TYPE_END_SCENE);
 }
@@ -294,9 +294,9 @@ void StgEndScene::Finish() {
 **********************************************************/
 const function stgEndFunction[] =
 {
-	//ŠÖ”F
+	//é–¢æ•°ï¼š
 
-	//’è”F
+	//å®šæ•°ï¼š
 	{"__stgEndFunction__", constant<0>::func, 0},
 
 };
@@ -342,7 +342,7 @@ void StgReplaySaveScene::Start() {
 
 	//_InitializeTransitionTexture();
 
-	//ƒXƒNƒŠƒvƒg‰Šú‰»
+	//ã‚¹ã‚¯ãƒªãƒ—ãƒˆåˆæœŸåŒ–
 	std::wstring path = info->GetReplaySaveSceneScriptPath();
 	_InitializeScript(path, StgUserExtendSceneScript::TYPE_REPLAY_SCENE);
 }
@@ -359,9 +359,9 @@ void StgReplaySaveScene::Finish() {
 **********************************************************/
 const function stgReplaySaveFunction[] =
 {
-	//ŠÖ”F
+	//é–¢æ•°ï¼š
 
-	//’è”F
+	//å®šæ•°ï¼š
 	{"__stgReplaySaveFunction__", constant<0>::func, 0},
 
 };

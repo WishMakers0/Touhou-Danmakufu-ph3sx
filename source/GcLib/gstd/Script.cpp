@@ -317,12 +317,12 @@ wchar_t scanner::next_char() {
 }
 
 void scanner::skip() {
-	//‹ó”’‚ğ”ò‚Î‚·
+	//ç©ºç™½ã‚’é£›ã°ã™
 	wchar_t ch1 = current_char();
 	wchar_t ch2 = index_from_current_char(1);
 	while (ch1 == '\r' || ch1 == '\n' || ch1 == L'\t' || ch1 == L' '
 		|| ch1 == L'#' || (ch1 == L'/' && (ch2 == L'/' || ch2 == L'*'))) {
-		//ƒRƒƒ“ƒg‚ğ”ò‚Î‚·
+		//ã‚³ãƒ¡ãƒ³ãƒˆã‚’é£›ã°ã™
 		if (ch1 == L'#' ||
 			(ch1 == L'/' && (ch2 == L'/' || ch2 == L'*'))) {
 			if (ch1 == L'#' || ch2 == L'/') {
@@ -1750,7 +1750,7 @@ parser::symbol* parser::search_result() {
 }
 
 int parser::scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result, int initVar) {
-	//æ“Ç‚İ‚µ‚Ä¯•Êq‚ğ“o˜^‚·‚é
+	//å…ˆèª­ã¿ã—ã¦è­˜åˆ¥å­ã‚’ç™»éŒ²ã™ã‚‹
 	scanner lex2(*_lex);
 
 	int var = initVar;
@@ -1999,7 +1999,7 @@ void parser::parse_clause(script_engine::block* block, scanner* lex) {
 			block->codes.push_back(code(lex->line, command_kind::pc_call_and_push_result, s->sub, argc));
 		}
 		else {
-			//•Ï”
+			//å¤‰æ•°
 			block->codes.push_back(code(lex->line, command_kind::pc_push_variable, s->level, s->variable, name));
 		}
 	}
@@ -2049,7 +2049,7 @@ void parser::parse_suffix(script_engine::block* block, scanner* lex) {
 	parse_clause(block, lex);
 	if (lex->next == token_kind::tk_caret) {
 		lex->advance();
-		parse_suffix(block, lex); //Ä‹A
+		parse_suffix(block, lex); //å†å¸°
 		
 #ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "power", 2);
@@ -2080,11 +2080,11 @@ void parser::parse_suffix(script_engine::block* block, scanner* lex) {
 void parser::parse_prefix(script_engine::block* block, scanner* lex) {
 	if (lex->next == token_kind::tk_plus) {
 		lex->advance();
-		parse_prefix(block, lex);	//Ä‹A
+		parse_prefix(block, lex);	//å†å¸°
 	}
 	else if (lex->next == token_kind::tk_minus) {
 		lex->advance();
-		parse_prefix(block, lex);	//Ä‹A
+		parse_prefix(block, lex);	//å†å¸°
 
 #ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "negative", 1);
@@ -2094,7 +2094,7 @@ void parser::parse_prefix(script_engine::block* block, scanner* lex) {
 	}
 	else if (lex->next == token_kind::tk_exclamation) {
 		lex->advance();
-		parse_prefix(block, lex);	//Ä‹A
+		parse_prefix(block, lex);	//å†å¸°
 
 #ifndef __SCRIPT_H__INLINE_OPERATION
 		write_operation(block, lex, "not", 1);
@@ -2991,7 +2991,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				}
 			}
 			else {
-				//ŒİŠ·«‚Ì‚½‚ß‹ó‚ÌŠ‡ŒÊ‚¾‚¯‹–‚·
+				//äº’æ›æ€§ã®ãŸã‚ç©ºã®æ‹¬å¼§ã ã‘è¨±ã™
 				if (lex->next == token_kind::tk_open_par) {
 					lex->advance();
 					parser_assert(lex->next == token_kind::tk_close_par, "Only an empty parameter list is allowed here.\r\n");
@@ -3007,7 +3007,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 		if (single_parse) break;
 
-		//ƒZƒ~ƒRƒƒ“‚ª–³‚¢‚ÆŒp‘±‚µ‚È‚¢
+		//ã‚»ãƒŸã‚³ãƒ­ãƒ³ãŒç„¡ã„ã¨ç¶™ç¶šã—ãªã„
 		if (need_semicolon && lex->next != statement_terminator)
 			break;
 
@@ -3172,7 +3172,7 @@ void script_machine::call(std::string event_name) {
 	assert(!error);
 	assert(!stopped);
 	if (engine->events.find(event_name) != engine->events.end()) {
-		run();	//”O‚Ì‚½‚ß
+		run();	//å¿µã®ãŸã‚
 
 		auto env = threads.begin();
 

@@ -9,9 +9,9 @@ namespace gstd {
 	class Thread {
 	public:
 		enum Status {
-			RUN,//‰Ò“­’†
-			STOP,//’â~’†
-			REQUEST_STOP,//’â~—v‹’† 
+			RUN,//ï¿½Ò“ï¿½ï¿½ï¿½
+			STOP,//ï¿½ï¿½~ï¿½ï¿½
+			REQUEST_STOP,//ï¿½ï¿½~ï¿½vï¿½ï¿½ï¿½ï¿½ 
 		};
 	private:
 		static unsigned int __stdcall _StaticRun(LPVOID data);

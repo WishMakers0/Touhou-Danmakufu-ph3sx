@@ -58,11 +58,11 @@ void StgPlayerObject::Work() {
 	auto scriptManager = stageController_->GetScriptManager();
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 
-	//“–‚½‚è”»’èƒNƒŠƒA
+	//å½“ãŸã‚Šåˆ¤å®šã‚¯ãƒªã‚¢
 	ClearIntersected();
 
 	if (state_ == STATE_NORMAL) {
-		//’Êí
+		//é€šå¸¸æ™‚
 		if (hitObjectID_ != DxScript::ID_INVALID) {
 			if (frameInvincibility_ <= 0) {
 				state_ = STATE_HIT;
@@ -116,15 +116,15 @@ void StgPlayerObject::Work() {
 		}
 	}
 	if (state_ == STATE_HIT) {
-		//‚­‚ç‚¢ƒ{ƒ€‘Ò‹@
+		//ãã‚‰ã„ãƒœãƒ å¾…æ©Ÿ
 		if (input->GetVirtualKeyState(EDirectInput::KEY_BOMB) == KEY_PUSH)
 			CallSpell();
 
 		if (state_ == STATE_HIT) {
-			//‚­‚ç‚¢ƒ{ƒ€—LŒøƒtƒŒ[ƒ€Œ¸­
+			//ãã‚‰ã„ãƒœãƒ æœ‰åŠ¹ãƒ•ãƒ¬ãƒ¼ãƒ æ¸›å°‘
 			frameState_--;
 			if (frameState_ < 0) {
-				//©‹@ƒ_ƒEƒ“
+				//è‡ªæ©Ÿãƒ€ã‚¦ãƒ³
 				bool bEnemyLastSpell = false;
 
 				shared_ptr<StgEnemyBossSceneObject> objBossScene = enemyManager->GetBossSceneObject();
@@ -159,7 +159,7 @@ void StgPlayerObject::Work() {
 		}
 	}
 	if (state_ == STATE_DOWN) {
-		//ƒ_ƒEƒ“
+		//ãƒ€ã‚¦ãƒ³
 		frameState_--;
 		if (frameState_ <= 0) {
 			bVisible_ = true;
@@ -179,7 +179,7 @@ void StgPlayerObject::Work() {
 }
 void StgPlayerObject::Move() {
 	if (state_ == STATE_NORMAL) {
-		//’Êí
+		//é€šå¸¸æ™‚
 		if (hitObjectID_ == DxScript::ID_INVALID) {
 			_Move();
 		}
@@ -217,7 +217,7 @@ void StgPlayerObject::_Move() {
 	double px = posX_ + sx;
 	double py = posY_ + sy;
 
-	//‚Í‚İo‚½‚Æ‚«‚Ìˆ—
+	//ã¯ã¿å‡ºãŸã¨ãã®å‡¦ç†
 	px = std::max(px, (double)rcClip_.left);
 	px = std::min(px, (double)rcClip_.right);
 	py = std::max(py, (double)rcClip_.top);
@@ -283,7 +283,7 @@ void StgPlayerObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInterse
 		{
 			StgShotObject* objShot = (StgShotObject*)ptrObj.get();
 			if (objShot != nullptr) {
-				//“G’e
+				//æ•µå¼¾
 				if (!own->IsGraze()) {
 					hitObjectID_ = objShot->GetObjectID();
 
@@ -300,7 +300,7 @@ void StgPlayerObject::Intersect(StgIntersectionTarget::ptr ownTarget, StgInterse
 		break;
 		case StgIntersectionTarget::TYPE_ENEMY:
 		{
-			//“G
+			//æ•µ
 			if (!own->IsGraze()) {
 				shared_ptr<StgEnemyObject> objEnemy = std::dynamic_pointer_cast<StgEnemyObject>(ptrObj);
 				if (objEnemy)
@@ -315,14 +315,14 @@ shared_ptr<StgPlayerObject> StgPlayerObject::GetOwnObject() {
 	return std::dynamic_pointer_cast<StgPlayerObject>(stageController_->GetMainRenderObject(idObject_));
 }
 bool StgPlayerObject::IsPermitShot() {
-	//ˆÈ‰º‚Ì‚Æ‚«•s‰Â
-	//E‰ï˜b’†
+	//ä»¥ä¸‹ã®ã¨ãä¸å¯
+	//ãƒ»ä¼šè©±ä¸­
 	return !bForbidShot_;
 }
 bool StgPlayerObject::IsPermitSpell() {
-	//ˆÈ‰º‚Ì‚Æ‚«•s‰Â
-	//E‰ï˜b’†
-	//Eƒ‰ƒXƒgƒXƒyƒ‹’†
+	//ä»¥ä¸‹ã®ã¨ãä¸å¯
+	//ãƒ»ä¼šè©±ä¸­
+	//ãƒ»ãƒ©ã‚¹ãƒˆã‚¹ãƒšãƒ«ä¸­
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 	bool bEnemyLastSpell = false;
 	shared_ptr<StgEnemyBossSceneObject> objBossScene = enemyManager->GetBossSceneObject();

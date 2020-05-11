@@ -22,7 +22,7 @@ namespace directx {
 	class AcmMp3Wave;
 
 
-	struct WAVEFILEHEADER {//WAVE\¬ƒtƒH[ƒ}ƒbƒgî•ñA"fmt "ƒ`ƒƒƒ“ƒNƒf[ƒ^
+	struct WAVEFILEHEADER {//WAVEæ§‹æˆãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆæƒ…å ±ã€"fmt "ãƒãƒ£ãƒ³ã‚¯ãƒ‡ãƒ¼ã‚¿
 		char cRIFF[4];
 		int	iSizeRIFF;
 		char cType[4];
@@ -52,7 +52,7 @@ namespace directx {
 			SD_WAVE,
 			SD_MP3,
 			SD_OGG,
-			SD_AWAVE,//ˆ³kwave waveƒwƒbƒ_mp3
+			SD_AWAVE,//åœ§ç¸®wave waveãƒ˜ãƒƒãƒ€mp3
 			SD_UNKNOWN,
 		};
 
@@ -93,8 +93,8 @@ namespace directx {
 		void SetFadeDeleteAll();
 	};
 
-	//ƒtƒF[ƒhƒCƒ“^ƒtƒF[ƒhƒAƒEƒg§Œä
-	//•K—v‚È‚­‚È‚Á‚½ƒoƒbƒtƒ@‚ÌŠJ•ú‚È‚Ç
+	//ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ï¼ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¢ã‚¦ãƒˆåˆ¶å¾¡
+	//å¿…è¦ãªããªã£ãŸãƒãƒƒãƒ•ã‚¡ã®é–‹æ”¾ãªã©
 	class DirectSoundManager::SoundManageThread : public gstd::Thread, public gstd::InnerClass<DirectSoundManager> {
 		friend DirectSoundManager;
 	protected:
@@ -103,8 +103,8 @@ namespace directx {
 
 		SoundManageThread(DirectSoundManager* manager);
 		void _Run();
-		void _Arrange();//•K—v‚È‚­‚È‚Á‚½ƒf[ƒ^‚ğíœ
-		void _Fade();//ƒtƒF[ƒhˆ—
+		void _Arrange();//å¿…è¦ãªããªã£ãŸãƒ‡ãƒ¼ã‚¿ã‚’å‰Šé™¤
+		void _Fade();//ãƒ•ã‚§ãƒ¼ãƒ‰å‡¦ç†
 	};
 
 	/**********************************************************
@@ -137,7 +137,7 @@ namespace directx {
 
 	/**********************************************************
 	//SoundDivision
-	//‰¹—Ê‚È‚Ç‚ğ‹¤—L‚·‚é‚½‚ß‚ÌƒNƒ‰ƒX
+	//éŸ³é‡ãªã©ã‚’å…±æœ‰ã™ã‚‹ãŸã‚ã®ã‚¯ãƒ©ã‚¹
 	**********************************************************/
 	class SoundDivision {
 	public:
@@ -147,7 +147,7 @@ namespace directx {
 			DIVISION_VOICE,
 		};
 	protected:
-		double rateVolume_;//‰¹—ÊŠ„‡(0-100)
+		double rateVolume_;//éŸ³é‡å‰²åˆ(0-100)
 	public:
 		SoundDivision();
 		virtual ~SoundDivision();
@@ -194,16 +194,16 @@ namespace directx {
 		SoundDivision* division_;
 
 		WAVEFORMATEX formatWave_;
-		bool bLoop_;//ƒ‹[ƒv—L–³
-		double timeLoopStart_;//ƒ‹[ƒvŠJnŠÔ
-		double timeLoopEnd_;//ƒ‹[ƒvI—¹ŠÔ
+		bool bLoop_;//ãƒ«ãƒ¼ãƒ—æœ‰ç„¡
+		double timeLoopStart_;//ãƒ«ãƒ¼ãƒ—é–‹å§‹æ™‚é–“
+		double timeLoopEnd_;//ãƒ«ãƒ¼ãƒ—çµ‚äº†æ™‚é–“
 		bool bPause_;
 
-		bool bDelete_;//íœƒtƒ‰ƒO
-		bool bFadeDelete_;//ƒtƒF[ƒhƒAƒEƒgŒã‚Éíœ
-		bool bAutoDelete_;//©“®íœ
-		double rateVolume_;//‰¹—ÊŠ„‡(0-100)
-		double rateVolumeFadePerSec_;//ƒtƒF[ƒh‚Ì‰¹—Ê’á‰ºŠ„‡
+		bool bDelete_;//å‰Šé™¤ãƒ•ãƒ©ã‚°
+		bool bFadeDelete_;//ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¢ã‚¦ãƒˆå¾Œã«å‰Šé™¤
+		bool bAutoDelete_;//è‡ªå‹•å‰Šé™¤
+		double rateVolume_;//éŸ³é‡å‰²åˆ(0-100)
+		double rateVolumeFadePerSec_;//ãƒ•ã‚§ãƒ¼ãƒ‰æ™‚ã®éŸ³é‡ä½ä¸‹å‰²åˆ
 		
 		bool flgUpdateStreamOffset_;
 		size_t lastStreamCopyPos_;
@@ -269,11 +269,11 @@ namespace directx {
 		friend StreamingThread;
 	protected:
 		HANDLE hEvent_[3];
-		IDirectSoundNotify* pDirectSoundNotify_;//ƒCƒxƒ“ƒg
+		IDirectSoundNotify* pDirectSoundNotify_;//ã‚¤ãƒ™ãƒ³ãƒˆ
 		int sizeCopy_;
 		StreamingThread* thread_;
 		bool bStreaming_;
-		bool bRequestStop_;//ƒ‹[ƒvŠ®—¹‚Ìƒtƒ‰ƒOB‚·‚®’â~‚·‚é‚ÆÅŒã‚Ìƒoƒbƒtƒ@‚ªÄ¶‚³‚ê‚È‚¢‚½‚ßB
+		bool bRequestStop_;//ãƒ«ãƒ¼ãƒ—å®Œäº†æ™‚ã®ãƒ•ãƒ©ã‚°ã€‚ã™ãåœæ­¢ã™ã‚‹ã¨æœ€å¾Œã®ãƒãƒƒãƒ•ã‚¡ãŒå†ç”Ÿã•ã‚Œãªã„ãŸã‚ã€‚
 
 		void _CreateSoundEvent(WAVEFORMATEX& formatWave);
 		virtual void _CopyStream(int indexCopy);

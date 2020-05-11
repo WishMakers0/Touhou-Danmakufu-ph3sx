@@ -21,7 +21,7 @@ private:
 	double life_;
 	double countBomb_;
 	double power_;
-	int frameRebirth_;//‚­‚ç‚¢ƒ{ƒ€—LŒøƒtƒŒ[ƒ€
+	int frameRebirth_;//ãã‚‰ã„ãƒœãƒ æœ‰åŠ¹ãƒ•ãƒ¬ãƒ¼ãƒ 
 public:
 	StgPlayerInformation() {}
 	virtual ~StgPlayerInformation() {}
@@ -58,9 +58,9 @@ protected:
 	RECT rcClip_;
 
 	int state_;
-	int frameState_;//ŠeƒXƒe[ƒg‚ÅŽg—p‚³‚ê‚éƒtƒŒ[ƒ€
-	int frameRebirthMax_;//‚­‚ç‚¢ƒ{ƒ€—LŒøƒtƒŒ[ƒ€‰Šú’l
-	int frameRebirthDiff_;//‚­‚ç‚¢ƒ{ƒ€Œ¸­—Ê
+	int frameState_;//å„ã‚¹ãƒ†ãƒ¼ãƒˆã§ä½¿ç”¨ã•ã‚Œã‚‹ãƒ•ãƒ¬ãƒ¼ãƒ 
+	int frameRebirthMax_;//ãã‚‰ã„ãƒœãƒ æœ‰åŠ¹ãƒ•ãƒ¬ãƒ¼ãƒ åˆæœŸå€¤
+	int frameRebirthDiff_;//ãã‚‰ã„ãƒœãƒ æ¸›å°‘é‡
 	int frameStateDown_;
 
 	std::vector<weak_ptr<StgIntersectionObject>> listGrazedShot_;
@@ -172,7 +172,7 @@ protected:
 	StgStageController* stageController_;
 	double damage_;
 	bool bEraseShot_;
-	double life_;//ŠÑ’Ê—Í
+	double life_;//è²«é€šåŠ›
 
 public:
 	StgPlayerSpellObject(StgStageController* stageController);

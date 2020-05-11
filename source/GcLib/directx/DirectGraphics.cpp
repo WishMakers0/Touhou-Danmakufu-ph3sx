@@ -82,7 +82,7 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 	wndStyleWin_ = WS_OVERLAPPEDWINDOW - WS_SIZEBOX;
 	hAttachedWindow_ = hWnd;
 
-	//FullScreenMode‚Ìİ’è
+	//FullScreenModeã®è¨­å®š
 	ZeroMemory(&d3dppFull_, sizeof(D3DPRESENT_PARAMETERS));
 	d3dppFull_.hDeviceWindow = hWnd;
 	d3dppFull_.BackBufferWidth = config.GetScreenWidth();
@@ -98,7 +98,7 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 	d3dppFull_.PresentationInterval = config.IsVSyncEnable() ? D3DPRESENT_INTERVAL_ONE :  D3DPRESENT_INTERVAL_IMMEDIATE;
 	d3dppFull_.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
 
-	//WindowMode‚Ìİ’è
+	//WindowModeã®è¨­å®š
 	D3DDISPLAYMODE dmode;
 	HRESULT hrAdapt = pDirect3D_->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &dmode);
 	ZeroMemory(&d3dppWin_, sizeof(D3DPRESENT_PARAMETERS));
@@ -203,10 +203,10 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config) {
 		}
 	}
 
-	// BackSurfaceæ“¾
+	// BackSurfaceå–å¾—
 	pDevice_->GetRenderTarget(0, &pBackSurf_);
 
-	// Zƒoƒbƒtƒ@æ“¾
+	// Zãƒãƒƒãƒ•ã‚¡å–å¾—
 	pDevice_->GetDepthStencilSurface(&pZBuffer_);
 
 	thisBase_ = this;
@@ -244,22 +244,22 @@ void DirectGraphics::_RestoreDxResource() {
 }
 void DirectGraphics::_Restore() {
 	Logger::WriteTop("DirectGraphics::_Restore");
-	// ƒfƒBƒXƒvƒŒƒC‚Ì‹¦’²ƒŒƒxƒ‹‚ğ’²¸
+	// ãƒ‡ã‚£ã‚¹ãƒ—ãƒ¬ã‚¤ã®å”èª¿ãƒ¬ãƒ™ãƒ«ã‚’èª¿æŸ»
 	HRESULT hr = pDevice_->TestCooperativeLevel();
 	if (hr == D3DERR_DEVICELOST) {
 		int count = 0;
 		do {
-			Sleep(500);	// 0.5•b‘Ò‚Â
+			Sleep(500);	// 0.5ç§’å¾…ã¤
 			count += 500;
 			hr = pDevice_->TestCooperativeLevel();
 			if (hr == D3DERR_DEVICENOTRESET)break;
 		} while (count < 6000);
 	}
 
-	// ƒŠƒXƒgƒA
+	// ãƒªã‚¹ãƒˆã‚¢
 	_ReleaseDxResource();
 
-	//ƒfƒoƒCƒXƒŠƒZƒbƒg
+	//ãƒ‡ãƒã‚¤ã‚¹ãƒªã‚»ãƒƒãƒˆ
 	if (modeScreen_ == SCREENMODE_FULLSCREEN)
 		pDevice_->Reset(&d3dppFull_);
 	else
@@ -303,10 +303,10 @@ void DirectGraphics::_InitializeDeviceState() {
 
 	SetBlendMode(MODE_BLEND_ALPHA);
 
-	//ƒ¿ƒeƒXƒg
+	//Î±ãƒ†ã‚¹ãƒˆ
 	SetAlphaTest(true, 0, D3DCMP_GREATER);
 
-	//ZƒeƒXƒg
+	//Zãƒ†ã‚¹ãƒˆ
 	SetZBufferEnable(false);
 	SetZWriteEnable(false);
 
@@ -428,7 +428,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 	pDevice_->SetTextureStageState(stage + 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
 	switch (mode) {
-	case MODE_BLEND_NONE://‚È‚µ
+	case MODE_BLEND_NONE://ãªã—
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -438,7 +438,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ZERO);
 		break;
-	case MODE_BLEND_ALPHA://ƒ¿‚Å”¼“§–¾‡¬
+	case MODE_BLEND_ALPHA://Î±ã§åŠé€æ˜åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -448,7 +448,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_INVSRCALPHA);
 		break;
-	case MODE_BLEND_ADD_RGB://RGB‚Å‰ÁZ‡¬
+	case MODE_BLEND_ADD_RGB://RGBã§åŠ ç®—åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -458,7 +458,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ZERO);
 		break;
-	case MODE_BLEND_ADD_ARGB://ƒ¿‚Å‰ÁZ‡¬
+	case MODE_BLEND_ADD_ARGB://Î±ã§åŠ ç®—åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -468,7 +468,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_INVSRCALPHA);
 		break;
-	case MODE_BLEND_MULTIPLY://æZ‡¬
+	case MODE_BLEND_MULTIPLY://ä¹—ç®—åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -489,7 +489,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		*/
 		break;
 		/*
-				case MODE_BLEND_SUBTRACT://Œ¸Z‡¬
+				case MODE_BLEND_SUBTRACT://æ¸›ç®—åˆæˆ
 					pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP,D3DTOP_MODULATE);
 					pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2,D3DTA_CURRENT);
 					pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
@@ -499,7 +499,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 					pDevice_->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
 					break;
 		*/
-	case MODE_BLEND_SUBTRACT://Œ¸Z‡¬
+	case MODE_BLEND_SUBTRACT://æ¸›ç®—åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -510,7 +510,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_INVSRCALPHA);
 		break;
 
-	case MODE_BLEND_SHADOW://‰e•`‰æ—p
+	case MODE_BLEND_SHADOW://å½±æç”»ç”¨
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -520,7 +520,7 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 		pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_INVSRCALPHA);
 		break;
-	case MODE_BLEND_INV_DESTRGB://•`‰ææF”½“]‡¬
+	case MODE_BLEND_INV_DESTRGB://æç”»å…ˆè‰²åè»¢åˆæˆ
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -547,17 +547,17 @@ void DirectGraphics::SetBlendMode(DWORD mode, int stage) {
 		break;
 	}
 
-	// Œ¸Z”¼“§–¾‡¬
+	// æ¸›ç®—åŠé€æ˜åˆæˆ
 	//pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
 	//pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	//pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 
-	// ƒnƒCƒ‰ƒCƒg(•¢‚¢Ä‚«)
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆ(è¦†ã„ç„¼ã)
 	//pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 	//pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
 	//pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE); 
 
-	// ƒŠƒo[ƒX(”½“])
+	// ãƒªãƒãƒ¼ã‚¹(åè»¢)
 	//pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 	//pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
 	//pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
@@ -752,9 +752,9 @@ DirectGraphicsPrimaryWindow::~DirectGraphicsPrimaryWindow() {
 }
 void DirectGraphicsPrimaryWindow::_PauseDrawing() {
 	//	gstd::Application::GetBase()->SetActive(false);
-		// ƒEƒCƒ“ƒhƒE‚Ìƒƒjƒ…[ƒo[‚ğ•`‰æ‚·‚é
+		// ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒãƒ¼ã‚’æç”»ã™ã‚‹
 	::DrawMenuBar(hWnd_);
-	// ƒEƒCƒ“ƒhƒE‚ÌƒtƒŒ[ƒ€‚ğ•`‰æ‚·‚é
+	// ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’æç”»ã™ã‚‹
 	::RedrawWindow(hWnd_, nullptr, nullptr, RDW_FRAME);
 }
 void DirectGraphicsPrimaryWindow::_RestartDrawing() {
@@ -794,7 +794,7 @@ bool DirectGraphicsPrimaryWindow::Initialize(DirectGraphicsConfig& config) {
 
 	HWND hWndGraphics = nullptr;
 	if (config.IsPseudoFullScreen()) {
-		//‹[—ƒtƒ‹ƒXƒNƒŠ[ƒ“‚Ìê‡‚ÍAqƒEƒBƒ“ƒhƒE‚ÉDirectGraphics‚ğ”z’u‚·‚é
+		//æ“¬ä¼¼ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã®å ´åˆã¯ã€å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«DirectGraphicsã‚’é…ç½®ã™ã‚‹
 		std::wstring nameClass = L"DirectGraphicsPrimaryWindow.Child";
 		WNDCLASSEX wcex;
 		ZeroMemory(&wcex, sizeof(wcex));
@@ -871,13 +871,13 @@ LRESULT DirectGraphicsPrimaryWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPAR
 	}
 	case WM_ENTERMENULOOP:
 	{
-		//ƒƒjƒ…[‚ª‘I‘ğ‚³‚ê‚½‚ç“®ì‚ğ’â~‚·‚é
+		//ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒé¸æŠã•ã‚ŒãŸã‚‰å‹•ä½œã‚’åœæ­¢ã™ã‚‹
 		_PauseDrawing();
 		return FALSE;
 	}
 	case WM_EXITMENULOOP:
 	{
-		//ƒƒjƒ…[‚Ì‘I‘ğ‚ª‰ğœ‚³‚ê‚½‚ç“®ì‚ğÄŠJ‚·‚é
+		//ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®é¸æŠãŒè§£é™¤ã•ã‚ŒãŸã‚‰å‹•ä½œã‚’å†é–‹ã™ã‚‹
 		_RestartDrawing();
 		return FALSE;
 	}
@@ -978,7 +978,7 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 		Application::GetBase()->SetActive(true);
 
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
-		//ƒeƒNƒXƒ`ƒƒ‰ğ•ú
+		//ãƒ†ã‚¯ã‚¹ãƒãƒ£è§£æ”¾
 		_ReleaseDxResource();
 #endif
 
@@ -1003,7 +1003,7 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 				SWP_NOSIZE | SWP_NOMOVE | SWP_NOREDRAW | SWP_NOACTIVATE | SWP_NOCOPYBITS | SWP_NOSENDCHANGING);
 
 			modeScreen_ = SCREENMODE_WINDOW;
-			while (::ShowCursor(TRUE) < 0) {};//ƒ}ƒEƒXƒJ[ƒ\ƒ‹‚ğoŒ»‚³‚¹‚é
+			while (::ShowCursor(TRUE) < 0) {};//ãƒã‚¦ã‚¹ã‚«ãƒ¼ã‚½ãƒ«ã‚’å‡ºç¾ã•ã›ã‚‹
 		}
 		else {
 			pDevice_->Reset(&d3dppFull_);
@@ -1013,7 +1013,7 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode() {
 		}
 
 #if defined(DNH_PROJ_EXECUTOR) || defined(DNH_PROJ_VIEWER)
-		//ƒeƒNƒXƒ`ƒƒƒŒƒXƒgƒA
+		//ãƒ†ã‚¯ã‚¹ãƒãƒ£ãƒ¬ã‚¹ãƒˆã‚¢
 		_RestoreDxResource();
 #endif
 	}
@@ -1191,7 +1191,7 @@ D3DXVECTOR2 DxCamera::TransformCoordinateTo2D(D3DXVECTOR3 pos) {
 
 	if (vect.w > 0) {
 		vect.x = width / 2.0f + (vect.x / vect.w) * width / 2.0f;
-		vect.y = height / 2.0f - (vect.y / vect.w) * height / 2.0f; // ‚x•ûŒü‚Íã‚ª³‚Æ‚È‚é‚½‚ß
+		vect.y = height / 2.0f - (vect.y / vect.w) * height / 2.0f; // ï¼¹æ–¹å‘ã¯ä¸ŠãŒæ­£ã¨ãªã‚‹ãŸã‚
 	}
 
 	D3DXVECTOR2 res(vect.x, vect.y);
@@ -1252,18 +1252,18 @@ D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, dou
 	LONG width = rcClip.right - rcClip.left;
 	LONG height = rcClip.bottom - rcClip.top;
 
-	LONG cx = rcClip.left + width / 2; //‰æ–Ê‚Ì’†SÀ•Wx
-	LONG cy = rcClip.top + height / 2; //‰æ–Ê‚Ì’†SÀ•Wy
+	LONG cx = rcClip.left + width / 2; //ç”»é¢ã®ä¸­å¿ƒåº§æ¨™x
+	LONG cy = rcClip.top + height / 2; //ç”»é¢ã®ä¸­å¿ƒåº§æ¨™y
 
-	LONG dx = focus.x - cx; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Ê¶’[ˆÊ’u
-	LONG dy = focus.y - cy; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Êã’[ˆÊ’u
+	LONG dx = focus.x - cx; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢å·¦ç«¯ä½ç½®
+	LONG dy = focus.y - cy; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢ä¸Šç«¯ä½ç½®
 
 	D3DXVECTOR2 res;
-	res.x = cx - dx * ratioX; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Ê’†S‚ÌˆÊ’u(xÀ•W•ÏŠ·—Ê)
-	res.y = cy - dy * ratioY; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Ê’†S‚ÌˆÊ’u(yÀ•W•ÏŠ·—Ê)
+	res.x = cx - dx * ratioX; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢ä¸­å¿ƒã®ä½ç½®(xåº§æ¨™å¤‰æ›é‡)
+	res.y = cy - dy * ratioY; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢ä¸­å¿ƒã®ä½ç½®(yåº§æ¨™å¤‰æ›é‡)
 
-	res.x -= (width / 2) * ratioX; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Ê¶‚ÌˆÊ’u(xÀ•W•ÏŠ·—Ê)
-	res.y -= (height / 2) * ratioY; //Œ»ƒtƒH[ƒJƒX‚Å‚Ì‰æ–Ê’†S‚ÌˆÊ’u(xÀ•W•ÏŠ·—Ê)
+	res.x -= (width / 2) * ratioX; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢å·¦ã®ä½ç½®(xåº§æ¨™å¤‰æ›é‡)
+	res.y -= (height / 2) * ratioY; //ç¾ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ã§ã®ç”»é¢ä¸­å¿ƒã®ä½ç½®(xåº§æ¨™å¤‰æ›é‡)
 
 	return res;
 }

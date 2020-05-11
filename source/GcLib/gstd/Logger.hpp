@@ -18,7 +18,7 @@ namespace gstd {
 	protected:
 		static Logger* top_;
 		gstd::CriticalSection lock_;
-		std::list<ref_count_ptr<Logger>> listLogger_;//q‚ÌƒƒK
+		std::list<ref_count_ptr<Logger>> listLogger_;//å­ã®ãƒ­ã‚¬
 		virtual void _WriteChild(SYSTEMTIME& time, std::wstring str);
 		virtual void _Write(SYSTEMTIME& time, std::wstring str) = 0;
 	public:
@@ -31,7 +31,7 @@ namespace gstd {
 
 		static void SetTop(Logger* logger) { top_ = logger; }
 		static void WriteTop(std::string str) { if (top_) top_->Write(str); }
-		static void WriteTop(std::wstring str) { if (top_) top_->Write(str); }//ƒgƒbƒv‚ÌƒƒK‚Éo—Í‚µ‚Ü‚·
+		static void WriteTop(std::wstring str) { if (top_) top_->Write(str); }//ãƒˆãƒƒãƒ—ã®ãƒ­ã‚¬ã«å‡ºåŠ›ã—ã¾ã™
 	};
 
 	/**********************************************************
@@ -57,8 +57,8 @@ namespace gstd {
 
 	/**********************************************************
 	//WindowLogger
-	//ƒƒOƒEƒBƒ“ƒhƒE
-	//ƒEƒBƒ“ƒhƒE‚Í•ÊƒXƒŒƒbƒh“®ì‚Å‚·
+	//ãƒ­ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦
+	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯åˆ¥ã‚¹ãƒ¬ãƒƒãƒ‰å‹•ä½œã§ã™
 	//Natashi: Only instantiate once.
 	**********************************************************/
 	class WindowLogger : public Logger, public WindowBase {
@@ -169,7 +169,7 @@ namespace gstd {
 
 	class WindowLogger::InfoCollectThread : public Thread {
 	protected:
-		//CPUî•ñ\‘¢‘Ì
+		//CPUæƒ…å ±æ§‹é€ ä½“
 		struct CpuInfo {
 			char venderID[13];
 			char name[49];

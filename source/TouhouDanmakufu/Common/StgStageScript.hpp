@@ -118,28 +118,28 @@ public:
 		INFO_COLLISION_LIST,
 		INFO_IS_FIXED_ANGLE,
 
-		//ƒCƒxƒ“ƒg
-		EV_REQUEST_LIFE = 1,//“Gƒ‰ƒCƒt—v‹
-		EV_REQUEST_TIMER,//“GƒXƒyƒ‹ƒ^ƒCƒ}—v‹
-		EV_REQUEST_IS_SPELL,//ƒXƒyƒ‹ƒJ[ƒhéŒ¾
-		EV_REQUEST_IS_LAST_SPELL,//ƒ‰ƒXƒgƒXƒyƒ‹
-		EV_REQUEST_IS_DURABLE_SPELL,//‘Ï‹vƒXƒyƒ‹
-		EV_REQUEST_SPELL_SCORE,//ƒXƒyƒ‹ƒJ[ƒhƒXƒRƒA
-		EV_REQUEST_REPLAY_TARGET_COMMON_AREA,//ƒŠƒvƒŒƒC‘ÎÛ
+		//ã‚¤ãƒ™ãƒ³ãƒˆ
+		EV_REQUEST_LIFE = 1,//æ•µãƒ©ã‚¤ãƒ•è¦æ±‚
+		EV_REQUEST_TIMER,//æ•µã‚¹ãƒšãƒ«ã‚¿ã‚¤ãƒè¦æ±‚
+		EV_REQUEST_IS_SPELL,//ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰å®£è¨€
+		EV_REQUEST_IS_LAST_SPELL,//ãƒ©ã‚¹ãƒˆã‚¹ãƒšãƒ«
+		EV_REQUEST_IS_DURABLE_SPELL,//è€ä¹…ã‚¹ãƒšãƒ«
+		EV_REQUEST_SPELL_SCORE,//ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰ã‚¹ã‚³ã‚¢
+		EV_REQUEST_REPLAY_TARGET_COMMON_AREA,//ãƒªãƒ—ãƒ¬ã‚¤å¯¾è±¡
 
-		EV_TIMEOUT,//ƒXƒyƒ‹ƒ^ƒCƒ€ƒAƒEƒg
-		EV_START_BOSS_SPELL,//ƒ{ƒXƒXƒyƒ‹ƒJ[ƒhŠJn
-		EV_END_BOSS_SPELL,//ƒ{ƒXƒXƒyƒ‹ƒJ[ƒhŠJn
-		EV_GAIN_SPELL,//ƒXƒyƒ‹ƒJ[ƒhæ“¾
-		EV_START_BOSS_STEP,//ƒXƒyƒ‹ƒJ[ƒhŠJn
-		EV_END_BOSS_STEP,//ƒXƒyƒ‹ƒJ[ƒhI—¹
+		EV_TIMEOUT,//ã‚¹ãƒšãƒ«ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆ
+		EV_START_BOSS_SPELL,//ãƒœã‚¹ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰é–‹å§‹
+		EV_END_BOSS_SPELL,//ãƒœã‚¹ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰é–‹å§‹
+		EV_GAIN_SPELL,//ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰å–å¾—
+		EV_START_BOSS_STEP,//ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰é–‹å§‹
+		EV_END_BOSS_STEP,//ã‚¹ãƒšãƒ«ã‚«ãƒ¼ãƒ‰çµ‚äº†
 
-		EV_PLAYER_SHOOTDOWN,//©‹@ƒ_ƒEƒ“
-		EV_PLAYER_SPELL,//©‹@ƒXƒyƒ‹
-		EV_PLAYER_REBIRTH,//©‹@•œ‹A
+		EV_PLAYER_SHOOTDOWN,//è‡ªæ©Ÿãƒ€ã‚¦ãƒ³
+		EV_PLAYER_SPELL,//è‡ªæ©Ÿã‚¹ãƒšãƒ«
+		EV_PLAYER_REBIRTH,//è‡ªæ©Ÿå¾©å¸°
 
-		EV_PAUSE_ENTER,//’â~ŠJn
-		EV_PAUSE_LEAVE,//’â~‰ğœ
+		EV_PAUSE_ENTER,//åœæ­¢é–‹å§‹
+		EV_PAUSE_LEAVE,//åœæ­¢è§£é™¤
 
 		EV_DELETE_SHOT_IMMEDIATE,
 		EV_DELETE_SHOT_TO_ITEM,
@@ -158,11 +158,11 @@ public:
 
 	std::shared_ptr<StgStageScriptObjectManager> GetStgObjectManager();
 
-	//STG‹¤’ÊŠÖ”F‹¤’Êƒf[ƒ^
+	//STGå…±é€šé–¢æ•°ï¼šå…±é€šãƒ‡ãƒ¼ã‚¿
 	static gstd::value Func_SaveCommonDataAreaToReplayFile(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_LoadCommonDataAreaFromReplayFile(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”FƒVƒXƒeƒ€ŠÖ˜A
+	//STGå…±é€šé–¢æ•°ï¼šã‚·ã‚¹ãƒ†ãƒ é–¢é€£
 	static gstd::value Func_GetMainStgScriptPath(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetMainStgScriptDirectory(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_SetStgFrame(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -177,7 +177,7 @@ public:
 	static gstd::value Func_CloseStgScene(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetReplayFps(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”F©‹@
+	//STGå…±é€šé–¢æ•°ï¼šè‡ªæ©Ÿ
 	static gstd::value Func_GetPlayerObjectID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetPlayerScriptID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_SetPlayerSpeed(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -216,7 +216,7 @@ public:
 	static gstd::value Func_SetPlayerRebirthPosition(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
-	//STG‹¤’ÊŠÖ”F“G
+	//STGå…±é€šé–¢æ•°ï¼šæ•µ
 	static gstd::value Func_GetEnemyBossSceneObjectID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetEnemyBossObjectID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetAllEnemyID(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -229,7 +229,7 @@ public:
 	static gstd::value Func_ReloadEnemyShotData(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
-	//STG‹¤’ÊŠÖ”F’e
+	//STGå…±é€šé–¢æ•°ï¼šå¼¾
 	static gstd::value Func_DeleteShotAll(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_DeleteShotInCircle(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_CreateShotA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -251,7 +251,7 @@ public:
 	static gstd::value Func_StartShotScript(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
-	//STG‹¤’ÊŠÖ”FƒAƒCƒeƒ€
+	//STGå…±é€šé–¢æ•°ï¼šã‚¢ã‚¤ãƒ†ãƒ 
 	static gstd::value Func_CreateItemA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_CreateItemA2(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_CreateItemU1(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -267,13 +267,13 @@ public:
 	static gstd::value Func_ReloadItemData(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
-	//STG‹¤’ÊŠÖ”F‚»‚Ì‘¼
+	//STGå…±é€šé–¢æ•°ï¼šãã®ä»–
 	static gstd::value Func_StartSlow(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_StopSlow(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_IsIntersected_Line_Circle(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_IsIntersected_Obj_Obj(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”FˆÚ“®ƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šç§»å‹•ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjMove_SetX(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjMove_SetY(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjMove_SetPosition(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -301,7 +301,7 @@ public:
 	static gstd::value Func_ObjMove_SetSpeedY(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjMove_GetSpeedY(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”F“GƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šæ•µã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjEnemy_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemy_Regist(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemy_GetInfo(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -315,7 +315,7 @@ public:
 	DNH_FUNCAPI_DECL_(Func_ObjEnemy_GetIntersectionCircleToPlayer);
 	DNH_FUNCAPI_DECL_(Func_ObjEnemy_SetEnableIntersectionPositionFetching);
 
-	//STG‹¤’ÊŠÖ”F“Gƒ{ƒXƒV[ƒ“ƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šæ•µãƒœã‚¹ã‚·ãƒ¼ãƒ³ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjEnemyBossScene_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemyBossScene_Regist(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemyBossScene_Add(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -325,7 +325,7 @@ public:
 	static gstd::value Func_ObjEnemyBossScene_StartSpell(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjEnemyBossScene_EndSpell(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”F’eƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šå¼¾ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjShot_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjShot_Regist(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjShot_SetAutoDelete(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -392,7 +392,7 @@ public:
 	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_SetLaserParameter);
 	DNH_FUNCAPI_DECL_(Func_ObjPatternShot_CopySettings);
 
-	//STG‹¤’ÊŠÖ”FƒAƒCƒeƒ€ƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šã‚¢ã‚¤ãƒ†ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjItem_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjItem_Regist(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjItem_SetItemID(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -401,13 +401,13 @@ public:
 	static gstd::value Func_ObjItem_SetDefinedMovePatternA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjItem_GetInfo(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//STG‹¤’ÊŠÖ”F©‹@ƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šè‡ªæ©Ÿã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjPlayer_AddIntersectionCircleA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjPlayer_AddIntersectionCircleA2(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjPlayer_ClearIntersection(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 
-	//STG‹¤’ÊŠÖ”F“–‚½‚è”»’èƒIƒuƒWƒFƒNƒg‘€ì
+	//STGå…±é€šé–¢æ•°ï¼šå½“ãŸã‚Šåˆ¤å®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjCol_IsIntersected(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjCol_GetListOfIntersectedEnemyID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjCol_GetIntersectedCount(gstd::script_machine* machine, int argc, const gstd::value* argv);
@@ -422,7 +422,7 @@ public:
 	StgStageSystemScript(StgStageController* stageController);
 	virtual ~StgStageSystemScript();
 
-	//ƒVƒXƒeƒ€ê—pŠÖ”FƒVƒXƒeƒ€‘€ì
+	//ã‚·ã‚¹ãƒ†ãƒ å°‚ç”¨é–¢æ•°ï¼šã‚·ã‚¹ãƒ†ãƒ æ“ä½œ
 
 };
 
@@ -438,7 +438,7 @@ public:
 	StgStageItemScript(StgStageController* stageController);
 	virtual ~StgStageItemScript();
 
-	//ƒVƒXƒeƒ€ê—pŠÖ”FƒAƒCƒeƒ€‘€ì
+	//ã‚·ã‚¹ãƒ†ãƒ å°‚ç”¨é–¢æ•°ï¼šã‚¢ã‚¤ãƒ†ãƒ æ“ä½œ
 
 };
 
@@ -454,7 +454,7 @@ public:
 	StgStageShotScript(StgStageController* stageController);
 	virtual ~StgStageShotScript();
 
-	//ƒVƒXƒeƒ€ê—pŠÖ”FƒAƒCƒeƒ€‘€ì
+	//ã‚·ã‚¹ãƒ†ãƒ å°‚ç”¨é–¢æ•°ï¼šã‚¢ã‚¤ãƒ†ãƒ æ“ä½œ
 	static gstd::value Func_SetShotDeleteEventEnable(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
 };
@@ -475,14 +475,14 @@ public:
 	StgStagePlayerScript(StgStageController* stageController);
 	virtual ~StgStagePlayerScript();
 
-	//©‹@ê—pŠÖ”
+	//è‡ªæ©Ÿå°‚ç”¨é–¢æ•°
 	static gstd::value Func_CreatePlayerShotA1(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_CallSpell(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_LoadPlayerShotData(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ReloadPlayerShotData(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetSpellManageObject(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
-	//©‹@ê—pŠÖ”FƒXƒyƒ‹ƒIƒuƒWƒFƒNƒg‘€ì
+	//è‡ªæ©Ÿå°‚ç”¨é–¢æ•°ï¼šã‚¹ãƒšãƒ«ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæ“ä½œ
 	static gstd::value Func_ObjSpell_Create(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjSpell_Regist(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_ObjSpell_SetDamage(gstd::script_machine* machine, int argc, const gstd::value* argv);
