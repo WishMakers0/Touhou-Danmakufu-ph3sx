@@ -789,9 +789,6 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 		iBuffer->Unlock();
 	}
 
-	// Moved to StgShotManager
-	//device->SetStreamSource(0, vBuffer, 0, sizeof(VERTEX_TLX));
-	//device->SetIndices(iBuffer);
 	{
 		ID3DXEffect*& effect = manager->effectLayer_;
 
@@ -799,7 +796,6 @@ void StgShotRenderer::Render(StgShotManager* manager) {
 		device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, countRenderVertex_, 0, countRenderIndex_ / 3U);
 		effect->EndPass();
 	}
-	//device->SetIndices(nullptr);
 
 	countRenderVertex_ = 0U;
 	countRenderIndex_ = 0U;
@@ -1098,6 +1094,12 @@ void StgShotObject::DeleteImmediate() {
 	auto objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(this);
 }
+
+/*
+void StgShotObject::_ProcessTransformAct() {
+	
+}
+*/
 
 //StgShotObject::ReserveShotList
 ref_count_ptr<StgShotObject::ReserveShotList::ListElement>::unsync StgShotObject::ReserveShotList::GetNextFrameData() {
@@ -2408,8 +2410,6 @@ void StgCurveLaserObject::RenderOnShotManager() {
 
 		LONG* ptrSrc = reinterpret_cast<LONG*>(rcSrcOrg);
 
-		VERTEX_TLX verts[2];
-
 		std::list<LaserNode>::iterator itr = listPosition_.begin();
 		size_t iPos = 0U;
 		for (std::list<LaserNode>::iterator itr = listPosition_.begin(); itr != listPosition_.end(); ++itr, ++iPos) {
@@ -2426,13 +2426,14 @@ void StgCurveLaserObject::RenderOnShotManager() {
 				thisColor = (thisColor & 0x00ffffff) | (alpha << 24);
 			}
 			else {
-				thisColor = ColorAccess::ApplyAlpha(thisColor, nodeAlpha * alphaRateShot);
+				thisColor = ColorAccess::ApplyAlpha(thisColor, nodeAlpha * alphaRateShot / 255.0f);
 			}
 
+			VERTEX_TLX verts[2];
 			for (size_t iVert = 0U; iVert < 2U; ++iVert) {
 				VERTEX_TLX vt;
 
-				_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, rectV / textureHeight);
+				_SetVertexUV(vt, ptrSrc[(iVert & 0b1) << 1] / textureWidth, rectV);
 				_SetVertexPosition(vt, itr->vertOff[iVert].x, itr->vertOff[iVert].y, position_.z);
 				_SetVertexColorARGB(vt, thisColor);
 
@@ -2621,6 +2622,8 @@ void StgPatternShotObjectGenerator::FireSet(void* scriptData, StgStageController
 		objShot->SetShotDataID(idShotData_);
 		objShot->SetDelay(delay_);
 		objShot->SetOwnerType(typeOwner_);
+
+		//objShot->SetTransformList(listTranformation_);
 
 		int idRes = script->AddObject(objShot);
 		if (idRes == DxScript::ID_INVALID) return false;

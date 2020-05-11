@@ -310,6 +310,7 @@ protected:
 	virtual void _AddReservedShot(shared_ptr<StgShotObject> obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent(bool flgPlayerCollision) {}
 	virtual void _SendDeleteEvent(int bit);
+
 	//virtual void _ProcessTransformAct();
 public:
 	StgShotObject(StgStageController* stageController);
@@ -610,7 +611,7 @@ private:
 	int laserWidth_;
 	int laserLength_;
 
-	//std::vector<StgPatternShotTransform> listTranformation_;
+	std::vector<StgPatternShotTransform> listTranformation_;
 public:
 	StgPatternShotObjectGenerator();
 	~StgPatternShotObjectGenerator();
@@ -623,8 +624,8 @@ public:
 	}
 	void CopyFrom(StgPatternShotObjectGenerator* other);
 
-	//void AddTransformation(StgPatternShotTransform& entry) { listTranformation_.push_back(entry); }
-	//void ClearTransformation() { listTranformation_.clear(); }
+	void AddTransformation(StgPatternShotTransform& entry) { listTranformation_.push_back(entry); }
+	void ClearTransformation() { listTranformation_.clear(); }
 
 	void SetParent(shared_ptr<StgMoveObject> obj) { parent_ = obj; }
 
