@@ -200,6 +200,7 @@ namespace gstd {
 		}
 
 		static inline const double Round(double val) { return std::round(val); }
+		static inline const int Trunc(double val) { return (int)(val + 0.01); }
 
 		class Lerp {
 		public:
