@@ -2465,15 +2465,6 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 						for (code c : tmp.codes) block->codes.push_back(c);
 					}
 				}
-				/*
-				{
-					block->codes.push_back(code(lex->line, command_kind::pc_loop_count));
-					parse_inline_block(block, lex, block_kind::bk_loop);
-					block->codes.push_back(code(lex->line, command_kind::pc_continue_marker));
-					block->codes.push_back(code(lex->line, command_kind::pc_loop_back, ip));
-					block->codes.push_back(code(lex->line, command_kind::pc_pop));
-				}
-				*/
 			}
 			else {
 				size_t ip = block->codes.size();
@@ -2489,6 +2480,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				}
 #endif
 			}
+
 			need_semicolon = false;
 		}
 		else if (lex->next == token_kind::tk_TIMES) {
@@ -2526,15 +2518,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				}
 #endif
 			}
-			/*
-			{
-				block->codes.push_back(code(lex->line, command_kind::pc_loop_count));
-				parse_inline_block(block, lex, block_kind::bk_loop);
-				block->codes.push_back(code(lex->line, command_kind::pc_continue_marker));
-				block->codes.push_back(code(lex->line, command_kind::pc_loop_back, ip));
-				block->codes.push_back(code(lex->line, command_kind::pc_pop));
-			}
-			*/
+
 			need_semicolon = false;
 		}
 		else if (lex->next == token_kind::tk_WHILE) {
@@ -2575,13 +2559,15 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 
 				lex->advance();
 				if (lex->next == token_kind::tk_LET) lex->advance();
+				else if (lex->next == token_kind::tk_const)
+					parser_assert(false, "The counter variable cannot be const.\r\n");
 
 				parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 
 				std::string feIdentifier = lex->word;
 
 				lex->advance();
-				parser_assert(lex->next != token_kind::tk_IN && lex->next != token_kind::tk_colon, 
+				parser_assert(lex->next == token_kind::tk_IN || lex->next == token_kind::tk_colon, 
 					"\"in\" or a colon is required.\r\n");
 				lex->advance();
 
@@ -2619,10 +2605,12 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 				lex->advance();
 
 				bool isNewVar = false;
+				bool isNewVarConst = false;
 				std::string newVarName = "";
 				scanner lex_s1(*lex);
-				if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
+				if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL || lex->next == token_kind::tk_const) {
 					isNewVar = true;
+					isNewVarConst = lex->next == token_kind::tk_const;
 					lex->advance();
 					parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 					newVarName = lex->word;
@@ -2660,7 +2648,7 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 						s.sub = nullptr;
 						s.variable = 0;
 						s.can_overload = false;
-						s.can_modify = true;
+						s.can_modify = !isNewVarConst;
 						frame.back().singular_insert(newVarName, s);
 					}
 					parse_statements(forBlock, &lex_s1, token_kind::tk_semicolon, true);
@@ -2720,9 +2708,9 @@ void parser::parse_statements(script_engine::block* block, scanner* lex, token_k
 			parser_assert(lex->next == token_kind::tk_open_par, "\"(\" is required.\r\n");
 			lex->advance();
 
-			if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) {
-				lex->advance();
-			}
+			if (lex->next == token_kind::tk_LET || lex->next == token_kind::tk_REAL) lex->advance();
+			else if (lex->next == token_kind::tk_const)
+				parser_assert(false, "The counter variable cannot be const.\r\n");
 
 			parser_assert(lex->next == token_kind::tk_word, "Variable name is required.\r\n");
 
@@ -3265,7 +3253,7 @@ void script_machine::advance() {
 					variables_t& vars = i->variables;
 
 					if (vars.size() <= c->variable) {	//Shouldn't happen with pc_var_alloc
-						vars.resize(c->variable + 4);	//+4 for good measure
+						vars.resize(c->variable + 4);
 						vars.length = c->variable + 1;
 					}
 
@@ -3364,7 +3352,7 @@ void script_machine::advance() {
 				break;
 			}
 
-			if (c->sub->func != nullptr) {
+			if (c->sub->func) {
 				//Default functions
 
 				size_t sizePrev = current_stack.size();
