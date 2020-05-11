@@ -1133,19 +1133,16 @@ void DxScriptObjectManager::ClearRenderObject() {
 		objRender_[iPri].clear();
 	}
 }
-void DxScriptObjectManager::SetShader(gstd::ref_count_ptr<Shader> shader, double min, double max) {
-	int tPriMin = (int)(min * (listShader_.size() - 1) + 0.5);
-	int tPriMax = (int)(max * (listShader_.size() - 1) + 0.5);
-
-	for (int iPri = tPriMin; iPri <= tPriMax; ++iPri) {
-		if (iPri < 0 || iPri >= listShader_.size())break;
+void DxScriptObjectManager::SetShader(gstd::ref_count_ptr<Shader> shader, int min, int max) {
+	for (int iPri = min; iPri <= max; ++iPri) {
+		if (iPri < 0 || iPri >= listShader_.size()) continue;
 		listShader_[iPri] = shader;
 	}
 }
 void DxScriptObjectManager::ResetShader() {
 	ResetShader(0, listShader_.size());
 }
-void DxScriptObjectManager::ResetShader(double min, double max) {
+void DxScriptObjectManager::ResetShader(int min, int max) {
 	SetShader(nullptr, min, max);
 }
 
@@ -2522,10 +2519,12 @@ gstd::value DxScript::Func_SetShader(gstd::script_machine* machine, int argc, co
 
 	ref_count_ptr<Shader> shader = obj->GetShader();
 
-	double min = (double)argv[1].as_real();
-	double max = (double)argv[2].as_real();
+	double min = argv[1].as_real();
+	double max = argv[2].as_real();
 	auto objectManager = script->GetObjectManager();
-	objectManager->SetShader(shader, min, max);
+	int size = objectManager->GetRenderBucketCapacity();
+
+	objectManager->SetShader(shader, min * size, max * size);
 
 	return value();
 }
@@ -2537,15 +2536,11 @@ gstd::value DxScript::Func_SetShaderI(gstd::script_machine* machine, int argc, c
 
 	ref_count_ptr<Shader> shader = obj->GetShader();
 
-	int size = script->GetObjectManager()->GetRenderBucketCapacity();
-	int min = (int)(argv[1].as_real() + 0.5);
-	int max = (int)(argv[2].as_real() + 0.5);
-
-	double priMin = (double)min / (double)(size - 1);
-	double priMax = (double)max / (double)(size - 1);
+	int min = Math::Trunc(argv[1].as_real());
+	int max = Math::Trunc(argv[2].as_real());
 
 	auto objectManager = script->GetObjectManager();
-	objectManager->SetShader(shader, priMin, priMax);
+	objectManager->SetShader(shader, min, max);
 
 	return value();
 }
@@ -2556,7 +2551,9 @@ gstd::value DxScript::Func_ResetShader(gstd::script_machine* machine, int argc, 
 	double min = (double)argv[0].as_real();
 	double max = (double)argv[1].as_real();
 	auto objectManager = script->GetObjectManager();
-	objectManager->SetShader(shader, min, max);
+	int size = objectManager->GetRenderBucketCapacity();
+
+	objectManager->SetShader(shader, min * size, max * size);
 
 	return value();
 }
@@ -2564,14 +2561,11 @@ gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc,
 	DxScript* script = (DxScript*)machine->data;
 	ref_count_ptr<Shader> shader = nullptr;
 
-	int size = script->GetObjectManager()->GetRenderBucketCapacity();
-	int min = (int)(argv[0].as_real() + 0.5);
-	int max = (int)(argv[1].as_real() + 0.5);
+	int min = Math::Trunc(argv[1].as_real());
+	int max = Math::Trunc(argv[2].as_real());
 
-	double priMin = (double)min / (double)(size - 1);
-	double priMax = (double)max / (double)(size - 1);
 	auto objectManager = script->GetObjectManager();
-	objectManager->SetShader(shader, priMin, priMax);
+	objectManager->SetShader(shader, min, max);
 
 	return value();
 }
@@ -2949,7 +2943,7 @@ value DxScript::Func_Obj_SetRenderPriorityI(script_machine* machine, int argc, c
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr)return value();
 
-	int pri = Math::Round(argv[1].as_real());
+	int pri = Math::Trunc(argv[1].as_real());
 	size_t maxPri = script->GetObjectManager()->GetRenderBucketCapacity() - 1U;
 
 	if (pri < 0) pri = 0;
@@ -3045,11 +3039,13 @@ gstd::value DxScript::Func_Obj_IsValueExists(gstd::script_machine* machine, int 
 gstd::value DxScript::Func_Obj_GetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	size_t key = (size_t)argv[1].as_real();
+	double keyDbl = argv[1].as_real();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr) return value();
 
+	int64_t hashDbl = (int64_t&)keyDbl;
+	size_t key = (hashDbl >> 32) ^ (hashDbl & UINT32_MAX);
 	auto itr = obj->mapObjectValue_.find(key);
 	if (itr == obj->mapObjectValue_.end()) return value();
 
@@ -3058,12 +3054,14 @@ gstd::value DxScript::Func_Obj_GetValueR(gstd::script_machine* machine, int argc
 gstd::value DxScript::Func_Obj_GetValueDR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	size_t key = (size_t)argv[1].as_real();
+	double keyDbl = argv[1].as_real();
 	gstd::value def = argv[2];
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == nullptr) return def;
 
+	int64_t hashDbl = (int64_t&)keyDbl;
+	size_t key = (hashDbl >> 32) ^ (hashDbl & UINT32_MAX);
 	auto itr = obj->mapObjectValue_.find(key);
 	if (itr == obj->mapObjectValue_.end()) return def;
 
@@ -3072,33 +3070,45 @@ gstd::value DxScript::Func_Obj_GetValueDR(gstd::script_machine* machine, int arg
 gstd::value DxScript::Func_Obj_SetValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	size_t key = (size_t)argv[1].as_real();
+	double keyDbl = argv[1].as_real();
 	gstd::value val = argv[2];
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj) obj->SetObjectValue(key, val);
+	if (obj) {
+		int64_t hashDbl = (int64_t&)keyDbl;
+		size_t key = (hashDbl >> 32) ^ (hashDbl & UINT32_MAX);
+		obj->SetObjectValue(key, val);
+	}
 
 	return value();
 }
 gstd::value DxScript::Func_Obj_DeleteValueR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	size_t key = (size_t)argv[1].as_real();
+	double keyDbl = argv[1].as_real();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj) obj->DeleteObjectValue(key);
+	if (obj) {
+		int64_t hashDbl = (int64_t&)keyDbl;
+		size_t key = (hashDbl >> 32) ^ (hashDbl & UINT32_MAX);
+		obj->DeleteObjectValue(key);
+	}
 
 	return value();
 }
 gstd::value DxScript::Func_Obj_IsValueExistsR(gstd::script_machine* machine, int argc, const gstd::value* argv) {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	size_t key = (size_t)argv[1].as_real();
+	double keyDbl = argv[1].as_real();
 
 	bool res = false;
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
-	if (obj) res = obj->IsObjectValueExists(key);
+	if (obj) {
+		int64_t hashDbl = (int64_t&)keyDbl;
+		size_t key = (hashDbl >> 32) ^ (hashDbl & UINT32_MAX);
+		res = obj->IsObjectValueExists(key);
+	}
 
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -4610,8 +4620,10 @@ gstd::value DxScript::Func_ObjSound_Seek(gstd::script_machine* machine, int argc
 	if (player == nullptr)return value();
 
 	double seekTime = argv[1].as_real();
-	if (obj->GetPlayer()->IsPlaying())
+	if (obj->GetPlayer()->IsPlaying()) {
 		player->Seek(seekTime);
+		player->ResetStreamForSeek();
+	}
 	else
 		obj->GetStyle().SetStartTime(seekTime);
 
@@ -4629,8 +4641,10 @@ gstd::value DxScript::Func_ObjSound_SeekSampleCount(gstd::script_machine* machin
 
 	WAVEFORMATEX fmt = obj->GetPlayer()->GetWaveFormat();
 	double seekTime = seekSample / (double)fmt.nSamplesPerSec;
-	if (obj->GetPlayer()->IsPlaying())
+	if (obj->GetPlayer()->IsPlaying()) {
 		player->Seek(seekTime);
+		player->ResetStreamForSeek();
+	}
 	else
 		obj->GetStyle().SetStartTime(seekTime);
 

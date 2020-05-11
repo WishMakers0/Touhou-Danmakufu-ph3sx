@@ -87,9 +87,11 @@ namespace directx {
 		void SetObjectValue(size_t hash, gstd::value val) { mapObjectValue_[hash] = val; }
 		void DeleteObjectValue(size_t hash) { mapObjectValue_.erase(hash); }
 
-		static inline const size_t GetKeyHash(std::wstring& hash) {
-			return std::hash<std::wstring>{}(hash);
+		template<typename T>
+		static inline const size_t GetKeyHash(T& hash) {
+			return std::hash<T>{}(hash);
 		}
+
 		bool IsObjectValueExists(std::wstring key);
 		gstd::value GetObjectValue(std::wstring key);
 		void SetObjectValue(std::wstring key, gstd::value val);
@@ -651,9 +653,9 @@ namespace directx {
 		void ClearRenderObject();
 		std::vector<std::list<shared_ptr<DxScriptObjectBase>>>* GetRenderObjectListPointer() { return &objRender_; }
 
-		void SetShader(gstd::ref_count_ptr<Shader> shader, double min, double max);
+		void SetShader(gstd::ref_count_ptr<Shader> shader, int min, int max);
 		void ResetShader();
-		void ResetShader(double min, double max);
+		void ResetShader(int min, int max);
 		gstd::ref_count_ptr<Shader> GetShader(int index);
 
 		void ReserveSound(gstd::ref_count_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style);
