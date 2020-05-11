@@ -769,8 +769,13 @@ void SoundStreamingPlayer::_CopyStream(int indexCopy) {
 		}
 
 		if (!bStreaming_ || (IsPlaying() && !bRequestStop_)) {
-			if (dwSize1 > 0)_CopyBuffer(pMem1, dwSize1);//バッファ前半
-			if (dwSize2 > 0)_CopyBuffer(pMem2, dwSize2);//バッファ後半
+			if (dwSize1 > 0) {	//バッファ前半
+				size_t res = _CopyBuffer(pMem1, dwSize1);
+				lastStreamCopyPos_ = res;
+			}
+			if (dwSize2 > 0) {	//バッファ後半
+				_CopyBuffer(pMem2, dwSize2);
+			}
 		}
 		else {
 			//演奏中でなければ無音を書き込む
@@ -835,6 +840,11 @@ bool SoundStreamingPlayer::Stop() {
 		thread_->Stop();
 	}
 	return true;
+}
+void SoundStreamingPlayer::ResetStreamForSeek() {
+	pDirectSoundBuffer_->SetCurrentPosition(0);
+	_CopyStream(1);
+	_CopyStream(0);
 }
 bool SoundStreamingPlayer::IsPlaying() {
 	return thread_->GetStatus() == Thread::RUN;
@@ -1059,16 +1069,14 @@ bool SoundStreamingPlayerWave::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReade
 
 	return true;
 }
-void SoundStreamingPlayerWave::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
+size_t SoundStreamingPlayerWave::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int cSize = dwSize;
 	int posLoopStart = posWaveStart_ + timeLoopStart_ * formatWave_.nAvgBytesPerSec;
 	int posLoopEnd = posWaveStart_ + timeLoopEnd_ * formatWave_.nAvgBytesPerSec;
 	int blockSize = formatWave_.nBlockAlign;
 
 	int cPos = reader_->GetFilePointer();
-	//if (flgUpdateStreamOffset_) 
-		lastStreamCopyPos_ = cPos;
-	//flgUpdateStreamOffset_ = false;
+	size_t resStreamPos = cPos;
 
 	if (cPos + cSize > posWaveEnd_) {//ファイル終点
 		int size1 = cSize + cPos - posWaveEnd_;
@@ -1095,6 +1103,8 @@ void SoundStreamingPlayerWave::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 			_RequestStop();
 	}
 	else reader_->Read(pMem, cSize);
+
+	return resStreamPos;
 }
 bool SoundStreamingPlayerWave::Seek(double time) {
 	{
@@ -1185,12 +1195,11 @@ bool SoundStreamingPlayerOgg::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 
 	return true;
 }
-void SoundStreamingPlayerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
+size_t SoundStreamingPlayerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int blockSize = formatWave_.nBlockAlign;
 
-	//if (flgUpdateStreamOffset_) 
-		lastStreamCopyPos_ = (DWORD)(ov_time_tell(&fileOgg_) * formatWave_.nAvgBytesPerSec);
-	//flgUpdateStreamOffset_ = false;
+	//lastStreamCopyPos_ = (DWORD)(ov_time_tell(&fileOgg_) * formatWave_.nAvgBytesPerSec);
+	size_t resStreamPos = ov_pcm_tell(&fileOgg_) * (size_t)formatWave_.nBlockAlign;
 
 	int sizeWriteTotal = 0;
 	while (sizeWriteTotal < dwSize) {
@@ -1247,6 +1256,7 @@ void SoundStreamingPlayerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 		}
 	}
 
+	return resStreamPos;
 }
 bool SoundStreamingPlayerOgg::Seek(double time) {
 	{
@@ -1484,12 +1494,11 @@ bool SoundStreamingPlayerMp3::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 	reader->Seek(posMp3DataStart_);
 	return true;
 }
-void SoundStreamingPlayerMp3::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
+size_t SoundStreamingPlayerMp3::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	int blockSize = formatWave_.nBlockAlign;
 
-	//if (flgUpdateStreamOffset_)
-		lastStreamCopyPos_ = (DWORD)(timeCurrent_ * formatWave_.nAvgBytesPerSec);
-	//flgUpdateStreamOffset_ = false;
+	//lastStreamCopyPos_ = (DWORD)(timeCurrent_ * formatWave_.nAvgBytesPerSec);
+	size_t resStreamPos = timeCurrent_ * formatWave_.nAvgBytesPerSec;
 
 	int sizeWriteTotal = 0;
 	while (sizeWriteTotal < dwSize) {
@@ -1545,6 +1554,7 @@ void SoundStreamingPlayerMp3::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 		}
 	}
 
+	return resStreamPos;
 }
 int SoundStreamingPlayerMp3::_ReadAcmStream(char* pBuffer, int size) {
 	int sizeWrite = 0;

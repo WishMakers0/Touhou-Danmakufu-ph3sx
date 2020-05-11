@@ -227,6 +227,7 @@ namespace directx {
 		virtual bool IsPlaying();
 		virtual bool Seek(double time) = 0;
 		virtual bool SetVolumeRate(double rateVolume);
+		virtual void ResetStreamForSeek() {}
 		bool SetPanRate(double ratePan);
 		double GetVolumeRate();
 		void SetFade(double rateVolumeFadePerSec);
@@ -276,22 +277,24 @@ namespace directx {
 
 		void _CreateSoundEvent(WAVEFORMATEX& formatWave);
 		virtual void _CopyStream(int indexCopy);
-		virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize) = 0;
+		virtual size_t _CopyBuffer(LPVOID pMem, DWORD dwSize) = 0;
 		void _RequestStop() { bRequestStop_ = true; }
 
 	public:
 		SoundStreamingPlayer();
 		virtual ~SoundStreamingPlayer();
 
+		virtual void ResetStreamForSeek();
+
 		virtual bool Play(PlayStyle& style);
 		virtual bool Stop();
 		virtual bool IsPlaying();
 	};
 	class SoundStreamingPlayer::StreamingThread : public gstd::Thread, public gstd::InnerClass<SoundStreamingPlayer> {
-	protected:
-		virtual void _Run();
 	public:
 		StreamingThread(SoundStreamingPlayer* player) { _SetOuter(player); }
+
+		virtual void _Run();
 	};
 
 	/**********************************************************
@@ -318,7 +321,7 @@ namespace directx {
 		int posWaveStart_;
 		int posWaveEnd_;
 		virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
-		virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
+		virtual size_t _CopyBuffer(LPVOID pMem, DWORD dwSize);
 	public:
 		SoundStreamingPlayerWave();
 		virtual bool Seek(double time);
@@ -333,7 +336,7 @@ namespace directx {
 		ov_callbacks oggCallBacks_;
 
 		virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
-		virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
+		virtual size_t _CopyBuffer(LPVOID pMem, DWORD dwSize);
 
 		static size_t _ReadOgg(void* ptr, size_t size, size_t nmemb, void* source);
 		static int _SeekOgg(void* source, ogg_int64_t offset, int whence);
@@ -362,7 +365,7 @@ namespace directx {
 		gstd::ref_count_ptr<gstd::ByteBuffer> bufDecode_;
 
 		virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
-		virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
+		virtual size_t _CopyBuffer(LPVOID pMem, DWORD dwSize);
 		int _ReadAcmStream(char* pBuffer, int size);
 	public:
 		SoundStreamingPlayerMp3();
