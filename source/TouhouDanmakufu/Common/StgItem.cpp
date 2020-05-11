@@ -1192,8 +1192,8 @@ void StgMovePattern_Item::Move() {
 	double px = target_->GetPositionX();
 	double py = target_->GetPositionY();
 	if (typeMove_ == MOVE_TOPLAYER || itemObject->IsMoveToPlayer()) {
-		if (frame_ == 0) speed_ = 5;
-		speed_ += 0.05;
+		if (frame_ == 0) speed_ = 6;
+		speed_ += 0.075;
 		shared_ptr<StgPlayerObject> objPlayer = stageController->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - py, objPlayer->GetX() - px);
 		angDirection_ = angle;
