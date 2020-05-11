@@ -10,7 +10,7 @@ using namespace directx;
 const int STANDARD_FPS = 60;
 
 const std::wstring DNH_EXE_DEFAULT = L"th_dnh_ph3sx.exe";
-const std::wstring DNH_VERSION = L"v0.01a";
+const std::wstring DNH_VERSION = L"v1.00a";
 
 #if NDEBUG
 typedef bool PriListBool;
