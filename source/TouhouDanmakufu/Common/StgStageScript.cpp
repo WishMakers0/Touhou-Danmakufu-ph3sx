@@ -4659,3 +4659,118 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionLine(gstd::script
 
 	return value();
 }
+
+// Woo additions
+/*
+gstd::value StgStageScript::Func_SetShotDelayRenderBlendType(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	int blend = (int)argv[0].as_real();
+	info->SetShotObjectDelayBlend(blend);
+	return value();
+}
+gstd::value StgStageScript::Func_GetShotDelayRenderBlendType(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	long double res = stageController->GetStageInformation()->GetShotObjectDelayBlend();
+	return value(machine->get_engine()->get_real_type(), res);
+}
+
+gstd::value StgStageScript::Func_SetShotInvalidGrazeFrame(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	int invGrazeFrame = (int)argv[0].as_real();
+	info->SetShotInvalidGrazeFrame(invGrazeFrame);
+	return value();
+}
+gstd::value StgStageScript::Func_SetShotInvalidIntersectionDistance(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	double invShotDist = (double)argv[0].as_real();
+	if (invShotDist <= 0) { invShotDist = 0; }
+	else { invShotDist = pow(invShotDist, 2); }
+
+	info->SetShotInvalidIntersectionDistance(invShotDist);
+	return value();
+}
+gstd::value StgStageScript::Func_ObjMove_ProcessMovement(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value();
+
+	bool result = argv[1].as_boolean();
+	obj->SetMoveProcess(result);
+	return value();
+}
+gstd::value StgStageScript::Func_ObjMove_GetProcessMovement(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value(machine->get_engine()->get_real_type(), (bool)false);
+
+	bool status = obj->GetMoveProcess();
+	return value(machine->get_engine()->get_real_type(), (bool)status);
+}
+gstd::value StgStageScript::Func_ObjShot_SetDamageReductionRate(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value();
+
+	double damageRed = argv[1].as_real();
+	obj->SetDamageReductionRate(damageRed);
+
+	return value();
+}
+gstd::value StgStageScript::Func_ObjShot_GetDamageReductionRate(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	int id = (int)argv[0].as_real();
+	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value();
+
+	double res = obj->GetDamageReductionRate();
+	return value(machine->get_engine()->get_real_type(), (long double)res);
+}
+gstd::value StgStageScript::Func_ObjShot_GetGrazeStatus(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	StgStageController* stageController = script->stageController_;
+	int id = (int)argv[0].as_real();
+	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value();
+
+	bool res = obj->GetGrazeStatus();
+	return value(machine->get_engine()->get_boolean_type(), res);
+}
+gstd::value StgStageScript::Func_ObjShot_SetEraseShotType(gstd::script_machine* machine, int argc, gstd::value const* argv)
+{
+	StgStageScript* script = (StgStageScript*)machine->data;
+	int id = (int)argv[0].as_real();
+	StgShotObject* obj = dynamic_cast<StgShotObject*>(script->GetObjectPointer(id));
+	if (obj == NULL)
+		return value();
+
+	int bErase = argv[1].as_real();
+	obj->SetEraseShotTypeTo(bErase);
+
+	return value();
+}
+*/

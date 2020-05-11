@@ -177,6 +177,21 @@ public:
 	static gstd::value Func_CloseStgScene(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetReplayFps(gstd::script_machine* machine, int argc, const gstd::value* argv);
 
+	//Woo stuff
+	//static gstd::value Func_SetShotDelayRenderBlendType(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_GetShotDelayRenderBlendType(gstd::script_machine* machine, int argc, gstd::value const* argv);
+	//static gstd::value Func_SetShotInvalidGrazeFrame(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_SetShotInvalidIntersectionDistance(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+
+	//static gstd::value Func_ObjMove_ProcessMovement(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_ObjMove_GetProcessMovement(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+
+	//static gstd::value Func_ObjShot_SetDamageReductionRate(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_ObjShot_GetDamageReductionRate(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_ObjShot_GetGrazeStatus(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	//static gstd::value Func_ObjShot_SetEraseShotType(gstd::script_machine* machine, int argc, gstd::value const* argv); //
+	
+
 	//STG共通関数：自機
 	static gstd::value Func_GetPlayerObjectID(gstd::script_machine* machine, int argc, const gstd::value* argv);
 	static gstd::value Func_GetPlayerScriptID(gstd::script_machine* machine, int argc, const gstd::value* argv);

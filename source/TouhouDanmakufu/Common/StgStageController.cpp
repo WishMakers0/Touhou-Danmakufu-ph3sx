@@ -486,6 +486,7 @@ StgStageInformation::StgStageInformation() {
 	priShotObject_ = 50;
 	priItemObject_ = 60;
 	priCameraFocusPermit_ = 69;
+	priShotDelayBlend_ = DirectGraphics::MODE_BLEND_NONE;
 	SetRect(&rcShotAutoDeleteClip_, -64, -64, 64, 64);
 
 	rand_ = new RandProvider();

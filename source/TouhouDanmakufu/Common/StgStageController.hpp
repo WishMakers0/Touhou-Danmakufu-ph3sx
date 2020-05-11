@@ -99,6 +99,7 @@ private:
 	int priShotObject_;
 	int priItemObject_;
 	int priCameraFocusPermit_;
+	int priShotDelayBlend_;
 	RECT rcShotAutoDeleteClip_;
 
 	//STG情報
@@ -146,6 +147,8 @@ public:
 	void SetCameraFocusPermitPriority(int pri) { priCameraFocusPermit_ = pri; }
 	RECT* GetShotAutoDeleteClip() { return &rcShotAutoDeleteClip_; }
 	void SetShotAutoDeleteClip(RECT rect) { rcShotAutoDeleteClip_ = rect; }
+	int GetShotObjectDelayBlend() { return priShotDelayBlend_; }
+	void SetShotObjectDelayBlend(int blend) { priShotDelayBlend_ = blend; }
 
 	RandProvider* GetRandProvider() { return rand_; }
 	void SetRandProviderSeed(int seed) { rand_->Initialize(seed); }
