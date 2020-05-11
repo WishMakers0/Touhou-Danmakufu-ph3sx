@@ -207,6 +207,14 @@ Interpolate_CubicBezier
 			
 -------------------------------------------------------------------------------------------------------------------
 
+wait
+	Arguments:
+		1) frame
+	Description:
+		Pauses the execution for the given amount of frames.
+		
+		Much faster than loop(n){yield;}
+
 typeof
 	Arguments:
 		1) (any) value
@@ -270,6 +278,24 @@ bit_right
 		2) shift factor
 	Description:
 		Rounds and clamps the value and performs a bitwise right shift operation.
+		
+as_real
+	Arguments:
+		1) value
+	Description:
+		Converts the specified value to a real value and returns the result.
+		
+as_bool
+	Arguments:
+		1) value
+	Description:
+		Converts the specified value to a boolean value and returns the result.
+		
+as_char
+	Arguments:
+		1) value
+	Description:
+		Converts the specified value to a char value and returns the result.
 
 __DEBUG_BREAK
 	Description:
@@ -521,6 +547,43 @@ GetCameraViewProjectionMatrix
 
 -------------------------------------------------------------------------------------------------------------------
 
+Obj_GetValueR
+	Arguments:
+		1) object ID
+		2) key
+	Description:
+		Obj_GetValue with direct real value key.
+
+Obj_GetValueDR
+	Arguments:
+		1) object ID
+		2) key
+		3) default
+	Description:
+		Obj_GetValueD with direct real value key.
+
+Obj_SetValueR
+	Arguments:
+		1) object ID
+		2) key
+		3) value
+	Description:
+		Obj_SetValue with direct real value key.
+
+Obj_DeleteValueR
+	Arguments:
+		1) object ID
+		2) key
+	Description:
+		Obj_DeleteValue with direct real value key.
+
+Obj_IsValueExistsR
+	Arguments:
+		1) object ID
+		2) key
+	Description:
+		Obj_IsValueExists with direct real value key.
+
 ObjRender_GetAlpha
 	Arguments:
 		1) object ID
@@ -552,6 +615,14 @@ ObjRender_SetTextureFilterMip
 		2) (struct) mode
 	Description:
 		Sets the mipmap filtering mode for the render object.
+
+ObjRender_SetVertexShaderRenderingMode
+	Arguments:
+		1) object ID
+		2) (bool) use vertex shader mode
+	Description:
+		Sets whether the render object will be rendered with support for vertex shaders.
+		Rendering will not be performed without an attached shader object when this is set to true.
 
 ObjSpriteList2D_SetAutoClearVertexCount
 	Arguments:
@@ -603,13 +674,13 @@ ObjSound_GetWavePosition
 	Arguments:
 		1) object ID
 	Description:
-		Returns the current reading position of the sound object.
+		Returns the current reading position of the sound object. Not entirely precise.
 
 ObjSound_GetWavePositionSampleCount
 	Arguments:
 		1) object ID
 	Description:
-		Returns the current reading position of the sound object in samples.
+		Returns the current reading position of the sound object in samples. Not entirely precise.
 
 ObjSound_GetTotalLength
 	Arguments:
@@ -837,6 +908,153 @@ CreatePlayerShotA1
 
 -------------------------------------------------------------------------------------------------------------------
 
+ObjPatternShot_Create
+	Description:
+		Creates a pattern shot object and returns its object ID.
+		
+		Can be used for firing a large amount of bullets with only a few function calls, like in ZUN's ECL scripts.
+
+ObjPatternShot_Fire
+	Arguments:
+		1) object ID
+	Description:
+		Fires the shot pattern defined by the given shot pattern object.
+
+ObjPatternShot_FireReturn
+	Arguments:
+		1) object ID
+	Description:
+		Fires the shot pattern defined by the given shot pattern object and returns the IDs of the created shots in an array.
+
+ObjPatternShot_SetParentObject
+	Arguments:
+		1) object ID
+		2) parent object ID
+	Description:
+		Sets the parent object of the given shot pattern object.
+
+ObjPatternShot_SetPatternType
+	Arguments:
+		1) object ID
+		2) (struct) type
+	Description:
+		Sets the firing pattern of the given shot pattern object.
+		
+		Available pattern types:
+			PATTERN_TYPE_FAN
+			PATTERN_TYPE_FAN_AIMED
+			PATTERN_TYPE_RING
+			PATTERN_TYPE_RING_AIMED
+			PATTERN_TYPE_ARROW
+			PATTERN_TYPE_ARROW_AIMED
+			PATTERN_TYPE_SCATTER_ANGLE
+			PATTERN_TYPE_SCATTER_SPEED
+			PATTERN_TYPE_SCATTER
+
+ObjPatternShot_SetShotType
+	Arguments:
+		1) object ID
+		2) (struct) type
+	Description:
+		Sets the shot type of the given shot pattern object.
+		
+		Supported types:
+			OBJ_SHOT
+			OBJ_LOOSE_LASER
+			OBJ_CURVE_LASER
+
+ObjPatternShot_SetShotCount
+	Arguments:
+		1) object ID
+		2) way
+		3) stack
+	Description:
+		Sets the shot way and shot stack of the given shot pattern object.
+
+ObjPatternShot_SetSpeed
+	Arguments:
+		1) object ID
+		2) base speed
+		3) speed argument
+	Description:
+		Sets the shot speed and argument of the given shot pattern object.
+
+ObjPatternShot_SetAngle
+	Arguments:
+		1) object ID
+		2) base angle
+		3) angle argument
+	Description:
+		Sets the shot angle and argument of the given shot pattern object.
+
+ObjPatternShot_SetBasePoint
+	Arguments:
+		1) object ID
+		2) X position
+		3) Y position
+	Description:
+		Sets the base firing position of the given shot pattern object.
+		Defaults to the parent object's position if not used.
+		
+		Use PATTERN_BASEPOINT_RESET in either arguments to reset it to the parent object's position.
+
+ObjPatternShot_SetBasePointOffset
+	Arguments:
+		1) object ID
+		2) X offset
+		3) Y offset
+	Description:
+		Sets the firing position offset of the given shot pattern object from its base point.
+
+ObjPatternShot_SetBasePointOffsetCircle
+	Arguments:
+		1) object ID
+		2) angle
+		3) radius
+	Description:
+		Sets the firing position offset in a circular manner of the given shot pattern object from its base point.
+		
+		Equivalent to ObjPatternShot_SetBasePointOffset(obj, radius * cos(angle), radius * sin(angle));
+
+ObjPatternShot_SetShootRadius
+	Arguments:
+		1) object ID
+		2) radius
+	Description:
+		Causes the shots to be fired a certain radius away from their base points.
+
+ObjPatternShot_SetDelay
+	Arguments:
+		1) object ID
+		2) delay
+	Description:
+		Sets the shot delay of the given shot pattern object.
+
+ObjPatternShot_SetGraphic
+	Arguments:
+		1) object ID
+		2) graphic
+	Description:
+		Sets the shot image ID of the given shot pattern object.
+
+ObjPatternShot_SetLaserParameter
+	Arguments:
+		1) object ID
+		2) width
+		3) length
+	Description:
+		Sets the length and width of the given shot pattern object.
+		Has no effect if the pattern is firing normal shots.
+
+ObjPatternShot_CopySettings
+	Arguments:
+		1) destination object ID
+		2) source object ID
+	Description:
+		Copies the settings of a shot pattern object to another.
+
+-------------------------------------------------------------------------------------------------------------------
+
 SaveSnapShotA3
 	Arguments:
 		1) (string) path
@@ -854,6 +1072,6 @@ PauseScript
 		1) script ID
 		2) (bool) pause
 	Description:
-		Pauses or unpauses the specified script.
+		Pauses or unpauses the specified script. Not guaranteed to work perfectly.
 		Causes an error is the script ID is the ID of the script from which the function was called,
 			aka; "a script cannot pause itself".
